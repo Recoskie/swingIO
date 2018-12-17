@@ -1,7 +1,7 @@
 # VHex
 Fast hex UI componet, for RandomAccessFileV.
 
-[RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) Is a powerful mapping tool for fragmented data. This component is planed to have both a simulated Virtual memory display mode and offset mode in file. For mapping and modifying binary applications.
+[RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) Is a powerful mapping tool for fragmented data. This component is designed to have both a simulated Virtual memory display mode, and file offset mode. For mapping and modifying binary applications.
 
 ```java
 import javax.swing.*;
