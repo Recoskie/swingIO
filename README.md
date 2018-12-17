@@ -15,30 +15,43 @@ public class Window
 
   public Window()
   {
-    //Instance and setup a basic JFrame.
+    //Instance and setup an basic JFrame.
 
     JFrame frame = new JFrame( "Hex editor Component." );
+    
     frame.setLocationRelativeTo( null );
+    
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 
     //Create the file system stream.
 
     try
     {
-      file = new RandomAccessFileV( "Sample.bin", "rw" );
+      file = new RandomAccessFileV( "Test_files\\DIFxAPI.dll", "rw" );
     }
     catch( java.io.IOException e )
     {
       e.printStackTrace( System.out );
     }
-    
-    //VHex editor component.
-    
-    VHex hex = new VHex( file );
 
-    //Add component to window.
+    //Map a offset to a virtual address.
+
+    file.addV( 0, 0xFF, 0x771241, 0xFF ); //Map first 256 bytes at 0x771241.
+    file.addV( 0x14D0, 0x33, 0x771241, 0x33 ); //Write over first 0x33 bytes from offset 0x14D0.
     
-    frame.add( hex );
+    //Instance and setup VHex editor component.
+    
+    VHex Virtual = new VHex( file, true );
+    VHex Offset = new VHex( file, false );
+
+    //Add the two hex editor components side by side.
+
+    frame.setLayout( new GridLayout( 1, 2 ) );
+    
+    frame.add( Virtual );
+    frame.add( Offset );
+
+    Virtual.ScrollBar.setValue( 487716 );
 
     //Pack the frame.
     
