@@ -15,7 +15,8 @@ public class VHex extends JComponent
 
   //The hex editor columns.
 
-  String[] col = new String[]{ "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
+  String[] OffsetMode = new String[]{ "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
+  String[] VirtualMode = new String[]{ "Virtual Address (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
 
   //The table which will update as you scroll through the IO stream.
 
@@ -71,9 +72,10 @@ public class VHex extends JComponent
       
       if( !Virtual ) { End = IOStream.length(); }
 
-      //Else the last 64 bit address.
+      //Else the last 64 bit address. Because of scroll bar limit smaller size is used.
+      //Might create A custom scroll bar for this use.
 
-      else { End = 1152921504606846975L; }
+      else { End = 0x0FFFFFFF; }
     }
     catch( java.io.IOException e ) { }
 
@@ -141,7 +143,7 @@ public class VHex extends JComponent
           }
         }
 
-        AddressModel tabel = new AddressModel( TData, col );
+        AddressModel tabel = new AddressModel( TData, Virtual ? VirtualMode : OffsetMode );
 
         data.setModel( tabel );
 
