@@ -1,7 +1,7 @@
 # VHex
 Fast hex UI componet, for RandomAccessFileV.
 
-[RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) Is a powerful mapping tool for fragmented data. This component is planed to have both an simulated Virtual memory display mode and offset mode in file. For mapping and modifying binary applications.
+[RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) Is a powerful mapping tool for fragmented data. This component is planed to have both a simulated Virtual memory display mode and offset mode in file. For mapping and modifying binary applications.
 
 ```java
 import javax.swing.*;
@@ -15,7 +15,7 @@ public class Window
 
   public Window()
   {
-    //Instance and setup an basic JFrame.
+    //Instance and setup a basic JFrame.
 
     JFrame frame = new JFrame( "Hex editor Component." );
     frame.setLocationRelativeTo( null );
@@ -25,7 +25,7 @@ public class Window
 
     try
     {
-      file = new RandomAccessFileV( "Test_files\\DIFxAPI.dll", "rw" );
+      file = new RandomAccessFileV( "Sample.bin", "rw" );
     }
     catch( java.io.IOException e )
     {
