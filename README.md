@@ -27,7 +27,7 @@ public class Window
 
     try
     {
-      file = new RandomAccessFileV( "Test_files\\DIFxAPI.dll", "rw" );
+      file = new RandomAccessFileV( "Sample.bin", "rw" );
     }
     catch( java.io.IOException e )
     {
