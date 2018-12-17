@@ -43,17 +43,39 @@ public class VHex extends JComponent
 
   JScrollBar ScrollBar;
 
+  //Virtual mode, or offset mode.
+
+  boolean Virtual = false;
+  
+  //If no mode setting then assume file offset mode.
+
+  public VHex( RandomAccessFileV f ) { this( f, false ); }
+
   //Initialize the hex UI component. With file system stream.
 
-  public VHex( RandomAccessFileV f )
+  public VHex( RandomAccessFileV f, boolean mode )
   {
+    //Set the mode for the hex editor component.
+
+    Virtual = mode;
+
     //Reference the file stream.
 
     IOStream = f;
 
     //The length of the file.
 
-    try { End = IOStream.length(); } catch( java.io.IOException e ) {}
+    try
+    {
+      //If file offset mode the end is the end of the file.
+      
+      if( !Virtual ) { End = IOStream.length(); }
+
+      //Else the last 64 bit address.
+
+      else { End = 1152921504606846975L; }
+    }
+    catch( java.io.IOException e ) { }
 
     //Setup the scroll bar.
 
@@ -69,13 +91,33 @@ public class VHex extends JComponent
 
         long CurPos = e.getValue() * 16;
 
-        try{ IOStream.seek( CurPos ); } catch( java.io.IOException e1 ) {}
+        try
+        {
+          //If offset mode use offset seek.
+          
+          if( !Virtual ) { IOStream.seek( CurPos ); }
+
+          //If Virtual use Virtual map seek.
+
+          else { IOStream.seekV( CurPos ); }
+        }
+        catch( java.io.IOException e1 ) {}
 
         //Number of bytes to be read.        
         
         byte[] b = new byte[ 0x400 ];
         
-        try{ IOStream.read( b ); } catch( java.io.IOException e1 ) {}
+        try
+        {
+          //If offset mode use unmaped read.
+
+          if( !Virtual ) { IOStream.read( b ); }
+
+          //If Virtual use Virtual map read.
+
+          else { IOStream.readV( b ); }
+        }
+        catch( java.io.IOException e1 ) {}
 
         //16 bytes per line. Plus an additional for the address.
         
@@ -89,7 +131,7 @@ public class VHex extends JComponent
         {
           //The curent offset at curent row per 16 offset.
 
-          TData[ rn ][ 0 ] = String.format( "%1$016X", CurPos );
+          TData[ rn ][ 0 ] = "0x" + String.format( "%1$016X", CurPos );
 
           //Fill each row.
           
