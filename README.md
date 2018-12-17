@@ -51,8 +51,6 @@ public class Window
     frame.add( Virtual );
     frame.add( Offset );
 
-    Virtual.ScrollBar.setValue( 487716 );
-
     //Pack the frame.
     
     frame.pack();
