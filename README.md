@@ -14,7 +14,7 @@ public class Window
 
   public Window()
   {
-    //Instance and setup an basic JFrame.
+    //Instance and setup a basic JFrame.
 
     JFrame frame = new JFrame( "Hex editor Component." );
     
