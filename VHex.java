@@ -30,6 +30,11 @@ public class VHex extends JComponent
   
   long Sel_Start = 0, Sel_End = 0;
   
+  //The curently selected rows and cols in table.
+  
+  int SRow = 0, SCol = 0;
+  int ERow = 0, ECol = 0;
+  
   //Table selection model.
   
   ListSelectionModel Selection;
@@ -148,8 +153,15 @@ public class VHex extends JComponent
           
           int[] selectedRow = data.getSelectedRows(); int[] selectedColumns = data.getSelectedColumns();
           
-          Sel_Start = Base_Address + ( ( selectedRow[ 0 ] * 16 ) + selectedColumns[ 0 ] );
-          Sel_End = Base_Address + ( ( selectedRow[ selectedRow.length - 1 ] * 16 ) + selectedColumns[ selectedColumns.length - 1 ] );
+          //Selected rows and cols.
+          
+          SRow = selectedRow[ 0 ]; SCol = selectedColumns[ 0 ];
+          ERow = selectedRow[ selectedRow.length - 1 ]; ECol = selectedColumns[ selectedColumns.length - 1 ];
+          
+          //Calulate the selected bytes address position.
+          
+          Sel_Start = Base_Address + ( ( SRow * 16 ) + SCol );
+          Sel_End = Base_Address + ( ( ERow * 16 ) + ECol );
         }
       }
     });
@@ -170,8 +182,8 @@ public class VHex extends JComponent
         
         //Start Address Selection.
         
-        int SRow = (int)( ( Sel_Start - CurPos ) / 16 );
-        int SCol = (int)( Sel_Start % 16 );
+        SRow = (int)( ( Sel_Start - CurPos ) / 16 );
+        SCol = (int)( Sel_Start % 16 );
         
         //If negative rows select row 0.
         
@@ -179,8 +191,8 @@ public class VHex extends JComponent
         
         //End Address Selection position.
         
-        int ERow = (int)( ( Sel_End - CurPos ) / 16 );
-        int ECol = (int)( Sel_End % 16 );
+        ERow = (int)( ( Sel_End - CurPos ) / 16 );
+        ECol = (int)( Sel_End % 16 );
         
         //Max number of rows in table.
         
@@ -253,6 +265,64 @@ public class VHex extends JComponent
     }
 
     ScrollBar.addAdjustmentListener( new Scroll( ) );
+    
+    //Custom table selection rendering.
+    
+    data.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
+    {
+      @Override
+      
+      public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+      {  
+        final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        
+        int[] selectedRow = data.getSelectedRows(); int[] selectedColumns = data.getSelectedColumns();
+
+       //First col is address.
+
+        if( column == 0 )
+        {
+          c.setBackground(Color.black);
+          c.setForeground(Color.white);
+        }
+        
+        //Shade from start to end of bytes.
+
+        else if ( row == SRow && column >= SCol )
+        {
+          c.setBackground(new Color (57, 105, 138));
+          c.setForeground(Color.white);
+        }
+        else if ( row == ERow && column <= ECol )
+        {
+          c.setBackground(new Color (57, 105, 138));
+          c.setForeground(Color.white);
+        }
+        else if ( row > SRow && row < ERow )
+        {
+          c.setBackground(new Color (57, 105, 138));
+          c.setForeground(Color.white);
+        }
+        
+        //Alternate shades between rows.
+        
+        else
+        {
+          if (row % 2 == 0)
+          {
+            c.setBackground(Color.white);
+            c.setForeground(Color.black);
+          }
+          else
+          {
+            c.setBackground(new Color(242, 242, 242));
+            c.setForeground(Color.black);
+          }
+        }
+        
+        return c;
+      }
+    });
     
     //Add everything to main component.
 
