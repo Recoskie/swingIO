@@ -22,9 +22,17 @@ public class VHex extends JComponent
 
   JTable data = new JTable( );
   
+  //The table model.
+  
+  AddressModel TModel;
+  
   //End and start byte selection.
   
   long Sel_Start = 0, Sel_End = 0;
+  
+  //Table selection model.
+  
+  ListSelectionModel Selection;
   
   //This is used to stop the selection from changing address by running the selection event when updating the selected bytes while scrolling.
   
@@ -85,8 +93,10 @@ public class VHex extends JComponent
         TData[ rn ][ i ]= "??";
       }
     }
+    
+    TModel = new AddressModel( TData, Offset );
 
-    data.setModel( new AddressModel( TData, Offset ) );
+    data.setModel( TModel );
 
     //The length of the stream.
 
@@ -126,7 +136,7 @@ public class VHex extends JComponent
     
     //Setup selection.
 
-    ListSelectionModel Selection = data.getSelectionModel();
+    Selection = data.getSelectionModel();
     
     Selection.addListSelectionListener( new ListSelectionListener()
     {
@@ -216,13 +226,13 @@ public class VHex extends JComponent
         {
           //The curent offset at curent row per 16 offset.
 
-          data.getModel().setValueAt( "0x" + String.format( "%1$016X", CurPos ), rn, 0 );
+          TModel.setValueAt( "0x" + String.format( "%1$016X", CurPos ), rn, 0 );
 
           //Fill each row.
           
           for( int i = 1; i < 17; i++, pos++, CurPos++ )
           {
-            data.getModel().setValueAt( ( CurPos < End ) ? String.format( "%1$02X", b[ pos ] ) : "??", rn, i );
+            TModel.setValueAt( ( CurPos < End ) ? String.format( "%1$02X", b[ pos ] ) : "??", rn, i );
           }
         }
         
