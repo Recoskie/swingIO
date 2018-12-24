@@ -2,6 +2,7 @@ import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.event.*;
 
 public class VHex extends JComponent
 {
@@ -21,6 +22,14 @@ public class VHex extends JComponent
   //The table which will update as you scroll through the IO stream.
 
   JTable data = new JTable( );
+  
+  //End and start byte selection.
+  
+  long Sel_Start = 0x0, Sel_End = 0x0;
+  
+  //This is used to stop the selection from changing address by running the selection event when updating the selected bytes while scrolling.
+  
+  boolean Move = false;
 
   //The address is not changeable.
 
@@ -105,7 +114,7 @@ public class VHex extends JComponent
         }
         catch( java.io.IOException e1 ) {}
 
-        //Number of bytes to be read.        
+        //Number of bytes to be read. Note this should be updated to number of rows that can be rendered in draing space.
         
         byte[] b = new byte[ 0x400 ];
         
@@ -115,7 +124,7 @@ public class VHex extends JComponent
 
           if( !Virtual ) { IOStream.read( b ); }
 
-          //If Virtual use Virtual map read.
+          //If Virtual then use Virtual map read.
 
           else { IOStream.readV( b ); }
         }
@@ -128,6 +137,12 @@ public class VHex extends JComponent
         //The current row number.
 
         int pos = 0;
+        
+        //Table address position is changing.
+        
+        Move = true;
+        
+        //Update table cells with the new bytes at address position.
         
         for( int rn = 0; rn < TData.length; rn++ )
         {
@@ -142,26 +157,79 @@ public class VHex extends JComponent
             if( CurPos < End ){ TData[ rn ][ i ]= String.format( "%1$02X", b[ pos ] ); } else { TData[ rn ][ i ]= "??"; }
           }
         }
-
+        
         AddressModel tabel = new AddressModel( TData, Virtual ? VirtualMode : OffsetMode );
 
+        data.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
+        data.setColumnSelectionAllowed(true);
+        data.setRowSelectionAllowed(true);
+
         data.setModel( tabel );
+        
+        //The selected bytes. If any.
+        
+        CurPos = e.getValue() * 16;
+        
+        //Start Address.
+        
+        int SRow = (int)( ( Sel_Start - CurPos ) / 16 );
+        int SCol = (int)( Sel_Start % 16 );
+        
+        //If negative rows select row 0.
+        
+        if( SRow < 0 ){ SRow = 0; }
+        
+        //End Address position.
+        
+        int ERow = (int)( ( Sel_End - CurPos ) / 16 );
+        int ECol = (int)( Sel_End % 16 );
+        
+        //Max number of rows in table.
+        
+        if( ERow >= 63 ) { ERow = 63; }
+        
+        //If within the tabel area.
+        
+        if( ERow > 0 && SRow <= 63 )
+        {
+          data.changeSelection( SRow, SCol, false, false ); //Start
+          data.changeSelection( ERow, ECol, false, true );  //End.
+	    }
+        
 
         data.getColumnModel().getColumn( 0 ).setPreferredWidth( 160 );
-
-        data.getColumnModel().setColumnSelectionAllowed( true );
-        
-        data.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
 
         for( int i = 1; i < 17; i++ ) { data.getColumnModel().getColumn( i ).setPreferredWidth( 20 ); }
 
         data.getTableHeader().setReorderingAllowed( false );
 
         data.setFillsViewportHeight( true );
+        
+        Move = false;
       }
     }
 
     ScrollBar.addAdjustmentListener( new Scroll( ) );
+
+    ListSelectionModel cellSelectionModel = data.getSelectionModel();
+    cellSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+    cellSelectionModel.addListSelectionListener(new ListSelectionListener()
+    {
+      public void valueChanged(ListSelectionEvent e)
+      {
+		if( Move == false )
+		{
+		  long Base_Address = ScrollBar.getValue() * 16;
+		  
+          int[] selectedRow = data.getSelectedRows();
+          int[] selectedColumns = data.getSelectedColumns();
+          
+          Sel_Start = Base_Address + ( ( selectedRow[ 0 ] * 16 ) + selectedColumns[ 0 ] );
+          Sel_End = Base_Address + ( ( selectedRow[ selectedRow.length - 1 ] * 16 ) + selectedColumns[ selectedColumns.length - 1 ] );
+	    }
+      }
+    });
 
     super.setLayout( new BorderLayout( ) );
     super.add( data.getTableHeader(), BorderLayout.PAGE_START );
