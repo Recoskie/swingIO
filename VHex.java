@@ -64,15 +64,15 @@ public class VHex extends JComponent
 
   public VHex( RandomAccessFileV f, boolean mode )
   {
-	//Set the mode for the hex editor component.
-	
-	if( mode ) { Virtual = true; Offset[0] = "Virtual Address (h)"; }
-	
+    //Set the mode for the hex editor component.
+    
+    if( mode ) { Virtual = true; Offset[0] = "Virtual Address (h)"; }
+    
     //Reference the file stream.
 
     IOStream = f;
 	
-	//Inilize a small table.
+    //Inilize a small table.
 	
     String[][] TData = new String[ 64 ][ 17 ];
     
@@ -133,21 +133,19 @@ public class VHex extends JComponent
     {
       public void valueChanged( ListSelectionEvent e )
       {
-		if( Move == false )
-		{
-		  long Base_Address = ScrollBar.getValue() * 16;
-		  
+        if( Move == false )
+        {
+          long Base_Address = ScrollBar.getValue() * 16;
+          
           int[] selectedRow = data.getSelectedRows(); int[] selectedColumns = data.getSelectedColumns();
           
           Sel_Start = Base_Address + ( ( selectedRow[ 0 ] * 16 ) + selectedColumns[ 0 ] );
           Sel_End = Base_Address + ( ( selectedRow[ selectedRow.length - 1 ] * 16 ) + selectedColumns[ selectedColumns.length - 1 ] );
-	    }
+        }
       }
     });
     
     //Setup Scroll bar system.
-    
-    //Setup the scroll bar.
 
     ScrollBar = new JScrollBar( JScrollBar.VERTICAL, 30, 20, 0, (int) ( ( End + 15 ) / 16 ) );
     
@@ -239,7 +237,7 @@ public class VHex extends JComponent
         {
           data.changeSelection( SRow, SCol, false, false ); //Start
           data.changeSelection( ERow, ECol, false, true );  //End.
-	    }
+        }
         
         Move = false;
       }
