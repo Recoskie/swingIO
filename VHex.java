@@ -16,8 +16,7 @@ public class VHex extends JComponent
 
   //The hex editor columns.
 
-  String[] OffsetMode = new String[]{ "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
-  String[] VirtualMode = new String[]{ "Virtual Address (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
+  String[] Offset = new String[]{ "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
 
   //The table which will update as you scroll through the IO stream.
 
@@ -25,7 +24,7 @@ public class VHex extends JComponent
   
   //End and start byte selection.
   
-  long Sel_Start = 0x0, Sel_End = 0x0;
+  long Sel_Start = 0, Sel_End = 0;
   
   //This is used to stop the selection from changing address by running the selection event when updating the selected bytes while scrolling.
   
@@ -65,13 +64,29 @@ public class VHex extends JComponent
 
   public VHex( RandomAccessFileV f, boolean mode )
   {
-    //Set the mode for the hex editor component.
-
-    Virtual = mode;
-
+	//Set the mode for the hex editor component.
+	
+	if( mode ) { Virtual = true; Offset[0] = "Virtual Address (h)"; }
+	
     //Reference the file stream.
 
     IOStream = f;
+	
+	//Inilize a small table.
+	
+    String[][] TData = new String[ 64 ][ 17 ];
+    
+    //Create table model.
+    
+    for( int rn = 0; rn < TData.length; rn++ )
+    {
+      for( int i = 0; i < 17; i++ )
+      {
+        TData[ rn ][ i ]= "??";
+      }
+    }
+
+    data.setModel( new AddressModel( TData, Offset ) );
 
     //The length of the file.
 
@@ -88,6 +103,50 @@ public class VHex extends JComponent
     }
     catch( java.io.IOException e ) { }
 
+    //Setup table.
+    
+    data.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
+    data.setColumnSelectionAllowed( true );
+    data.setRowSelectionAllowed( true );
+    
+    //Address column.
+    
+    data.getColumnModel().getColumn( 0 ).setPreferredWidth( 160 );
+
+    //Byte value columns.
+
+    for( int i = 1; i < 17; i++ ) { data.getColumnModel().getColumn( i ).setPreferredWidth( 20 ); }
+    
+    //Columns can not be re-arranged.
+    
+    data.getTableHeader().setReorderingAllowed( false );
+    
+    //Fill view port height.
+    
+    data.setFillsViewportHeight( true );
+    
+    //Setup selection.
+
+    ListSelectionModel Selection = data.getSelectionModel();
+    
+    Selection.addListSelectionListener( new ListSelectionListener()
+    {
+      public void valueChanged( ListSelectionEvent e )
+      {
+		if( Move == false )
+		{
+		  long Base_Address = ScrollBar.getValue() * 16;
+		  
+          int[] selectedRow = data.getSelectedRows(); int[] selectedColumns = data.getSelectedColumns();
+          
+          Sel_Start = Base_Address + ( ( selectedRow[ 0 ] * 16 ) + selectedColumns[ 0 ] );
+          Sel_End = Base_Address + ( ( selectedRow[ selectedRow.length - 1 ] * 16 ) + selectedColumns[ selectedColumns.length - 1 ] );
+	    }
+      }
+    });
+    
+    //Setup Scroll bar system.
+    
     //Setup the scroll bar.
 
     ScrollBar = new JScrollBar( JScrollBar.VERTICAL, 30, 20, 0, (int) ( ( End + 15 ) / 16 ) );
@@ -101,6 +160,26 @@ public class VHex extends JComponent
         //Seek the current position at scroll bar position.
 
         long CurPos = e.getValue() * 16;
+        
+        //Start Address Selection.
+        
+        int SRow = (int)( ( Sel_Start - CurPos ) / 16 );
+        int SCol = (int)( Sel_Start % 16 );
+        
+        //If negative rows select row 0.
+        
+        if( SRow < 0 ){ SRow = 0; }
+        
+        //End Address Selection position.
+        
+        int ERow = (int)( ( Sel_End - CurPos ) / 16 );
+        int ECol = (int)( Sel_End % 16 );
+        
+        //Max number of rows in table.
+        
+        if( ERow > 63 ) { ERow = 63; }
+        
+        //Read data at scroll position.
 
         try
         {
@@ -114,7 +193,7 @@ public class VHex extends JComponent
         }
         catch( java.io.IOException e1 ) {}
 
-        //Number of bytes to be read. Note this should be updated to number of rows that can be rendered in draing space.
+        //Number of bytes to be read. Note this should be updated to number of rows that can be rendered in drawing space.
         
         byte[] b = new byte[ 0x400 ];
         
@@ -129,18 +208,10 @@ public class VHex extends JComponent
           else { IOStream.readV( b ); }
         }
         catch( java.io.IOException e1 ) {}
-
-        //16 bytes per line. Plus an additional for the address.
         
-        String[][] TData = new String[ (int) ( ( b.length + 1 ) / 16 ) ][ 17 ];
-        
-        //The current row number.
+        //The current byte in IO stream.
 
         int pos = 0;
-        
-        //Table address position is changing.
-        
-        Move = true;
         
         //Update table cells with the new bytes at address position.
         
@@ -148,47 +219,21 @@ public class VHex extends JComponent
         {
           //The curent offset at curent row per 16 offset.
 
-          TData[ rn ][ 0 ] = "0x" + String.format( "%1$016X", CurPos );
+          data.getModel().setValueAt( "0x" + String.format( "%1$016X", CurPos ), rn, 0 );
 
           //Fill each row.
           
           for( int i = 1; i < 17; i++, pos++, CurPos++ )
           {
-            if( CurPos < End ){ TData[ rn ][ i ]= String.format( "%1$02X", b[ pos ] ); } else { TData[ rn ][ i ]= "??"; }
+            data.getModel().setValueAt( ( CurPos < End ) ? String.format( "%1$02X", b[ pos ] ) : "??", rn, i );
           }
         }
         
-        AddressModel tabel = new AddressModel( TData, Virtual ? VirtualMode : OffsetMode );
-
-        data.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
-        data.setColumnSelectionAllowed(true);
-        data.setRowSelectionAllowed(true);
-
-        data.setModel( tabel );
+        //If selected bytes is within the table area.
         
-        //The selected bytes. If any.
+        Move = true;
         
-        CurPos = e.getValue() * 16;
-        
-        //Start Address.
-        
-        int SRow = (int)( ( Sel_Start - CurPos ) / 16 );
-        int SCol = (int)( Sel_Start % 16 );
-        
-        //If negative rows select row 0.
-        
-        if( SRow < 0 ){ SRow = 0; }
-        
-        //End Address position.
-        
-        int ERow = (int)( ( Sel_End - CurPos ) / 16 );
-        int ECol = (int)( Sel_End % 16 );
-        
-        //Max number of rows in table.
-        
-        if( ERow >= 63 ) { ERow = 63; }
-        
-        //If within the tabel area.
+        data.clearSelection();
         
         if( ERow > 0 && SRow <= 63 )
         {
@@ -196,40 +241,13 @@ public class VHex extends JComponent
           data.changeSelection( ERow, ECol, false, true );  //End.
 	    }
         
-
-        data.getColumnModel().getColumn( 0 ).setPreferredWidth( 160 );
-
-        for( int i = 1; i < 17; i++ ) { data.getColumnModel().getColumn( i ).setPreferredWidth( 20 ); }
-
-        data.getTableHeader().setReorderingAllowed( false );
-
-        data.setFillsViewportHeight( true );
-        
         Move = false;
       }
     }
 
     ScrollBar.addAdjustmentListener( new Scroll( ) );
-
-    ListSelectionModel cellSelectionModel = data.getSelectionModel();
-    cellSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-
-    cellSelectionModel.addListSelectionListener(new ListSelectionListener()
-    {
-      public void valueChanged(ListSelectionEvent e)
-      {
-		if( Move == false )
-		{
-		  long Base_Address = ScrollBar.getValue() * 16;
-		  
-          int[] selectedRow = data.getSelectedRows();
-          int[] selectedColumns = data.getSelectedColumns();
-          
-          Sel_Start = Base_Address + ( ( selectedRow[ 0 ] * 16 ) + selectedColumns[ 0 ] );
-          Sel_End = Base_Address + ( ( selectedRow[ selectedRow.length - 1 ] * 16 ) + selectedColumns[ selectedColumns.length - 1 ] );
-	    }
-      }
-    });
+    
+    //Add everything to main component.
 
     super.setLayout( new BorderLayout( ) );
     super.add( data.getTableHeader(), BorderLayout.PAGE_START );
