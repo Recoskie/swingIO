@@ -10,7 +10,7 @@ public class VHex extends JComponent
 
   RandomAccessFileV IOStream;
 
-  //The end of the file.
+  //The end of the data stream.
 
   long End = 0;
 
@@ -30,7 +30,7 @@ public class VHex extends JComponent
   
   boolean Move = false;
 
-  //The address is not changeable.
+  //The address column is not changeable.
 
   public class AddressModel extends DefaultTableModel
   {
@@ -56,7 +56,7 @@ public class VHex extends JComponent
 
   boolean Virtual = false;
   
-  //If no mode setting then assume file offset mode.
+  //If no mode setting then assume offset mode.
 
   public VHex( RandomAccessFileV f ) { this( f, false ); }
 
@@ -88,17 +88,16 @@ public class VHex extends JComponent
 
     data.setModel( new AddressModel( TData, Offset ) );
 
-    //The length of the file.
+    //The length of the stream.
 
     try
     {
-      //If file offset mode the end is the end of the file.
+      //If offset mode then end is the end of the stream.
       
       if( !Virtual ) { End = IOStream.length(); }
 
-      //Else the last 64 bit address. Because of scroll bar limit smaller size is used.
-      //Might create A custom scroll bar for this use.
-
+      //Else the last 64 bit address.
+      
       else { End = 0x0FFFFFFF; }
     }
     catch( java.io.IOException e ) { }
