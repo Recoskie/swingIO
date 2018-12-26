@@ -135,34 +135,46 @@ public class VHex extends JComponent
     
     data.setFillsViewportHeight( true );
     
-    //Setup selection.
-
-    Selection = data.getSelectionModel();
-    
-    Selection.addListSelectionListener( new ListSelectionListener()
-    {
-      public void valueChanged( ListSelectionEvent e )
-      {
-        int[] selectedRow = data.getSelectedRows(); int[] selectedColumns = data.getSelectedColumns();
-        
-        //Selected rows and cols.
-        
-        SRow = ScrollBar.getValue() + selectedRow[ 0 ]; SCol = selectedColumns[ 0 ];
-        ERow = ScrollBar.getValue() + selectedRow[ selectedRow.length - 1 ]; ECol = selectedColumns[ selectedColumns.length - 1 ];
-      }
-    });
-    
     //Setup Scroll bar system.
 
     ScrollBar = new JScrollBar( JScrollBar.VERTICAL, 30, 20, 0, (int) ( ( End + 15 ) / 16 ) );
+    
+    //Custom selection handeling.
+    
+    data.addMouseListener(new MouseAdapter()
+    {
+      @Override
+      
+      public void mousePressed( MouseEvent e )
+      {
+        SRow = ScrollBar.getValue() + data.rowAtPoint(e.getPoint());
+        SCol = data.columnAtPoint(e.getPoint());
+        
+        ERow = SRow; ECol = SCol;
+        
+        data.invalidate();
+      }
+    });
+    
+    data.addMouseMotionListener( new MouseMotionAdapter()
+    {
+      @Override
+      
+      public void mouseDragged( MouseEvent e )
+      {
+	ERow = ScrollBar.getValue() + data.rowAtPoint(e.getPoint());
+        ECol = data.columnAtPoint(e.getPoint());
+        data.invalidate();
+      }
+    });
     
     //As we scroll update the table data. As it would be insane to graphically render large files in hex.
 
     class Scroll implements AdjustmentListener
     {
       public void adjustmentValueChanged( AdjustmentEvent e )
-      { 
-		long CurPos = ScrollBar.getValue() * 16;
+      {
+        long CurPos = ScrollBar.getValue() * 16;
 		
         //Read data at scroll position.
 
