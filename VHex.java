@@ -26,11 +26,7 @@ public class VHex extends JComponent
   
   AddressModel TModel;
   
-  //End and start byte selection.
-  
-  long Sel_Start = 0, Sel_End = 0;
-  
-  //The curently selected rows and cols in table.
+  //The curently selected rows and cols in table. Relative to scroll bar.
   
   int SRow = 0, SCol = 0;
   int ERow = 0, ECol = 0;
@@ -147,22 +143,12 @@ public class VHex extends JComponent
     {
       public void valueChanged( ListSelectionEvent e )
       {
-        if( Move == false )
-        {
-          long Base_Address = ScrollBar.getValue() * 16;
-          
-          int[] selectedRow = data.getSelectedRows(); int[] selectedColumns = data.getSelectedColumns();
-          
-          //Selected rows and cols.
-          
-          SRow = selectedRow[ 0 ]; SCol = selectedColumns[ 0 ];
-          ERow = selectedRow[ selectedRow.length - 1 ]; ECol = selectedColumns[ selectedColumns.length - 1 ];
-          
-          //Calulate the selected bytes address position.
-          
-          Sel_Start = Base_Address + ( ( SRow * 16 ) + SCol );
-          Sel_End = Base_Address + ( ( ERow * 16 ) + ECol );
-        }
+        int[] selectedRow = data.getSelectedRows(); int[] selectedColumns = data.getSelectedColumns();
+        
+        //Selected rows and cols.
+        
+        SRow = ScrollBar.getValue() + selectedRow[ 0 ]; SCol = selectedColumns[ 0 ];
+        ERow = ScrollBar.getValue() + selectedRow[ selectedRow.length - 1 ]; ECol = selectedColumns[ selectedColumns.length - 1 ];
       }
     });
     
@@ -175,29 +161,9 @@ public class VHex extends JComponent
     class Scroll implements AdjustmentListener
     {
       public void adjustmentValueChanged( AdjustmentEvent e )
-      {
-        //Seek the current position at scroll bar position.
-
-        long CurPos = e.getValue() * 16;
-        
-        //Start Address Selection.
-        
-        SRow = (int)( ( Sel_Start - CurPos ) / 16 );
-        SCol = (int)( Sel_Start % 16 );
-        
-        //If negative rows select row 0.
-        
-        if( SRow < 0 ){ SRow = 0; }
-        
-        //End Address Selection position.
-        
-        ERow = (int)( ( Sel_End - CurPos ) / 16 );
-        ECol = (int)( Sel_End % 16 );
-        
-        //Max number of rows in table.
-        
-        if( ERow > 63 ) { ERow = 63; }
-        
+      { 
+		long CurPos = ScrollBar.getValue() * 16;
+		
         //Read data at scroll position.
 
         try
@@ -247,26 +213,12 @@ public class VHex extends JComponent
             TModel.setValueAt( ( CurPos < End ) ? String.format( "%1$02X", b[ pos ] ) : "??", rn, i );
           }
         }
-        
-        //If selected bytes is within the table area.
-        
-        Move = true;
-        
-        data.clearSelection();
-        
-        if( ERow > 0 && SRow <= 63 )
-        {
-          data.changeSelection( SRow, SCol, false, false ); //Start
-          data.changeSelection( ERow, ECol, false, true );  //End.
-        }
-        
-        Move = false;
       }
     }
 
     ScrollBar.addAdjustmentListener( new Scroll( ) );
     
-    //Custom table selection rendering.
+    //Custom table selection redering.
     
     data.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
     {
@@ -276,7 +228,7 @@ public class VHex extends JComponent
       {  
         final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         
-        int[] selectedRow = data.getSelectedRows(); int[] selectedColumns = data.getSelectedColumns();
+        row += ScrollBar.getValue();
 
        //First col is address.
 
