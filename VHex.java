@@ -60,6 +60,14 @@ public class VHex extends JComponent
   //The hex editors scroll bar.
 
   JScrollBar ScrollBar;
+  
+  //Enabel relative scroling for files larger than 4Gb.
+  
+  boolean Rel = false;
+  
+  //Position that is relative to scroll bar position.
+  
+  long RelPos = 0;
 
   //Virtual mode, or offset mode.
 
@@ -105,11 +113,11 @@ public class VHex extends JComponent
     {
       //If offset mode then end is the end of the stream.
       
-      if( !Virtual ) { End = IOStream.length(); }
+      if( !Virtual ) { End = IOStream.length(); if( End > 0x7FFFFFFF ) { Rel = true; } }
 
       //Else the last 64 bit address.
       
-      else { End = 0x0FFFFFFF; }
+      else { Rel = true; End = 0x7FFFFFFFFFFFFFFFL; }
     }
     catch( java.io.IOException e ) { }
 
@@ -137,9 +145,9 @@ public class VHex extends JComponent
     
     //Setup Scroll bar system.
 
-    ScrollBar = new JScrollBar( JScrollBar.VERTICAL, 30, 20, 0, (int) ( ( End + 15 ) / 16 ) );
+    ScrollBar = new JScrollBar( JScrollBar.VERTICAL, 30, 20, 0, End < 0x7FFFFFFF ? (int) ( ( End + 15 ) / 16 ) : 0x7FFFFFFF );
     
-    //Custom selection handeling.
+    //Custom selection handling.
     
     data.addMouseListener(new MouseAdapter()
     {
@@ -152,7 +160,7 @@ public class VHex extends JComponent
         
         ERow = SRow; ECol = SCol;
         
-        data.invalidate();
+        TModel.fireTableDataChanged();
       }
     });
     
@@ -162,9 +170,23 @@ public class VHex extends JComponent
       
       public void mouseDragged( MouseEvent e )
       {
-	ERow = ScrollBar.getValue() + data.rowAtPoint(e.getPoint());
+	    ERow = ScrollBar.getValue() + data.rowAtPoint(e.getPoint());
         ECol = data.columnAtPoint(e.getPoint());
-        data.invalidate();
+        
+        //Automatically scroll while selecting bytes.
+        
+        if( e.getY() > ( data.getHeight() - 70 ) )
+        {
+		  ScrollBar.setValue( Math.min( ScrollBar.getValue() + 1, 0x7FFFFFFF ) );
+		}
+		else if( e.getY() < 0 )
+        {
+		  ScrollBar.setValue( Math.max( ScrollBar.getValue() - 1, 0 ) );
+		}
+		
+		//Force the table to re-render cells.
+        
+        TModel.fireTableDataChanged();
       }
     });
     
@@ -174,7 +196,24 @@ public class VHex extends JComponent
     {
       public void adjustmentValueChanged( AdjustmentEvent e )
       {
-        long CurPos = ScrollBar.getValue() * 16;
+        long CurPos = ( RelPos + ScrollBar.getValue() ) * 16;
+        
+        //If relative scrolling.
+        
+        if( Rel )
+        {
+          if( ScrollBar.getValue() > 1879048191 )
+          {
+			RelPos = Math.min( RelPos + ( ScrollBar.getValue() - 1879048191 ), 0x7FFFFFFF80000000L );
+			if( RelPos < 0x7FFFFFFF80000000L ) { ScrollBar.setValue( 1879048191 ); }
+		  }
+		  
+		  else if( ScrollBar.getValue() < 268435456 )
+		  {
+			RelPos = Math.max( RelPos - ( 268435456 - ScrollBar.getValue() ), 0 );
+			if( RelPos > 0 ) { ScrollBar.setValue( 268435456 ); }
+		  }
+        }
 		
         //Read data at scroll position.
 
@@ -224,6 +263,8 @@ public class VHex extends JComponent
           {
             TModel.setValueAt( ( CurPos < End ) ? String.format( "%1$02X", b[ pos ] ) : "??", rn, i );
           }
+          
+          TModel.fireTableDataChanged();
         }
       }
     }
