@@ -28,8 +28,8 @@ public class VHex extends JComponent
   
   //The currently selected rows and cols in table. Relative to scroll bar.
   
-  int SRow = 0, SCol = 0;
-  int ERow = 0, ECol = 0;
+  long SRow = 0, SCol = 0;
+  long ERow = 0, ECol = 0;
   
   //The main hex edior display.
   
@@ -119,7 +119,7 @@ public class VHex extends JComponent
         {
 		  IOStream.seekV( CurPos );
 		  IOStream.readV( data );
-	}
+		}
       }
       catch( java.io.IOException e1 ) {}
       
@@ -201,7 +201,7 @@ public class VHex extends JComponent
 
   public VHex( RandomAccessFileV f, boolean mode )
   { 
-    Virtual = mode;  
+	Virtual = mode;  
 	
     //Reference the file stream.
 
@@ -237,12 +237,12 @@ public class VHex extends JComponent
       
       if( !Virtual )
       {
-        End = IOStream.length();
+		  End = IOStream.length();
 		  
-        //Enable relative scrolling if the data length is outside the scroll bar range.
-
-        if( End > 0x7FFFFFFF ) { Rel = true; }
-      }
+		  //Enable relative scrolling if the data length is outside the scroll bar range.
+		  
+		  if( End > 0x7FFFFFFF ) { Rel = true; }
+	  }
 
       //Else the last 64 bit virtual address. Thus set relative scrolling.
       
@@ -274,8 +274,10 @@ public class VHex extends JComponent
       
       public void mousePressed( MouseEvent e )
       {
-        SRow = ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
-        SCol = tdata.columnAtPoint(e.getPoint());
+        SRow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint( e.getPoint() );
+        SCol = tdata.columnAtPoint( e.getPoint() );
+        
+        System.out.println(SRow+ ", Rel = " + RelPos + "" );
         
         ERow = SRow; ECol = SCol;
         
@@ -289,8 +291,8 @@ public class VHex extends JComponent
       
       public void mouseDragged( MouseEvent e )
       {
-	    ERow = ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
-        ECol = tdata.columnAtPoint(e.getPoint());
+	    ERow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint( e.getPoint() );
+        ECol = tdata.columnAtPoint( e.getPoint() );
         
         //Automatically scroll while selecting bytes.
         
@@ -346,11 +348,11 @@ public class VHex extends JComponent
     {
       @Override
       
-      public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+      public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int r, int column)
       {  
-        final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, r, column);
         
-        row += RelPos + ScrollBar.getValue();
+        long row = r + RelPos + ScrollBar.getValue();
         
         //Alternate shades between rows.
         
@@ -441,5 +443,7 @@ public class VHex extends JComponent
     super.add( tdata.getTableHeader(), BorderLayout.PAGE_START );
     super.add( tdata, BorderLayout.CENTER );
     super.add( ScrollBar, BorderLayout.EAST );
+    
+    TModel.updateData();
   }
 }
