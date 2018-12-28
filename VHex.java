@@ -20,25 +20,17 @@ public class VHex extends JComponent
 
   //The table which will update as you scroll through the IO stream.
 
-  JTable data = new JTable( );
+  JTable data;
   
   //The table model.
   
   AddressModel TModel;
   
-  //The curently selected rows and cols in table. Relative to scroll bar.
+  //The currently selected rows and cols in table. Relative to scroll bar.
   
   int SRow = 0, SCol = 0;
   int ERow = 0, ECol = 0;
   
-  //Table selection model.
-  
-  ListSelectionModel Selection;
-  
-  //This is used to stop the selection from changing address by running the selection event when updating the selected bytes while scrolling.
-  
-  boolean Move = false;
-
   //The address column is not changeable.
 
   public class AddressModel extends DefaultTableModel
@@ -56,12 +48,36 @@ public class VHex extends JComponent
       return( column > 0 );
     }
   }
+  
+  //The preferred table column size.
+  
+  class AddressColumnModel extends DefaultTableColumnModel {
+
+  public void addColumn(TableColumn c)
+  {
+	//Address column.
+	
+	if( super.getColumnCount() == 0 )
+	{
+	  c.setPreferredWidth( 130 );
+	}
+	
+	//Byte value columns.
+	
+	else
+	{
+	  c.setPreferredWidth( 20 );
+	}
+	
+    super.addColumn( c );
+  }
+}
 
   //The hex editors scroll bar.
 
   JScrollBar ScrollBar;
   
-  //Enabel relative scroling for files larger than 4Gb.
+  //Enable relative scrolling for files larger than 4Gb.
   
   boolean Rel = false;
   
@@ -91,7 +107,7 @@ public class VHex extends JComponent
 	
     //Inilize a small table.
 	
-    String[][] TData = new String[ 64 ][ 17 ];
+    String[][] TData = new String[ 16 ][ 17 ];
     
     //Create table model.
     
@@ -105,7 +121,9 @@ public class VHex extends JComponent
     
     TModel = new AddressModel( TData, Offset );
 
-    data.setModel( TModel );
+    data = new JTable( TModel, new AddressColumnModel() );
+    
+    data.createDefaultColumnsFromModel();
 
     //The length of the stream.
 
@@ -113,28 +131,21 @@ public class VHex extends JComponent
     {
       //If offset mode then end is the end of the stream.
       
-      if( !Virtual ) { End = IOStream.length(); if( End > 0x7FFFFFFF ) { Rel = true; } }
+      if( !Virtual )
+      {
+		  End = IOStream.length();
+		  
+		  //Enable relative scrolling if the data length is outside the scroll bar range.
+		  
+		  if( End > 0x7FFFFFFF ) { Rel = true; }
+	  }
 
-      //Else the last 64 bit address.
+      //Else the last 64 bit virtual address. Thus set relative scrolling.
       
       else { Rel = true; End = 0x7FFFFFFFFFFFFFFFL; }
     }
     catch( java.io.IOException e ) { }
 
-    //Setup table.
-    
-    data.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
-    data.setColumnSelectionAllowed( true );
-    data.setRowSelectionAllowed( true );
-    
-    //Address column.
-    
-    data.getColumnModel().getColumn( 0 ).setPreferredWidth( 160 );
-
-    //Byte value columns.
-
-    for( int i = 1; i < 17; i++ ) { data.getColumnModel().getColumn( i ).setPreferredWidth( 20 ); }
-    
     //Columns can not be re-arranged.
     
     data.getTableHeader().setReorderingAllowed( false );
@@ -142,6 +153,10 @@ public class VHex extends JComponent
     //Fill view port height.
     
     data.setFillsViewportHeight( true );
+    
+    //Do not alow resizing of cells.
+    
+    data.getTableHeader().setResizingAllowed( false );
     
     //Setup Scroll bar system.
 
@@ -184,7 +199,7 @@ public class VHex extends JComponent
 		  ScrollBar.setValue( Math.max( ScrollBar.getValue() - 1, 0 ) );
 		}
 		
-		//Force the table to re-render cells.
+		//Force the table to rerender cells.
         
         TModel.fireTableDataChanged();
       }
@@ -231,7 +246,7 @@ public class VHex extends JComponent
 
         //Number of bytes to be read. Note this should be updated to number of rows that can be rendered in drawing space.
         
-        byte[] b = new byte[ 0x400 ];
+        byte[] b = new byte[ data.getRowCount() * 16 ];
         
         try
         {
@@ -271,7 +286,7 @@ public class VHex extends JComponent
 
     ScrollBar.addAdjustmentListener( new Scroll( ) );
     
-    //Custom table selection redering.
+    //Custom table selection rendering.
     
     data.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
     {
@@ -281,8 +296,79 @@ public class VHex extends JComponent
       {  
         final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         
-        row += ScrollBar.getValue();
-
+        row += RelPos + ScrollBar.getValue();
+        
+        //Alternate shades between rows.
+        
+        if ( row % 2 == 0 )
+        {
+          c.setBackground( Color.white );
+          c.setForeground( Color.black );
+        }
+        else
+        {
+          c.setBackground( new Color(242, 242, 242) );
+          c.setForeground( Color.black );
+        }
+        
+        //If selection is in same row
+        
+        if( SRow == ERow && row == SRow )
+        {
+		  if( SCol > ECol && column >= ECol && column <= SCol )
+		  {
+            c.setBackground(new Color (57, 105, 138));
+            c.setForeground(Color.white);
+		  }
+		  else if( column <= ECol && column >= SCol )
+		  {
+            c.setBackground(new Color (57, 105, 138));
+            c.setForeground(Color.white);
+		  }
+	    }
+        
+        //Selection start to end.
+        
+        else if ( SRow <= ERow )
+        {
+          if ( row == SRow && column >= SCol )
+          {
+            c.setBackground(new Color (57, 105, 138));
+            c.setForeground(Color.white);
+		  }
+		  else if ( row == ERow && column <= ECol )
+		  {
+		    c.setBackground(new Color (57, 105, 138));
+            c.setForeground(Color.white);
+		  }
+		  else if ( row > SRow && row < ERow )
+		  {
+			c.setBackground(new Color (57, 105, 138));
+            c.setForeground(Color.white);
+		  }
+		}
+		
+		//Selection end to start.
+		
+        else if ( SRow >= ERow )
+        {
+          if ( row == SRow && column <= SCol )
+          {
+            c.setBackground(new Color (57, 105, 138));
+            c.setForeground(Color.white);
+		  }
+		  else if ( row < SRow && row > ERow )
+		  {
+			c.setBackground(new Color (57, 105, 138));
+            c.setForeground(Color.white);
+		  }
+		  else if ( row == ERow && column >= ECol )
+		  {
+		    c.setBackground(new Color (57, 105, 138));
+            c.setForeground(Color.white);
+		  }
+		}
+		
        //First col is address.
 
         if( column == 0 )
@@ -291,41 +377,7 @@ public class VHex extends JComponent
           c.setForeground(Color.white);
         }
         
-        //Shade from start to end of bytes.
-
-        else if ( row == SRow && column >= SCol )
-        {
-          c.setBackground(new Color (57, 105, 138));
-          c.setForeground(Color.white);
-        }
-        else if ( row == ERow && column <= ECol )
-        {
-          c.setBackground(new Color (57, 105, 138));
-          c.setForeground(Color.white);
-        }
-        else if ( row > SRow && row < ERow )
-        {
-          c.setBackground(new Color (57, 105, 138));
-          c.setForeground(Color.white);
-        }
-        
-        //Alternate shades between rows.
-        
-        else
-        {
-          if (row % 2 == 0)
-          {
-            c.setBackground(Color.white);
-            c.setForeground(Color.black);
-          }
-          else
-          {
-            c.setBackground(new Color(242, 242, 242));
-            c.setForeground(Color.black);
-          }
-        }
-        
-        return c;
+        return( c );
       }
     });
     
