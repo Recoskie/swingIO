@@ -14,13 +14,13 @@ public class VHex extends JComponent
 
   long End = 0;
 
-  //The hex editor columns.
-
-  String[] Offset = new String[]{ "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
+  //The curent position in IO stream.
+  
+  long CurPos = 0;
 
   //The table which will update as you scroll through the IO stream.
 
-  JTable data;
+  JTable tdata;
   
   //The table model.
   
@@ -31,47 +31,151 @@ public class VHex extends JComponent
   int SRow = 0, SCol = 0;
   int ERow = 0, ECol = 0;
   
-  //The address column is not changeable.
+  //The main hex edior display.
+  
+ class AddressModel extends AbstractTableModel
+ {
+    private String[] Offset = new String[]{ "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
 
-  public class AddressModel extends DefaultTableModel
-  {
-    AddressModel( Object[][] data, String[] colNames )
-    {
-      super( data, colNames );
-    }
+    //Byte buffer betwean io stream.
 
-    //The first cell can not be edited.
+    private byte[] data = new byte[ 0x4A0 ];
     
-    @Override
-    public boolean isCellEditable( int row, int column )
+    //Divide into rows of 16 offsets.
+    
+    private int RowLen = 16;
+    
+    //If virtual mode.
+    
+    public AddressModel( boolean mode ) { if( mode ) { Offset[ 0 ] = "Virtual Address (h)"; } }
+    
+    //Get number of columns.
+
+    public int getColumnCount() { return( Offset.length ); }
+
+    //Get number of rows in Display area.
+
+    public int getRowCount() { return( ( tdata.getHeight() / tdata.getRowHeight() ) + 1 ); }
+
+    //Get the column.
+
+    public String getColumnName( int col ) { return( Offset[ col ] ); }
+
+    //The address col and byte values.
+
+    public Object getValueAt( int row, int col )
     {
-      return( column > 0 );
+      //First col is address.
+      
+      if( col == 0 ) { return( "0x" + String.format( "%1$016X", CurPos + ( row * 16 ) ) ); }
+      
+      //Else byte to hex.
+      
+      if( ( ( row * RowLen ) + ( col - 1 ) ) < data.length ){ return( String.format( "%1$02X", data[ ( row * RowLen ) + ( col - 1 ) ] ) ); }
+      
+      else{ return("??"); }
     }
+    
+    //JTable uses this method to determine the default renderer/editor for each cell.
+    
+    public Class getColumnClass( int c ) { return( getValueAt(0, c).getClass() ); }
+
+    //First column is not editbale as it is the address.
+    
+    public boolean isCellEditable( int row, int col ) { return( col >= 1 ); }
+
+    //Do not fire if updating byte buffer. Seting values writes directly to the IO stream.
+    
+    public void setValueAt(Object value, int row, int col)
+    {
+      data[ ( row * RowLen ) + col ] = (byte)Integer.parseInt( (String)value, 16 );
+      
+      //Write the new byte value to stream.
+      
+      //Update table.
+      
+      fireTableCellUpdated( row, col );
+    }
+    
+    //Update table data.
+    
+    public void updateData()
+    {
+	  //Read data at scroll position.
+
+      try
+      {
+        //If offset mode use offset seek.
+        
+        if( !Virtual )
+        {
+	      IOStream.seek( CurPos );
+	      IOStream.read( data );
+	    }
+        
+        //If Virtual use Virtual map seek.
+        
+        else
+        {
+		  IOStream.seekV( CurPos );
+		  IOStream.readV( data );
+	}
+      }
+      catch( java.io.IOException e1 ) {}
+      
+      fireTableDataChanged();
+	}
   }
   
   //The preferred table column size.
   
-  class AddressColumnModel extends DefaultTableColumnModel {
-
-  public void addColumn(TableColumn c)
+  class AddressColumnModel extends DefaultTableColumnModel
   {
-	//Address column.
-	
-	if( super.getColumnCount() == 0 )
-	{
-	  c.setPreferredWidth( 130 );
-	}
-	
-	//Byte value columns.
-	
-	else
-	{
-	  c.setPreferredWidth( 20 );
-	}
-	
-    super.addColumn( c );
+    public void addColumn(TableColumn c)
+    {
+	  //Address column.
+	  
+	  if( super.getColumnCount() == 0 )
+	  {
+	    c.setPreferredWidth( 130 );
+	  }
+	  
+	  //Byte value columns.
+	  
+	  else
+	  {
+	    c.setPreferredWidth( 20 );
+	  }
+	  
+      super.addColumn( c );
+    }
   }
-}
+  
+  //Remove the tables default selection methods.
+  
+  class NullSelectionModel implements ListSelectionModel
+  {
+    public boolean isSelectionEmpty() { return( true ); }
+    public boolean isSelectedIndex( int index ) { return( false ); }
+    public int getMinSelectionIndex() { return( -1 ); }
+    public int getMaxSelectionIndex() { return( -1 ); }
+    public int getLeadSelectionIndex() { return( -1 ); }
+    public int getAnchorSelectionIndex() { return( -1 ); }
+    public void setSelectionInterval( int index0, int index1 ) { }
+    public void setLeadSelectionIndex( int index ) { }
+    public void setAnchorSelectionIndex( int index ) { }
+    public void addSelectionInterval( int index0, int index1 ) { }
+    public void insertIndexInterval( int index, int length, boolean before ) { }
+    public void clearSelection() { }
+    public void removeSelectionInterval( int index0, int index1 ) { }
+    public void removeIndexInterval( int index0, int index1 ) { }
+    public void setSelectionMode( int selectionMode ) { }
+    public int getSelectionMode() { return( SINGLE_SELECTION ); }
+    public void addListSelectionListener( ListSelectionListener lsl ) { }
+    public void removeListSelectionListener( ListSelectionListener lsl ) { }
+    public void setValueIsAdjusting( boolean valueIsAdjusting ) { }
+    public boolean getValueIsAdjusting() { return( false ); }
+  }
 
   //The hex editors scroll bar.
 
@@ -96,11 +200,9 @@ public class VHex extends JComponent
   //Initialize the hex UI component. With file system stream.
 
   public VHex( RandomAccessFileV f, boolean mode )
-  {
-    //Set the mode for the hex editor component.
-    
-    if( mode ) { Virtual = true; Offset[0] = "Virtual Address (h)"; }
-    
+  { 
+    Virtual = mode;  
+	
     //Reference the file stream.
 
     IOStream = f;
@@ -119,11 +221,13 @@ public class VHex extends JComponent
       }
     }
     
-    TModel = new AddressModel( TData, Offset );
+    TModel = new AddressModel( mode );
 
-    data = new JTable( TModel, new AddressColumnModel() );
+    tdata = new JTable( TModel, new AddressColumnModel() );
     
-    data.createDefaultColumnsFromModel();
+    tdata.createDefaultColumnsFromModel();
+    
+    tdata.setSelectionModel( new NullSelectionModel() );
 
     //The length of the stream.
 
@@ -133,12 +237,12 @@ public class VHex extends JComponent
       
       if( !Virtual )
       {
-		  End = IOStream.length();
+        End = IOStream.length();
 		  
-		  //Enable relative scrolling if the data length is outside the scroll bar range.
-		  
-		  if( End > 0x7FFFFFFF ) { Rel = true; }
-	  }
+        //Enable relative scrolling if the data length is outside the scroll bar range.
+
+        if( End > 0x7FFFFFFF ) { Rel = true; }
+      }
 
       //Else the last 64 bit virtual address. Thus set relative scrolling.
       
@@ -148,15 +252,15 @@ public class VHex extends JComponent
 
     //Columns can not be re-arranged.
     
-    data.getTableHeader().setReorderingAllowed( false );
+    tdata.getTableHeader().setReorderingAllowed( false );
     
     //Fill view port height.
     
-    data.setFillsViewportHeight( true );
+    tdata.setFillsViewportHeight( true );
     
     //Do not alow resizing of cells.
     
-    data.getTableHeader().setResizingAllowed( false );
+    tdata.getTableHeader().setResizingAllowed( false );
     
     //Setup Scroll bar system.
 
@@ -164,14 +268,14 @@ public class VHex extends JComponent
     
     //Custom selection handling.
     
-    data.addMouseListener(new MouseAdapter()
+    tdata.addMouseListener(new MouseAdapter()
     {
       @Override
       
       public void mousePressed( MouseEvent e )
       {
-        SRow = ScrollBar.getValue() + data.rowAtPoint(e.getPoint());
-        SCol = data.columnAtPoint(e.getPoint());
+        SRow = ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
+        SCol = tdata.columnAtPoint(e.getPoint());
         
         ERow = SRow; ECol = SCol;
         
@@ -179,18 +283,18 @@ public class VHex extends JComponent
       }
     });
     
-    data.addMouseMotionListener( new MouseMotionAdapter()
+    tdata.addMouseMotionListener( new MouseMotionAdapter()
     {
       @Override
       
       public void mouseDragged( MouseEvent e )
       {
-	    ERow = ScrollBar.getValue() + data.rowAtPoint(e.getPoint());
-        ECol = data.columnAtPoint(e.getPoint());
+	    ERow = ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
+        ECol = tdata.columnAtPoint(e.getPoint());
         
         //Automatically scroll while selecting bytes.
         
-        if( e.getY() > ( data.getHeight() - 70 ) )
+        if( e.getY() > ( tdata.getHeight() - 70 ) )
         {
 		  ScrollBar.setValue( Math.min( ScrollBar.getValue() + 1, 0x7FFFFFFF ) );
 		}
@@ -211,7 +315,7 @@ public class VHex extends JComponent
     {
       public void adjustmentValueChanged( AdjustmentEvent e )
       {
-        long CurPos = ( RelPos + ScrollBar.getValue() ) * 16;
+        CurPos = ( RelPos + ScrollBar.getValue() ) * 16;
         
         //If relative scrolling.
         
@@ -229,58 +333,8 @@ public class VHex extends JComponent
 			if( RelPos > 0 ) { ScrollBar.setValue( 268435456 ); }
 		  }
         }
-		
-        //Read data at scroll position.
-
-        try
-        {
-          //If offset mode use offset seek.
-          
-          if( !Virtual ) { IOStream.seek( CurPos ); }
-
-          //If Virtual use Virtual map seek.
-
-          else { IOStream.seekV( CurPos ); }
-        }
-        catch( java.io.IOException e1 ) {}
-
-        //Number of bytes to be read. Note this should be updated to number of rows that can be rendered in drawing space.
         
-        byte[] b = new byte[ data.getRowCount() * 16 ];
-        
-        try
-        {
-          //If offset mode use unmaped read.
-
-          if( !Virtual ) { IOStream.read( b ); }
-
-          //If Virtual then use Virtual map read.
-
-          else { IOStream.readV( b ); }
-        }
-        catch( java.io.IOException e1 ) {}
-        
-        //The current byte in IO stream.
-
-        int pos = 0;
-        
-        //Update table cells with the new bytes at address position.
-        
-        for( int rn = 0; rn < TData.length; rn++ )
-        {
-          //The curent offset at curent row per 16 offset.
-
-          TModel.setValueAt( "0x" + String.format( "%1$016X", CurPos ), rn, 0 );
-
-          //Fill each row.
-          
-          for( int i = 1; i < 17; i++, pos++, CurPos++ )
-          {
-            TModel.setValueAt( ( CurPos < End ) ? String.format( "%1$02X", b[ pos ] ) : "??", rn, i );
-          }
-          
-          TModel.fireTableDataChanged();
-        }
+        TModel.updateData();
       }
     }
 
@@ -288,7 +342,7 @@ public class VHex extends JComponent
     
     //Custom table selection rendering.
     
-    data.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
+    tdata.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
     {
       @Override
       
@@ -384,10 +438,8 @@ public class VHex extends JComponent
     //Add everything to main component.
 
     super.setLayout( new BorderLayout( ) );
-    super.add( data.getTableHeader(), BorderLayout.PAGE_START );
-    super.add( data, BorderLayout.CENTER );
+    super.add( tdata.getTableHeader(), BorderLayout.PAGE_START );
+    super.add( tdata, BorderLayout.CENTER );
     super.add( ScrollBar, BorderLayout.EAST );
-
-    ScrollBar.setValue( 0 );
   }
 }
