@@ -112,18 +112,15 @@ public class VHex extends JComponent
 
     //First column is not editbale as it is the address.
 
-    public boolean isCellEditable(int row, int col)
-    {
-      return (col >= 1);
-    }
+    public boolean isCellEditable(int row, int col) { return ( col >= 1 ); }
 
     //Do not fire if updating byte buffer. Seting values writes directly to the IO stream.
 
     public void setValueAt(Object value, int row, int col)
     {
-	  int b = Integer.parseInt((String) value, 16);
+	  int b = Integer.parseInt((String)value, 16);
 	
-      data[(row * RowLen) + ( col - 1 )] = (byte)b;
+      data[ ( row * RowLen ) + ( col - 1 ) ] = (byte)b;
 
       //Write the new byte value to stream.
 
@@ -133,7 +130,7 @@ public class VHex extends JComponent
 
         if (!Virtual)
         {
-          IOStream.seek( (row * RowLen) + ( col - 1 ) + CurPos);
+          IOStream.seek( (row * RowLen) + ( col - 1 ) + CurPos );
           IOStream.write(b);
         }
 
@@ -141,7 +138,7 @@ public class VHex extends JComponent
 
         else
         {
-          IOStream.seekV((row * RowLen) + ( col - 1 ) + CurPos);
+          IOStream.seekV( (row * RowLen) + ( col - 1 ) + CurPos );
           IOStream.writeV(b);
         }
       }
@@ -318,19 +315,23 @@ public class VHex extends JComponent
 
       public void mouseDragged(MouseEvent e)
       {
-        ERow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
-        ECol = tdata.columnAtPoint(e.getPoint());
-
         //Automatically scroll while selecting bytes.
 
-        if (e.getY() > (tdata.getHeight() - 70))
+        if ( e.getY() > tdata.getHeight() )
         {
-          ScrollBar.setValue(Math.min(ScrollBar.getValue() + 1, 0x7FFFFFFF));
+          ScrollBar.setValue(Math.min(ScrollBar.getValue() + 4, 0x7FFFFFFF));
+          ERow = RelPos + ScrollBar.getValue() + ( TModel.getRowCount() - 1 );
         }
-        else if (e.getY() < 0)
+        else if ( e.getY() < 0 )
         {
-          ScrollBar.setValue(Math.max(ScrollBar.getValue() - 1, 0));
+          ScrollBar.setValue(Math.max(ScrollBar.getValue() - 4, 0));
+          ERow = RelPos + ScrollBar.getValue();
         }
+        else
+        {
+          ERow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
+          ECol = tdata.columnAtPoint(e.getPoint());
+		}
 
         //Force the table to rerender cells.
 
