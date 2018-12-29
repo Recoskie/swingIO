@@ -87,12 +87,12 @@ public class VHex extends JComponent
 
       if (col == 0)
       {
-        return ("0x" + String.format("%1$016X", CurPos + (row * 16)));
+        return ("0x" + String.format("%1$016X", CurPos + (row * RowLen)));
       }
 
       //Else byte to hex.
 
-      if (((row * RowLen) + (col - 1)) < data.length)
+      else if (((row * RowLen) + (col - 1)) < data.length && ( ((row * RowLen) + (col - 1)) + CurPos ) < End )
       {
         return (String.format("%1$02X", data[(row * RowLen) + (col - 1)]));
       }
@@ -121,9 +121,31 @@ public class VHex extends JComponent
 
     public void setValueAt(Object value, int row, int col)
     {
-      data[(row * RowLen) + col] = (byte) Integer.parseInt((String) value, 16);
+	  int b = Integer.parseInt((String) value, 16);
+	
+      data[(row * RowLen) + ( col - 1 )] = (byte)b;
 
       //Write the new byte value to stream.
+
+      try
+      {
+        //If offset mode use offset seek, and write.
+
+        if (!Virtual)
+        {
+          IOStream.seek( (row * RowLen) + ( col - 1 ) + CurPos);
+          IOStream.write(b);
+        }
+
+        //If Virtual use Virtual map seek, and write.
+
+        else
+        {
+          IOStream.seekV((row * RowLen) + ( col - 1 ) + CurPos);
+          IOStream.writeV(b);
+        }
+      }
+      catch (java.io.IOException e1){}
 
       //Update table.
 
@@ -218,23 +240,9 @@ public class VHex extends JComponent
 
     IOStream = f;
 
-    //Inilize a small table.
-
-    String[][] TData = new String[16][17];
-
-    //Create table model.
-
-    for (int rn = 0; rn < TData.length; rn++)
-    {
-      for (int i = 0; i < 17; i++)
-      {
-        TData[rn][i] = "??";
-      }
-    }
-
     TModel = new AddressModel(mode);
 
-    tdata = new JTable(TModel, new AddressColumnModel());
+    tdata = new JTable( TModel, new AddressColumnModel() );
 
     tdata.createDefaultColumnsFromModel();
 
@@ -264,16 +272,19 @@ public class VHex extends JComponent
         End = 0x7FFFFFFFFFFFFFFFL;
       }
     }
-    catch (java.io.IOException e)
-    {}
+    catch (java.io.IOException e) {}
+    
+    //Remove selection listener.
+    
+    //tdata.removeSelectionListener( tdata );
 
     //Columns can not be re-arranged.
 
     tdata.getTableHeader().setReorderingAllowed(false);
 
-    //Fill view port height.
+    //Columns can not be re-arranged.
 
-    tdata.setFillsViewportHeight(true);
+    tdata.getTableHeader().setReorderingAllowed(false);
 
     //Do not alow resizing of cells.
 
