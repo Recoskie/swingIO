@@ -21,6 +21,10 @@ public class VHex extends JComponent
   //The table which will update as you scroll through the IO stream.
 
   JTable tdata;
+  
+  //Number of rows in draw space.
+  
+  int TRows = 0;
 
   //The table model.
 
@@ -60,23 +64,17 @@ public class VHex extends JComponent
 
     //Get number of columns.
 
-    public int getColumnCount()
-    {
-      return (Offset.length);
-    }
+    public int getColumnCount() { return ( Offset.length ); }
 
     //Get number of rows in Display area.
 
-    public int getRowCount()
-    {
-      return ((tdata.getHeight() / tdata.getRowHeight()) + 1);
-    }
+    public int getRowCount() { return ( TRows ); }
 
     //Get the column.
 
     public String getColumnName(int col)
     {
-      return (Offset[col]);
+      return ( Offset[col] );
     }
 
     //The address col and byte values.
@@ -190,7 +188,7 @@ public class VHex extends JComponent
 
       if (super.getColumnCount() == 0)
       {
-        c.setPreferredWidth(130);
+        c.setPreferredWidth(136);
       }
 
       //Byte value columns.
@@ -219,6 +217,17 @@ public class VHex extends JComponent
   //Virtual mode, or offset mode.
 
   boolean Virtual = false;
+  
+  //Only recaulatue number of table rows on resize. Speeds up table redering.
+  
+  class CalcRows extends ComponentAdapter
+  {
+    public void componentResized(ComponentEvent e)
+    {
+      TRows = ( tdata.getHeight() / tdata.getRowHeight() ) + 1;
+      ScrollBar.setVisibleAmount( TRows );
+    }
+  }
 
   //If no mode setting then assume offset mode.
 
@@ -231,6 +240,8 @@ public class VHex extends JComponent
 
   public VHex(RandomAccessFileV f, boolean mode)
   {
+	super.addComponentListener( new CalcRows() );
+	
     Virtual = mode;
 
     //Reference the file stream.
@@ -270,10 +281,6 @@ public class VHex extends JComponent
       }
     }
     catch (java.io.IOException e) {}
-    
-    //Remove selection listener.
-    
-    //tdata.removeSelectionListener( tdata );
 
     //Columns can not be re-arranged.
 
@@ -289,7 +296,7 @@ public class VHex extends JComponent
 
     //Setup Scroll bar system.
 
-    ScrollBar = new JScrollBar(JScrollBar.VERTICAL, 30, 20, 0, End < 0x7FFFFFFF ? (int)((End + 15) / 16) : 0x7FFFFFFF);
+    ScrollBar = new JScrollBar( JScrollBar.VERTICAL, 0, 0, 0, End < 0x7FFFFFFF ? (int)((End + 15) / 16) : 0x7FFFFFFF );
 
     //Custom selection handling.
 
@@ -353,7 +360,7 @@ public class VHex extends JComponent
         {
           if (ScrollBar.getValue() > 1879048191)
           {
-            RelPos = Math.min(RelPos + (ScrollBar.getValue() - 1879048191), 0x7FFFFFFF80000000L);
+            RelPos = Math.max(RelPos + (ScrollBar.getValue() - 1879048191), 0x7FFFFFFF00000000L);
             if (RelPos < 0x7FFFFFFF80000000L)
             {
               ScrollBar.setValue(1879048191);
