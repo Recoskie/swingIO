@@ -3,6 +3,7 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.event.*;
+import javax.swing.text.*;
 
 public class VHex extends JComponent
 {
@@ -192,9 +193,25 @@ public class VHex extends JComponent
     
     int Row = 0, Col = 0; //Curent cell.
     
-    char[] text = new char[2]; //Chicters that are changed by key press.
-    
     boolean CellMove = false; //Moving cells.
+    
+    class HexDocument extends PlainDocument
+    {
+      @Override
+      public void replace(int offset, int length, String text, AttributeSet attrs) throws BadLocationException
+      {
+		//Validate hex input.
+		
+        char c = text.toUpperCase().charAt(0);
+        
+        if ( c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39 )
+        {
+          pos = offset + 1; super.replace(offset, length, text, attrs); UpdatePos();
+		}
+		
+		textField.select( pos, pos + 1 );
+      }
+    }
     
     //Move left, or right. Cursor position.
 
@@ -206,7 +223,7 @@ public class VHex extends JComponent
       {
         Col -= 1;
 
-        if (Col <= 1)
+        if (Col <= 0)
         {
           Col = 16;
 
@@ -250,7 +267,7 @@ public class VHex extends JComponent
 
       //Select the curent hex digit user is editing.
 
-      textField.select(pos, pos + 1); CellMove = false;
+      CellMove = false;
     }
 
     public CellHexEditor()
@@ -264,22 +281,22 @@ public class VHex extends JComponent
         public void focusGained(FocusEvent e)
         {
           if( !CellMove ) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); }
-          char[] t = textField.getText().toCharArray(); text[0] = t[0]; text[1] = t[1]; UpdatePos();
+          textField.select( pos, pos + 1 );
         }
       });
 
       textField.addMouseListener(new MouseAdapter()
       {
         @Override
-        public void mousePressed(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); UpdatePos(); }
+        public void mousePressed(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); textField.select( pos, pos + 1 ); }
 
         @Override
-        public void mouseReleased(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); UpdatePos(); }
+        public void mouseReleased(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); textField.select( pos, pos + 1 ); }
 
         @Override
-        public void mouseClicked(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); UpdatePos(); }
+        public void mouseClicked(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); textField.select( pos, pos + 1 ); }
       });
-
+      
       textField.addKeyListener(new KeyListener()
       {
         public void keyPressed(KeyEvent e)
@@ -287,26 +304,16 @@ public class VHex extends JComponent
 		  int c = e.getKeyCode();
 		  
 		  if( c == e.VK_LEFT ){ pos -= 1; } else if( c == e.VK_RIGHT ){ pos += 1; }
-          
-          //Validate hex input.
-          
-          if (c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39)
-          {
-            text[pos] = (char) c;
-            textField.setText(String.valueOf(text));
-            pos += 1;
-          }
-          
-          textField.setText(String.valueOf(text)); UpdatePos();
+		  
+		  UpdatePos();
 		}
 
-        public void keyReleased(KeyEvent e)
-        {
-          textField.setText(String.valueOf(text)); UpdatePos();
-        }
+        public void keyReleased(KeyEvent e) { textField.select( pos, pos + 1 ); }
 
         public void keyTyped(KeyEvent e) {}
       });
+
+      textField.setDocument(new HexDocument());
     }
 
     @Override
@@ -314,9 +321,7 @@ public class VHex extends JComponent
     {
       final JTextField textField = (JTextField) super.getTableCellEditorComponent(table, value, isSelected, row, column);
 
-      Row = row; Col = column;
-
-      return( textField );
+      Row = row; Col = column; return( textField );
     }
   }
 
