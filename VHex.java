@@ -129,7 +129,7 @@ public class VHex extends JComponent
 
       //Update table.
 
-      fireTableCellUpdated(row, col);
+      fireTableDataChanged();//fireTableCellUpdated(row, col);
     }
 
     //Update table data.
@@ -186,16 +186,46 @@ public class VHex extends JComponent
 
   class CellHexEditor extends DefaultCellEditor
   {
-    final JTextField textField;
-    int pos = 0;
-    int Row = 0, Col = 0;
-    char[] text = new char[2];
+    final JTextField textField; //The table text componet.
+    
+    int pos = 0; //Charicter position in cell.
+    
+    int Row = 0, Col = 0; //Curent cell.
+    
+    char[] text = new char[2]; //Chicters that are changed by key press.
+    
+    boolean CellMove = false; //Moving cells.
+    
+    //Move left, or right. Cursor position.
 
     public void UpdatePos()
     {
       //Move the editor while entering hex.
+      
+      if (pos < 0)
+      {
+        Col -= 1;
 
-      if (pos == 2)
+        if (Col <= 1)
+        {
+          Col = 16;
+
+          if (Row == 0)
+          {
+            ScrollBar.setValue(ScrollBar.getValue() - 1);
+          }
+          else
+          {
+            Row -= 1;
+          }
+        }
+        
+        tdata.editCellAt(Row, Col);
+        tdata.getEditorComponent().requestFocus();
+        pos = 1; CellMove = true; return;
+      }
+
+      if (pos > 1)
       {
         Col += 1;
 
@@ -212,18 +242,15 @@ public class VHex extends JComponent
             Row += 1;
           }
         }
-
+        
         tdata.editCellAt(Row, Col);
         tdata.getEditorComponent().requestFocus();
-        pos = 0;
+        pos = 0; CellMove = true; return;
       }
 
       //Select the curent hex digit user is editing.
 
-      else
-      {
-        textField.select(pos, pos + 1);
-      }
+      textField.select(pos, pos + 1); CellMove = false;
     }
 
     public CellHexEditor()
@@ -236,46 +263,46 @@ public class VHex extends JComponent
         @Override
         public void focusGained(FocusEvent e)
         {
-          pos = 0;
-          text = textField.getText().toCharArray();
-          UpdatePos();
+          if( !CellMove ) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); }
+          char[] t = textField.getText().toCharArray(); text[0] = t[0]; text[1] = t[1]; UpdatePos();
         }
       });
 
       textField.addMouseListener(new MouseAdapter()
       {
         @Override
-        public void mousePressed(MouseEvent e) { UpdatePos(); }
+        public void mousePressed(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); UpdatePos(); }
 
         @Override
-        public void mouseReleased(MouseEvent e) { UpdatePos(); }
+        public void mouseReleased(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); UpdatePos(); }
 
         @Override
-        public void mouseClicked(MouseEvent e) { UpdatePos(); }
+        public void mouseClicked(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); UpdatePos(); }
       });
 
       textField.addKeyListener(new KeyListener()
       {
-        public void keyPressed(KeyEvent e) { textField.setText(String.valueOf(text)); }
-
-        //Validate hex input.
-
-        public void keyReleased(KeyEvent e)
+        public void keyPressed(KeyEvent e)
         {
-          int c = e.getKeyCode();
-
+		  int c = e.getKeyCode();
+		  
+		  if( c == e.VK_LEFT ){ pos -= 1; } else if( c == e.VK_RIGHT ){ pos += 1; }
+          
+          //Validate hex input.
+          
           if (c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39)
           {
             text[pos] = (char) c;
             textField.setText(String.valueOf(text));
             pos += 1;
           }
-          else
-          {
-            textField.setText(String.valueOf(text));
-          }
+          
+          textField.setText(String.valueOf(text)); UpdatePos();
+		}
 
-          UpdatePos();
+        public void keyReleased(KeyEvent e)
+        {
+          textField.setText(String.valueOf(text)); UpdatePos();
         }
 
         public void keyTyped(KeyEvent e) {}
