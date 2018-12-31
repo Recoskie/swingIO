@@ -52,19 +52,34 @@ public class VHex extends JComponent
 
     //If virtual mode.
 
-    public AddressModel(boolean mode) { if (mode) { Offset[0] = "Virtual Address (h)"; } }
+    public AddressModel(boolean mode)
+    {
+      if (mode)
+      {
+        Offset[0] = "Virtual Address (h)";
+      }
+    }
 
     //Get number of columns.
 
-    public int getColumnCount() { return (Offset.length); }
+    public int getColumnCount()
+    {
+      return (Offset.length);
+    }
 
     //Get number of rows in Display area.
 
-    public int getRowCount() { return (TRows); }
+    public int getRowCount()
+    {
+      return (TRows);
+    }
 
     //Get the column.
 
-    public String getColumnName(int col) { return (Offset[col]); }
+    public String getColumnName(int col)
+    {
+      return (Offset[col]);
+    }
 
     //The address col and byte values.
 
@@ -92,11 +107,17 @@ public class VHex extends JComponent
 
     //JTable uses this method to determine the default renderer/editor for each cell.
 
-    public Class getColumnClass(int c) { return (getValueAt(0, c).getClass()); }
+    public Class getColumnClass(int c)
+    {
+      return (getValueAt(0, c).getClass());
+    }
 
     //First column is not editbale as it is the address.
 
-    public boolean isCellEditable(int row, int col) { return (col >= 1); }
+    public boolean isCellEditable(int row, int col)
+    {
+      return (col >= 1);
+    }
 
     //Seting values writes directly to the IO stream.
 
@@ -126,11 +147,12 @@ public class VHex extends JComponent
           IOStream.writeV(b);
         }
       }
-      catch (java.io.IOException e1) {}
+      catch (java.io.IOException e1)
+      {}
 
       //Update table.
 
-      fireTableDataChanged();//fireTableCellUpdated(row, col);
+      fireTableDataChanged(); //fireTableCellUpdated(row, col);
     }
 
     //Update table data.
@@ -171,54 +193,62 @@ public class VHex extends JComponent
     {
       //Address column.
 
-      if (super.getColumnCount() == 0) { c.setPreferredWidth(136); }
+      if (super.getColumnCount() == 0)
+      {
+        c.setPreferredWidth(136);
+      }
 
       //Byte value columns.
 
-      else { c.setPreferredWidth(20); }
-      
+      else
+      {
+        c.setPreferredWidth(20);
+      }
+
       //Add column.
 
       super.addColumn(c);
     }
   }
-  
+
   //A simple cell editor for my hex editor.
 
   class CellHexEditor extends DefaultCellEditor
   {
     final JTextField textField; //The table text componet.
-    
+
     int pos = 0; //Charicter position in cell.
-    
+
     int Row = 0, Col = 0; //Curent cell.
-    
+
     boolean CellMove = false; //Moving cells.
-    
+
     class HexDocument extends PlainDocument
     {
       @Override
       public void replace(int offset, int length, String text, AttributeSet attrs) throws BadLocationException
       {
-		//Validate hex input.
-		
+        //Validate hex input.
+
         char c = text.toUpperCase().charAt(0);
-        
-        if ( c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39 )
+
+        if (c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39)
         {
-          pos = offset + 1; super.replace(offset, length, text, attrs); UpdatePos();
-		}
-		
-		textField.select( pos, pos + 1 );
+          pos = offset + 1;
+          super.replace(offset, length, text, attrs);
+          UpdatePos();
+        }
+
+        textField.select(pos, pos + 1);
       }
     }
-    
+
     //Move left, or right. Cursor position.
 
     public void UpdatePos()
     {
       //Move the editor while entering hex.
-      
+
       if (pos < 0)
       {
         Col -= 1;
@@ -236,9 +266,8 @@ public class VHex extends JComponent
             Row -= 1;
           }
         }
-        
-        tdata.editCellAt(Row, Col);
-        tdata.getEditorComponent().requestFocus();
+
+        tdata.editCellAt(Row, Col); tdata.getEditorComponent().requestFocus();
         pos = 1; CellMove = true; return;
       }
 
@@ -259,9 +288,8 @@ public class VHex extends JComponent
             Row += 1;
           }
         }
-        
-        tdata.editCellAt(Row, Col);
-        tdata.getEditorComponent().requestFocus();
+
+        tdata.editCellAt(Row, Col); tdata.getEditorComponent().requestFocus();
         pos = 0; CellMove = true; return;
       }
 
@@ -280,35 +308,53 @@ public class VHex extends JComponent
         @Override
         public void focusGained(FocusEvent e)
         {
-          if( !CellMove ) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); }
-          textField.select( pos, pos + 1 );
+          if (!CellMove)
+          {
+            pos = Math.max(0, textField.getCaretPosition() - 1);
+          }
+          textField.select(pos, pos + 1);
         }
       });
 
       textField.addMouseListener(new MouseAdapter()
       {
         @Override
-        public void mousePressed(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); textField.select( pos, pos + 1 ); }
+        public void mousePressed(MouseEvent e)
+        {
+          pos = Math.max(0, textField.getCaretPosition() - 1);
+          textField.select(pos, pos + 1);
+        }
 
         @Override
-        public void mouseReleased(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); textField.select( pos, pos + 1 ); }
+        public void mouseReleased(MouseEvent e)
+        {
+          pos = Math.max(0, textField.getCaretPosition() - 1);
+          textField.select(pos, pos + 1);
+        }
 
         @Override
-        public void mouseClicked(MouseEvent e) { pos = Math.max( 0, textField.getCaretPosition() - 1 ); textField.select( pos, pos + 1 ); }
+        public void mouseClicked(MouseEvent e)
+        {
+          pos = Math.max(0, textField.getCaretPosition() - 1);
+          textField.select(pos, pos + 1);
+        }
       });
-      
+
       textField.addKeyListener(new KeyListener()
       {
         public void keyPressed(KeyEvent e)
         {
-		  int c = e.getKeyCode();
-		  
-		  if( c == e.VK_LEFT ){ pos -= 1; } else if( c == e.VK_RIGHT ){ pos += 1; }
-		  
-		  UpdatePos();
-		}
+          int c = e.getKeyCode();
 
-        public void keyReleased(KeyEvent e) { textField.select( pos, pos + 1 ); }
+          if (c == e.VK_LEFT) { pos -= 1; } else if (c == e.VK_RIGHT) { pos += 1; }
+
+          UpdatePos();
+        }
+
+        public void keyReleased(KeyEvent e)
+        {
+          textField.select(pos, pos + 1);
+        }
 
         public void keyTyped(KeyEvent e) {}
       });
@@ -321,7 +367,7 @@ public class VHex extends JComponent
     {
       final JTextField textField = (JTextField) super.getTableCellEditorComponent(table, value, isSelected, row, column);
 
-      Row = row; Col = column; return( textField );
+      Row = row; Col = column; return (textField);
     }
   }
 
@@ -354,10 +400,7 @@ public class VHex extends JComponent
 
   //If no mode setting then assume offset mode.
 
-  public VHex(RandomAccessFileV f)
-  {
-    this(f, false);
-  }
+  public VHex(RandomAccessFileV f) { this(f, false); }
 
   //Initialize the hex UI component. With file system stream.
 
@@ -399,8 +442,7 @@ public class VHex extends JComponent
 
       else { Rel = true; End = 0x7FFFFFFFFFFFFFFFL; }
     }
-    catch (java.io.IOException e)
-    {}
+    catch (java.io.IOException e) {}
 
     //Columns can not be re-arranged.
 
@@ -413,7 +455,7 @@ public class VHex extends JComponent
     //Do not alow resizing of cells.
 
     tdata.getTableHeader().setResizingAllowed(false);
-    
+
     //Set the table editor.
 
     tdata.setDefaultEditor(String.class, new CellHexEditor());
@@ -433,8 +475,7 @@ public class VHex extends JComponent
         SRow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
         SCol = tdata.columnAtPoint(e.getPoint());
 
-        ERow = SRow;
-        ECol = SCol;
+        ERow = SRow; ECol = SCol;
 
         TModel.fireTableDataChanged();
       }
@@ -500,6 +541,8 @@ public class VHex extends JComponent
             }
           }
         }
+        
+        if (tdata.isEditing()) { tdata.getCellEditor().stopCellEditing(); }
 
         TModel.updateData();
       }
