@@ -4,7 +4,13 @@ VHex uses [RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) whi
 
 # IO Event Handling.
 
-Any read, or write is visually displayed in the VHex editor as it listens to IO events. If you use **YourStream.seek(pos)** then the hex editor will automatically scroll to position, and highlight the byte in hex editor. If you are plugging in a search algorithm into this file stream you will want to set **YourStream.Events = false;** until search is done. Then set **YourStream.Events = true;** thus calling **YourStream.seek(pos)** to display search indexes in hex editor.
+Any read, or write is visually displayed in the VHex editor as it listens to IO events. If you use **YourStream.seek(pos)** then the hex editor will automatically scroll to position, and highlight the byte in hex editor.
+<br /><br />
+If you are plugging in a search algorithm into this file stream you will want to set **YourStream.Events = false;** until search is done. Then set **YourStream.Events = true;** thus calling **YourStream.seek(pos)** to display search indexes in hex editor.
+<br /><br />
+If you want to watch what your search algorithm does then you do not have to set events false, but should add at least a 400 millisecond delay between each IO operation.
+<br /><br />
+I use a search algorithm as a good example. It could be a format decoder, or anything you can think of.
 
 ```java
 import javax.swing.*;
