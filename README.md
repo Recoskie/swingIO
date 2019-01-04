@@ -54,6 +54,11 @@ public class Window
     frame.add( Virtual );
     frame.add( Offset );
 
+    //Seek virtual address 0x771280.
+    //Note hex editors automatically update on any IO operation.
+    
+    file.seekV( 0x771280 );
+
     //Pack the frame.
     
     frame.pack();
