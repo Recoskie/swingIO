@@ -407,7 +407,6 @@ public class VHex extends JComponent implements IOEventListener
     {
       TRows = (tdata.getHeight() / tdata.getRowHeight()) + 1;
       data = java.util.Arrays.copyOf( data, TRows * 16 );
-      ScrollBar.setVisibleAmount( TRows );
     }
   }
   
@@ -487,9 +486,7 @@ public class VHex extends JComponent implements IOEventListener
 
     tdata.addMouseListener(new MouseAdapter()
     {
-      @Override
-
-      public void mousePressed(MouseEvent e)
+      @Override public void mousePressed(MouseEvent e)
       {
         SRow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
         SCol = tdata.columnAtPoint(e.getPoint());
@@ -502,9 +499,7 @@ public class VHex extends JComponent implements IOEventListener
 
     tdata.addMouseMotionListener(new MouseMotionAdapter()
     {
-      @Override
-
-      public void mouseDragged(MouseEvent e)
+      @Override public void mouseDragged(MouseEvent e)
       {
         //Automatically scroll while selecting bytes.
 
@@ -563,9 +558,7 @@ public class VHex extends JComponent implements IOEventListener
 
     tdata.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
     {
-      @Override
-
-      public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int r, int column)
+      @Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int r, int column)
       {
         final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, r, column);
 
@@ -668,6 +661,7 @@ public class VHex extends JComponent implements IOEventListener
   
   public void onSeek( IOEvent e )
   {
+    try{ System.out.println("Seek!="+IOStream.getFilePointer()+""); } catch ( Exception e1 ) {}
     TModel.updateData();
   }
   
