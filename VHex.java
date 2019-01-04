@@ -107,7 +107,7 @@ public class VHex extends JComponent implements IOEventListener
       
       if (col == 0)
       {
-        return ("0x" + String.format("%1$016X", pos));
+        return ("0x" + String.format("%1$016X", pos & 0xFFFFFFFFFFFFFFF0L));
       }
 
       //Else byte to hex.
@@ -185,6 +185,8 @@ public class VHex extends JComponent implements IOEventListener
           IOStream.Events = false;
           
           long t = IOStream.getFilePointer();
+          
+          IOStream.seek( t & 0xFFFFFFFFFFFFFFF0L );
           IOStream.read( data );
           IOStream.seek( t );
           
@@ -199,6 +201,7 @@ public class VHex extends JComponent implements IOEventListener
           
           long t = IOStream.getVirtualPointer();
           
+          IOStream.seekV( t & 0xFFFFFFFFFFFFFFF0L );
           IOStream.readV( data );
           IOStream.seekV( t );
           
@@ -407,6 +410,7 @@ public class VHex extends JComponent implements IOEventListener
     {
       TRows = (tdata.getHeight() / tdata.getRowHeight()) + 1;
       data = java.util.Arrays.copyOf( data, TRows * 16 );
+      TModel.updateData();
     }
   }
   
@@ -533,11 +537,11 @@ public class VHex extends JComponent implements IOEventListener
       {
         try
         {
-          if( !Virtual )
+          if( !Virtual && IOStream.Events )
           {
             IOStream.seek( RelPos + ScrollBar.getValue() * 16 );
           }
-          else
+          else if( IOStream.Events )
           {
             IOStream.seekV( RelPos + ScrollBar.getValue() * 16 );
           }
@@ -661,7 +665,6 @@ public class VHex extends JComponent implements IOEventListener
   
   public void onSeek( IOEvent e )
   {
-    try{ System.out.println("Seek!="+IOStream.getFilePointer()+""); } catch ( Exception e1 ) {}
     TModel.updateData();
   }
   
