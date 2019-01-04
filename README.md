@@ -1,6 +1,10 @@
 # VHex
 
-[RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) Is a powerful mapping tool for fragmented data. This component is designed to have both a simulated Virtual memory space mode, and file offset mode. For mapping and modifying binary applications. Or the virtual map can also be used to map fragmented data in disk images when doing data recovery.
+VHex uses [RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) which is a powerful mapping tool for fragmented data. This component is designed to have both a simulated Virtual memory space mode, and file offset mode. For mapping and modifying binary applications. Or the virtual map can also be used to map fragmented data in disk images when doing data recovery.
+
+# IO Event Handling.
+
+Also any read, or write is visually displayed in the VHex editor as it listens to IO events. If you use **YourStream.seek(pos)** the will automatically scroll to pos and highlight the byte in hex editor. If you are plunging in a search algorithm into this file stream you will want to set **YourStream.Events = false;** until search is done. Then set **YourStream.Events = true;** thus calling **YourStream.seek(pos)** to display search indexes in hex editor.
 
 ```java
 import javax.swing.*;
