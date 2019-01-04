@@ -5,7 +5,7 @@ import java.awt.event.*;
 import javax.swing.event.*;
 import javax.swing.text.*;
 
-public class VHex extends JComponent
+public class VHex extends JComponent implements IOEventListener
 {
   //The file system stream reference that will be used.
 
@@ -14,10 +14,6 @@ public class VHex extends JComponent
   //The end of the data stream.
 
   long End = 0;
-
-  //The curent position in IO stream.
-
-  long CurPos = 0;
 
   //The table which will update as you scroll through the IO stream.
 
@@ -35,16 +31,32 @@ public class VHex extends JComponent
 
   long SRow = 0, SCol = 0;
   long ERow = 0, ECol = 0;
+  
+  //Byte buffer betwean io stream. Updated based on number of rows that can be displayed.
+
+  private byte[] data = new byte[0];
+  
+  //The hex editors scroll bar.
+
+  JScrollBar ScrollBar;
+
+  //Enable relative scrolling for files larger than 4Gb.
+
+  boolean Rel = false;
+
+  //Position that is relative to scroll bar position.
+
+  long RelPos = 0;
+
+  //Virtual mode, or offset mode.
+
+  private boolean Virtual = false;
 
   //The main hex edior display.
 
   class AddressModel extends AbstractTableModel
   {
     private String[] Offset = new String[] { "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
-
-    //Byte buffer betwean io stream.
-
-    private byte[] data = new byte[0x4A0];
 
     //Divide into rows of 16 offsets.
 
@@ -85,24 +97,27 @@ public class VHex extends JComponent
 
     public Object getValueAt(int row, int col)
     {
+      //Caulate position.
+      
+      long pos = row * RowLen;
+      
+      try { pos += Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer(); } catch ( java.io.IOException e ) {}
+      
       //First col is address.
-
+      
       if (col == 0)
       {
-        return ("0x" + String.format("%1$016X", CurPos + (row * RowLen)));
+        return ("0x" + String.format("%1$016X", pos));
       }
 
       //Else byte to hex.
 
-      else if (((row * RowLen) + (col - 1)) < data.length && (((row * RowLen) + (col - 1)) + CurPos) < End)
+      else if ( ( pos + (col - 1) ) < End )
       {
-        return (String.format("%1$02X", data[(row * RowLen) + (col - 1)]));
+        return (String.format("%1$02X", data[ (row * RowLen) + (col - 1) ]));
       }
 
-      else
-      {
-        return ("??");
-      }
+      return ("??");
     }
 
     //JTable uses this method to determine the default renderer/editor for each cell.
@@ -135,16 +150,16 @@ public class VHex extends JComponent
 
         if (!Virtual)
         {
-          IOStream.seek((row * RowLen) + (col - 1) + CurPos);
           IOStream.write(b);
+          IOStream.seek((row * RowLen) + (col - 1) + IOStream.getFilePointer());
         }
 
         //If Virtual use Virtual map seek, and write.
 
         else
         {
-          IOStream.seekV((row * RowLen) + (col - 1) + CurPos);
           IOStream.writeV(b);
+          IOStream.seekV((row * RowLen) + (col - 1) + IOStream.getVirtualPointer());
         }
       }
       catch (java.io.IOException e1)
@@ -152,7 +167,7 @@ public class VHex extends JComponent
 
       //Update table.
 
-      fireTableDataChanged(); //fireTableCellUpdated(row, col);
+      fireTableCellUpdated(row, col);
     }
 
     //Update table data.
@@ -167,16 +182,27 @@ public class VHex extends JComponent
 
         if (!Virtual)
         {
-          IOStream.seek(CurPos);
-          IOStream.read(data);
+          IOStream.Events = false;
+          
+          long t = IOStream.getFilePointer();
+          IOStream.read( data );
+          IOStream.seek( t );
+          
+          IOStream.Events = true;
         }
 
         //If Virtual use Virtual map seek.
 
         else
         {
-          IOStream.seekV(CurPos);
-          IOStream.readV(data);
+          IOStream.Events = false;
+          
+          long t = IOStream.getVirtualPointer();
+          
+          IOStream.readV( data );
+          IOStream.seekV( t );
+          
+          IOStream.Events = true;
         }
       }
       catch (java.io.IOException e1) {}
@@ -189,20 +215,28 @@ public class VHex extends JComponent
 
   class AddressColumnModel extends DefaultTableColumnModel
   {
+	  int pixelWidth = 0;
+	
     public void addColumn(TableColumn c)
     {
+	  if( pixelWidth <= 0 )
+	  {
+	    java.awt.FontMetrics fm = tdata.getFontMetrics(tdata.getFont());
+      pixelWidth = fm.stringWidth("C");
+	  }
+	  
       //Address column.
 
       if (super.getColumnCount() == 0)
       {
-        c.setPreferredWidth(136);
+        c.setMinWidth( pixelWidth * 18 + 2 ); c.setMaxWidth( pixelWidth * 18 + 2 );
       }
 
       //Byte value columns.
 
       else
       {
-        c.setPreferredWidth(20);
+        c.setMinWidth( pixelWidth * 2 + 2 ); c.setMaxWidth( pixelWidth * 2 + 2 );
       }
 
       //Add column.
@@ -225,8 +259,7 @@ public class VHex extends JComponent
 
     class HexDocument extends PlainDocument
     {
-      @Override
-      public void replace(int offset, int length, String text, AttributeSet attrs) throws BadLocationException
+      @Override public void replace(int offset, int length, String text, AttributeSet attrs) throws BadLocationException
       {
         //Validate hex input.
 
@@ -273,7 +306,7 @@ public class VHex extends JComponent
 
       if (pos > 1)
       {
-        Col += 1;
+        //Col += 1;
 
         if (Col >= 17)
         {
@@ -305,8 +338,7 @@ public class VHex extends JComponent
 
       textField.addFocusListener(new FocusAdapter()
       {
-        @Override
-        public void focusGained(FocusEvent e)
+        @Override public void focusGained(FocusEvent e)
         {
           if (!CellMove)
           {
@@ -318,22 +350,19 @@ public class VHex extends JComponent
 
       textField.addMouseListener(new MouseAdapter()
       {
-        @Override
-        public void mousePressed(MouseEvent e)
+        @Override public void mousePressed(MouseEvent e)
         {
           pos = Math.max(0, textField.getCaretPosition() - 1);
           textField.select(pos, pos + 1);
         }
 
-        @Override
-        public void mouseReleased(MouseEvent e)
+        @Override public void mouseReleased(MouseEvent e)
         {
           pos = Math.max(0, textField.getCaretPosition() - 1);
           textField.select(pos, pos + 1);
         }
 
-        @Override
-        public void mouseClicked(MouseEvent e)
+        @Override public void mouseClicked(MouseEvent e)
         {
           pos = Math.max(0, textField.getCaretPosition() - 1);
           textField.select(pos, pos + 1);
@@ -362,30 +391,13 @@ public class VHex extends JComponent
       textField.setDocument(new HexDocument());
     }
 
-    @Override
-    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column)
+    @Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column)
     {
       final JTextField textField = (JTextField) super.getTableCellEditorComponent(table, value, isSelected, row, column);
 
       Row = row; Col = column; return (textField);
     }
   }
-
-  //The hex editors scroll bar.
-
-  JScrollBar ScrollBar;
-
-  //Enable relative scrolling for files larger than 4Gb.
-
-  boolean Rel = false;
-
-  //Position that is relative to scroll bar position.
-
-  long RelPos = 0;
-
-  //Virtual mode, or offset mode.
-
-  boolean Virtual = false;
 
   //Only recaulatue number of table rows on resize. Speeds up table redering.
 
@@ -394,10 +406,11 @@ public class VHex extends JComponent
     public void componentResized(ComponentEvent e)
     {
       TRows = (tdata.getHeight() / tdata.getRowHeight()) + 1;
-      ScrollBar.setVisibleAmount(TRows);
+      data = java.util.Arrays.copyOf( data, TRows * 16 );
+      ScrollBar.setVisibleAmount( TRows );
     }
   }
-
+  
   //If no mode setting then assume offset mode.
 
   public VHex(RandomAccessFileV f) { this(f, false); }
@@ -406,6 +419,12 @@ public class VHex extends JComponent
 
   public VHex(RandomAccessFileV f, boolean mode)
   {
+    //Register this componet to update on IO system calls.
+    
+    f.addMyEventListener( this );
+    
+    //Row resize calulation.
+    
     super.addComponentListener(new CalcRows());
 
     Virtual = mode;
@@ -517,34 +536,24 @@ public class VHex extends JComponent
     {
       public void adjustmentValueChanged(AdjustmentEvent e)
       {
-        CurPos = (RelPos + ScrollBar.getValue()) * 16;
+        try
+        {
+          if( !Virtual )
+          {
+            IOStream.seek( RelPos + ScrollBar.getValue() * 16 );
+          }
+          else
+          {
+            IOStream.seekV( RelPos + ScrollBar.getValue() * 16 );
+          }
+        }
+        catch( java.io.IOException e1 ) {}
 
         //If relative scrolling.
 
-        if (Rel)
-        {
-          if (ScrollBar.getValue() > 1879048191)
-          {
-            RelPos = Math.max(RelPos + (ScrollBar.getValue() - 1879048191), 0x7FFFFFFF00000000L);
-            if (RelPos < 0x7FFFFFFF80000000L)
-            {
-              ScrollBar.setValue(1879048191);
-            }
-          }
-
-          else if (ScrollBar.getValue() < 268435456)
-          {
-            RelPos = Math.max(RelPos - (268435456 - ScrollBar.getValue()), 0);
-            if (RelPos > 0)
-            {
-              ScrollBar.setValue(268435456);
-            }
-          }
-        }
+        if (Rel) { }
         
         if (tdata.isEditing()) { tdata.getCellEditor().stopCellEditing(); }
-
-        TModel.updateData();
       }
     }
 
@@ -654,4 +663,19 @@ public class VHex extends JComponent
 
     TModel.updateData();
   }
+  
+  //On seeking a new position in stream.
+  
+  public void onSeek( IOEvent e )
+  {
+    TModel.updateData();
+  }
+  
+  //On Reading a new byte in stream.
+  
+  public void onRead( IOEvent e ) { }
+  
+  //On writing a new byte in stream.
+  
+  public void onWrite( IOEvent e ) { }
 }
