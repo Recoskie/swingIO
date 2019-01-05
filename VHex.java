@@ -10,6 +10,25 @@ public class VHex extends JComponent implements IOEventListener
   //The file system stream reference that will be used.
 
   RandomAccessFileV IOStream;
+  
+  //Convert IO stream into row or col psotion.
+  
+  private long getRowPos()
+  {
+    try { return ( ( Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer() ) >> 4 ); } catch ( java.io.IOException e ) { }
+    return( -1 );
+  }
+  
+  private long getColPos()
+  {
+    try { return ( ( Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer() ) & 0x0F ); } catch ( java.io.IOException e ) { }
+    return( -1 );
+  }
+
+  //Monitor when scrolling.
+  
+  private boolean isScrolling = false;
+  private boolean isSelect = false;
 
   //The end of the data stream.
 
@@ -36,17 +55,70 @@ public class VHex extends JComponent implements IOEventListener
 
   private byte[] data = new byte[0];
   
-  //The hex editors scroll bar.
+  //A fast speclized scroll bar for VHex.
 
-  JScrollBar ScrollBar;
+  LongScrollBar ScrollBar;
+  
+  //The scrollbar class.
+  
+  private class LongScrollBar extends JScrollBar
+  {
+    private long End = 0, Pos = 0;
+    
+    private int RelUp = 0x6FFFFFFF, RelDown = 0x10000000;
+    
+    public LongScrollBar(int orientation, int value, int visible, int minimum, long maximum)
+    {
+      super( orientation, value, visible, minimum, maximum > 0x7FFFFFFF ? 0x7FFFFFFF : (int)maximum );
+      End = maximum;
+    }
+    
+    public void setValue( int v )
+    {
+      isScrolling = true;
+      
+      if( End > 0x7FFFFFFF )
+      {
+        if( Pos < ( End - 0x7FFFFFFF ) && v >= RelUp )
+        {
+          Pos += ( v - ( 0x7FFFFFFF - RelUp ) ); v = RelUp;
+        }
+        
+        else if( Pos > 0  && v <= RelDown )
+        {
+          Pos -= ( RelDown - v ); v = RelDown;
+        }
+        
+        if( Pos > ( End - 0x7FFFFFFF ) ){ Pos = End - 0x7FFFFFFF; }
+        
+        else if( Pos < 0 ) { Pos = 0; }
+      }
+      
+      super.setValue( v ); TModel.updateData();
+      
+      isScrolling = false;
+    }
+    
+    public void setValue( long v )
+    {
+      isScrolling = true;
+      
+      if( v > RelUp ) { Pos = v - RelUp; v = RelUp; }
+      
+      super.setValue( (int)v ); TModel.updateData();
+      
+      isScrolling = false;
+    }
+    
+    public long getRelValue()
+    {
+      return( Math.min( Pos + super.getValue(), End - TRows ) );
+    }
+  }
 
   //Enable relative scrolling for files larger than 4Gb.
 
   boolean Rel = false;
-
-  //Position that is relative to scroll bar position.
-
-  long RelPos = 0;
 
   //Virtual mode, or offset mode.
 
@@ -99,25 +171,21 @@ public class VHex extends JComponent implements IOEventListener
     {
       //Caulate position.
       
-      long pos = row * RowLen;
-      
-      try { pos += Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer(); } catch ( java.io.IOException e ) {}
+      long pos = ( ScrollBar.getRelValue() + row ) << 4;
       
       //First col is address.
       
       if (col == 0)
       {
-        return ("0x" + String.format("%1$016X", pos & 0xFFFFFFFFFFFFFFF0L));
+        return ("0x" + String.format("%1$016X", pos ));
       }
 
       //Else byte to hex.
 
-      else if ( ( pos + (col - 1) ) < End )
+      else
       {
-        return (String.format("%1$02X", data[ (row * RowLen) + (col - 1) ]));
+        return (String.format("%1$02X", data[ (row << 4) + (col - 1) ]));
       }
-
-      return ("??");
     }
 
     //JTable uses this method to determine the default renderer/editor for each cell.
@@ -151,7 +219,6 @@ public class VHex extends JComponent implements IOEventListener
         if (!Virtual)
         {
           IOStream.write(b);
-          IOStream.seek((row * RowLen) + (col - 1) + IOStream.getFilePointer());
         }
 
         //If Virtual use Virtual map seek, and write.
@@ -159,7 +226,6 @@ public class VHex extends JComponent implements IOEventListener
         else
         {
           IOStream.writeV(b);
-          IOStream.seekV((row * RowLen) + (col - 1) + IOStream.getVirtualPointer());
         }
       }
       catch (java.io.IOException e1)
@@ -186,7 +252,7 @@ public class VHex extends JComponent implements IOEventListener
           
           long t = IOStream.getFilePointer();
           
-          IOStream.seek( t & 0xFFFFFFFFFFFFFFF0L );
+          IOStream.seek( ScrollBar.getRelValue() << 4 );
           IOStream.read( data );
           IOStream.seek( t );
           
@@ -201,7 +267,7 @@ public class VHex extends JComponent implements IOEventListener
           
           long t = IOStream.getVirtualPointer();
           
-          IOStream.seekV( t & 0xFFFFFFFFFFFFFFF0L );
+          IOStream.seekV( ScrollBar.getRelValue() << 4 );
           IOStream.readV( data );
           IOStream.seekV( t );
           
@@ -309,7 +375,7 @@ public class VHex extends JComponent implements IOEventListener
 
       if (pos > 1)
       {
-        //Col += 1;
+        Col += 1;
 
         if (Col >= 17)
         {
@@ -442,30 +508,6 @@ public class VHex extends JComponent implements IOEventListener
 
     tdata.createDefaultColumnsFromModel();
 
-    //The length of the stream.
-
-    try
-    {
-      //If offset mode then end is the end of the stream.
-
-      if (!Virtual)
-      {
-        End = IOStream.length();
-
-        //Enable relative scrolling if the data length is outside the scroll bar range.
-
-        if (End > 0x7FFFFFFF)
-        {
-          Rel = true;
-        }
-      }
-
-      //Else the last 64 bit virtual address. Thus set relative scrolling.
-
-      else { Rel = true; End = 0x7FFFFFFFFFFFFFFFL; }
-    }
-    catch (java.io.IOException e) {}
-
     //Columns can not be re-arranged.
 
     tdata.getTableHeader().setReorderingAllowed(false);
@@ -484,7 +526,7 @@ public class VHex extends JComponent implements IOEventListener
 
     //Setup Scroll bar system.
 
-    ScrollBar = new JScrollBar(JScrollBar.VERTICAL, 0, 0, 0, End < 0x7FFFFFFF ? (int)((End + 15) / 16) : 0x7FFFFFFF);
+    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 0, 0, 0, ( Virtual ? 0x7FFFFFFFFFFFFFFFL : IOStream.length() ) >> 4 ); } catch (java.io.IOException e) {}
 
     //Custom selection handling.
 
@@ -492,12 +534,20 @@ public class VHex extends JComponent implements IOEventListener
     {
       @Override public void mousePressed(MouseEvent e)
       {
-        SRow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
-        SCol = tdata.columnAtPoint(e.getPoint());
-
-        ERow = SRow; ECol = SCol;
-
-        TModel.fireTableDataChanged();
+        isSelect = true;
+        try
+        {
+          if( !Virtual )
+          {
+            IOStream.seek( ( ScrollBar.getRelValue() + tdata.rowAtPoint(e.getPoint()) << 4 ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) );
+          }
+          else
+          {
+            IOStream.seekV( ( ScrollBar.getRelValue() + tdata.rowAtPoint(e.getPoint()) << 4 ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) );
+          }
+        }
+        catch( java.io.IOException e1 ) {}
+        isSelect = false;
       }
     });
 
@@ -510,16 +560,16 @@ public class VHex extends JComponent implements IOEventListener
         if (e.getY() > tdata.getHeight())
         {
           ScrollBar.setValue(Math.min(ScrollBar.getValue() + 4, 0x7FFFFFFF));
-          ERow = RelPos + ScrollBar.getValue() + (TModel.getRowCount() - 1);
+          ERow = getRowPos() + (TModel.getRowCount() - 1);
         }
         else if (e.getY() < 0)
         {
           ScrollBar.setValue(Math.max(ScrollBar.getValue() - 4, 0));
-          ERow = RelPos + ScrollBar.getValue();
+          ERow = getRowPos();
         }
         else
         {
-          ERow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
+          ERow = ScrollBar.getRelValue() + tdata.rowAtPoint(e.getPoint());
           ECol = tdata.columnAtPoint(e.getPoint());
         }
 
@@ -529,35 +579,6 @@ public class VHex extends JComponent implements IOEventListener
       }
     });
 
-    //As we scroll update the table data. As it would be insane to graphically render large files in hex.
-
-    class Scroll implements AdjustmentListener
-    {
-      public void adjustmentValueChanged(AdjustmentEvent e)
-      {
-        try
-        {
-          if( !Virtual && IOStream.Events )
-          {
-            IOStream.seek( RelPos + ScrollBar.getValue() * 16 );
-          }
-          else if( IOStream.Events )
-          {
-            IOStream.seekV( RelPos + ScrollBar.getValue() * 16 );
-          }
-        }
-        catch( java.io.IOException e1 ) {}
-
-        //If relative scrolling.
-
-        if (Rel) { }
-        
-        if (tdata.isEditing()) { tdata.getCellEditor().stopCellEditing(); }
-      }
-    }
-
-    ScrollBar.addAdjustmentListener(new Scroll());
-
     //Custom table selection rendering.
 
     tdata.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
@@ -566,7 +587,7 @@ public class VHex extends JComponent implements IOEventListener
       {
         final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, r, column);
 
-        long row = r + RelPos + ScrollBar.getValue();
+        long row = r + ScrollBar.getRelValue();
 
         //Alternate shades between rows.
 
@@ -665,6 +686,15 @@ public class VHex extends JComponent implements IOEventListener
   
   public void onSeek( IOEvent e )
   {
+    if( !isScrolling )
+    {
+      SRow = getRowPos(); SCol = getColPos() + 1;
+      
+      ECol = SCol; ERow = SRow;
+      
+      if( !isSelect ) { ScrollBar.setValue( SRow ); }
+    }
+    
     TModel.updateData();
   }
   
