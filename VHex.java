@@ -4,6 +4,7 @@ import javax.swing.event.*;
 
 //Event constructor.
 
+<<<<<<< HEAD
 class IOEvent extends EventObject
 {
   private long TPos = 0;
@@ -22,6 +23,23 @@ class IOEvent extends EventObject
   
   public long length(){ return( End - TPos ); }
 }
+=======
+  RandomAccessFileV IOStream;
+
+  //The end of the data stream.
+
+  long End = 0;
+
+  //The table which will update as you scroll through the IO stream.
+
+  JTable tdata;
+
+  //Number of rows in draw space.
+
+  int TRows = 0;
+
+  //The table model.
+>>>>>>> parent of a26eaea... Update VHex.java
 
 //Basic IO Events.
 
@@ -38,6 +56,7 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
   
   protected EventListenerList list = new EventListenerList();
   
+<<<<<<< HEAD
   //Disable events. This is to stop graphics components from updating while doing intensive operations.
   
   public boolean Events = true;
@@ -107,6 +126,27 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
   //This is a delayed event to find the length of the data, for sequential read or write.
   
   void fireIOEvent ( IOEvent evt )
+=======
+  //The hex editors scroll bar.
+
+  JScrollBar ScrollBar;
+
+  //Enable relative scrolling for files larger than 4Gb.
+
+  boolean Rel = false;
+
+  //Position that is relative to scroll bar position.
+
+  long RelPos = 0;
+
+  //Virtual mode, or offset mode.
+
+  private boolean Virtual = false;
+
+  //The main hex edior display.
+
+  class AddressModel extends AbstractTableModel
+>>>>>>> parent of a26eaea... Update VHex.java
   {
     Object[] listeners = list.getListenerList();
     
@@ -176,10 +216,17 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
     {
       //Set end of the current address to the start of added address.
       
+<<<<<<< HEAD
       VEnd = Address;
+=======
+      long pos = row * RowLen;
+      
+      try { pos += Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer(); } catch ( java.io.IOException e ) {}
+>>>>>>> parent of a26eaea... Update VHex.java
       
       //Calculate address length.
       
+<<<<<<< HEAD
       VLen = ( VEnd + 1 ) - VPos;
       
       //If there still is data after the added address.
@@ -189,6 +236,21 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
       //Calculate the bytes written into.
       
       FEnd = Pos + ( Len - 1 );
+=======
+      if (col == 0)
+      {
+        return ("0x" + String.format("%1$016X", pos & 0xFFFFFFFFFFFFFFF0L));
+      }
+
+      //Else byte to hex.
+
+      else if ( ( pos + (col - 1) ) < End )
+      {
+        return (String.format("%1$02X", data[ (row * RowLen) + (col - 1) ]));
+      }
+
+      return ("??");
+>>>>>>> parent of a26eaea... Update VHex.java
     }
     
     //Addresses that write over the start of an address.
@@ -306,6 +368,7 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
       
       if( Add.VPos <= Cmp.VEnd && Add.VPos > Cmp.VPos && sw )
       {
+<<<<<<< HEAD
         //Address range position.
         
         e = i + 1;
@@ -315,6 +378,22 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
         if( Cmp.VEnd > Add.VEnd )
         {
           sw = false; Map.add( e, new VRA( Cmp.Pos, Cmp.Len, Cmp.VPos, Cmp.VLen ) ); MSize++;
+=======
+        //If offset mode use offset seek, and write.
+
+        if (!Virtual)
+        {
+          IOStream.write(b);
+          IOStream.seek((row * RowLen) + (col - 1) + IOStream.getFilePointer());
+        }
+
+        //If Virtual use Virtual map seek, and write.
+
+        else
+        {
+          IOStream.writeV(b);
+          IOStream.seekV((row * RowLen) + (col - 1) + IOStream.getVirtualPointer());
+>>>>>>> parent of a26eaea... Update VHex.java
         }
         
         //Set end of the current address to the start of added address.
@@ -384,7 +463,13 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
           
           super.seek( ( Address - e.VPos ) + e.Pos );
           
+<<<<<<< HEAD
           VAddress = Address - super.getFilePointer();
+=======
+          IOStream.seek( t & 0xFFFFFFFFFFFFFFF0L );
+          IOStream.read( data );
+          IOStream.seek( t );
+>>>>>>> parent of a26eaea... Update VHex.java
           
           return;
         }
@@ -407,7 +492,13 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
           
           super.seek( ( Address - e.VPos ) + e.Pos );
           
+<<<<<<< HEAD
           VAddress = Address - super.getFilePointer();
+=======
+          IOStream.seekV( t & 0xFFFFFFFFFFFFFFF0L );
+          IOStream.readV( data );
+          IOStream.seekV( t );
+>>>>>>> parent of a26eaea... Update VHex.java
           
           return;
         }
@@ -503,6 +594,7 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
       
       else
       {
+<<<<<<< HEAD
         n = (int)( curVra.VLen - ( super.getFilePointer() - curVra.Pos ) );
         
         if( n < 0 ) { n = len - Pos; }
@@ -510,6 +602,26 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
         VAddress += n; Pos += n;
         
         seekV( getVirtualPointer() );
+=======
+        //Col += 1;
+
+        if (Col >= 17)
+        {
+          Col = 1;
+
+          if (Row >= (TRows - 1))
+          {
+            ScrollBar.setValue(ScrollBar.getValue() + 1);
+          }
+          else
+          {
+            Row += 1;
+          }
+        }
+
+        tdata.editCellAt(Row, Col); tdata.getEditorComponent().requestFocus();
+        pos = 0; CellMove = true; return;
+>>>>>>> parent of a26eaea... Update VHex.java
       }
     }
     
@@ -543,14 +655,92 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
     
     if( getVirtualPointer() > curVra.VEnd ) { seekV( getVirtualPointer() ); }
     
+<<<<<<< HEAD
     //Start Writing.
     
     while( Pos < b.length )
+=======
+    super.addComponentListener(new CalcRows());
+
+    Virtual = mode;
+
+    //Reference the file stream.
+
+    IOStream = f;
+
+    TModel = new AddressModel(mode);
+
+    tdata = new JTable(TModel, new AddressColumnModel());
+
+    tdata.createDefaultColumnsFromModel();
+
+    //The length of the stream.
+
+    try
+    {
+      //If offset mode then end is the end of the stream.
+
+      if (!Virtual)
+      {
+        End = IOStream.length();
+
+        //Enable relative scrolling if the data length is outside the scroll bar range.
+
+        if (End > 0x7FFFFFFF)
+        {
+          Rel = true;
+        }
+      }
+
+      //Else the last 64 bit virtual address. Thus set relative scrolling.
+
+      else { Rel = true; End = 0x7FFFFFFFFFFFFFFFL; }
+    }
+    catch (java.io.IOException e) {}
+
+    //Columns can not be re-arranged.
+
+    tdata.getTableHeader().setReorderingAllowed(false);
+
+    //Columns can not be re-arranged.
+
+    tdata.getTableHeader().setReorderingAllowed(false);
+
+    //Do not alow resizing of cells.
+
+    tdata.getTableHeader().setResizingAllowed(false);
+
+    //Set the table editor.
+
+    tdata.setDefaultEditor(String.class, new CellHexEditor());
+
+    //Setup Scroll bar system.
+
+    ScrollBar = new JScrollBar(JScrollBar.VERTICAL, 0, 0, 0, End < 0x7FFFFFFF ? (int)((End + 15) / 16) : 0x7FFFFFFF);
+
+    //Custom selection handling.
+
+    tdata.addMouseListener(new MouseAdapter()
+    {
+      @Override public void mousePressed(MouseEvent e)
+      {
+        SRow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
+        SCol = tdata.columnAtPoint(e.getPoint());
+
+        ERow = SRow; ECol = SCol;
+
+        TModel.fireTableDataChanged();
+      }
+    });
+
+    tdata.addMouseMotionListener(new MouseMotionAdapter()
+>>>>>>> parent of a26eaea... Update VHex.java
     {
       //Write in current offset.
       
       if( super.getFilePointer() >= curVra.Pos && super.getFilePointer() <= curVra.FEnd && curVra.Len > 0 )
       {
+<<<<<<< HEAD
         //Number of bytes that can be written in current area.
         
         n = (int)Math.min( ( curVra.FEnd + 1 ) - super.getFilePointer(), b.length );
@@ -569,6 +759,151 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
         VAddress += n; Pos += n;
         
         seekV( getVirtualPointer() );
+=======
+        //Automatically scroll while selecting bytes.
+
+        if (e.getY() > tdata.getHeight())
+        {
+          ScrollBar.setValue(Math.min(ScrollBar.getValue() + 4, 0x7FFFFFFF));
+          ERow = RelPos + ScrollBar.getValue() + (TModel.getRowCount() - 1);
+        }
+        else if (e.getY() < 0)
+        {
+          ScrollBar.setValue(Math.max(ScrollBar.getValue() - 4, 0));
+          ERow = RelPos + ScrollBar.getValue();
+        }
+        else
+        {
+          ERow = RelPos + ScrollBar.getValue() + tdata.rowAtPoint(e.getPoint());
+          ECol = tdata.columnAtPoint(e.getPoint());
+        }
+
+        //Force the table to rerender cells.
+
+        TModel.fireTableDataChanged();
+      }
+    });
+
+    //As we scroll update the table data. As it would be insane to graphically render large files in hex.
+
+    class Scroll implements AdjustmentListener
+    {
+      public void adjustmentValueChanged(AdjustmentEvent e)
+      {
+        try
+        {
+          if( !Virtual && IOStream.Events )
+          {
+            IOStream.seek( RelPos + ScrollBar.getValue() * 16 );
+          }
+          else if( IOStream.Events )
+          {
+            IOStream.seekV( RelPos + ScrollBar.getValue() * 16 );
+          }
+        }
+        catch( java.io.IOException e1 ) {}
+
+        //If relative scrolling.
+
+        if (Rel) { }
+        
+        if (tdata.isEditing()) { tdata.getCellEditor().stopCellEditing(); }
+      }
+    }
+
+    ScrollBar.addAdjustmentListener(new Scroll());
+
+    //Custom table selection rendering.
+
+    tdata.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
+    {
+      @Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int r, int column)
+      {
+        final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, r, column);
+
+        long row = r + RelPos + ScrollBar.getValue();
+
+        //Alternate shades between rows.
+
+        if (row % 2 == 0)
+        {
+          c.setBackground(Color.white);
+          c.setForeground(Color.black);
+        }
+        else
+        {
+          c.setBackground(new Color(242, 242, 242));
+          c.setForeground(Color.black);
+        }
+
+        //If selection is in same row
+
+        if (SRow == ERow && row == SRow)
+        {
+          if (SCol > ECol && column >= ECol && column <= SCol)
+          {
+            c.setBackground(new Color(57, 105, 138));
+            c.setForeground(Color.white);
+          }
+          else if (column <= ECol && column >= SCol)
+          {
+            c.setBackground(new Color(57, 105, 138));
+            c.setForeground(Color.white);
+          }
+        }
+
+        //Selection start to end.
+
+        else if (SRow <= ERow)
+        {
+          if (row == SRow && column >= SCol)
+          {
+            c.setBackground(new Color(57, 105, 138));
+            c.setForeground(Color.white);
+          }
+          else if (row == ERow && column <= ECol)
+          {
+            c.setBackground(new Color(57, 105, 138));
+            c.setForeground(Color.white);
+          }
+          else if (row > SRow && row < ERow)
+          {
+            c.setBackground(new Color(57, 105, 138));
+            c.setForeground(Color.white);
+          }
+        }
+
+        //Selection end to start.
+
+        else if (SRow >= ERow)
+        {
+          if (row == SRow && column <= SCol)
+          {
+            c.setBackground(new Color(57, 105, 138));
+            c.setForeground(Color.white);
+          }
+          else if (row < SRow && row > ERow)
+          {
+            c.setBackground(new Color(57, 105, 138));
+            c.setForeground(Color.white);
+          }
+          else if (row == ERow && column >= ECol)
+          {
+            c.setBackground(new Color(57, 105, 138));
+            c.setForeground(Color.white);
+          }
+        }
+
+        //First col is address.
+
+        if (column == 0)
+        {
+          c.setBackground(Color.black);
+          c.setForeground(Color.white);
+        }
+
+        return (c);
+>>>>>>> parent of a26eaea... Update VHex.java
       }
     }
   }
@@ -577,6 +912,7 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
   
   public void writeV( byte[] b, int off, int len ) throws IOException
   {
+<<<<<<< HEAD
     int Pos = off, n = 0; len += off;
     
     //Seek address if outside current address space.
@@ -620,6 +956,9 @@ public class RandomAccessFileV extends RandomAccessFile implements Runnable
     while( Events && Trigger ) { EventThread.interrupt(); }
     
     super.seek( Offset ); fireIOEventSeek( new IOEvent( this, Offset, Offset ) );
+=======
+    TModel.updateData();
+>>>>>>> parent of a26eaea... Update VHex.java
   }
   
   //Seek. Same as seek, but is a little faster of a read ahread trick.
