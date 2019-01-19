@@ -1,708 +1,761 @@
-import javax.swing.*;
-import javax.swing.table.*;
-import java.awt.*;
-import java.awt.event.*;
+import java.io.*;
+import java.util.*;
 import javax.swing.event.*;
-import javax.swing.text.*;
 
-public class VHex extends JComponent implements IOEventListener
+//Event constructor.
+
+class IOEvent extends EventObject
 {
-  //The file system stream reference that will be used.
-
-  RandomAccessFileV IOStream;
+  private long TPos = 0;
+  private long End = 0;
   
-  //Convert IO stream into row or col psotion.
+  public IOEvent( Object source ) { super( source ); }
   
-  private long getRowPos()
+  public IOEvent( Object source, long TPos, long End )
   {
-    try { return ( ( Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer() ) >> 4 ); } catch ( java.io.IOException e ) { }
-    return( -1 );
+    super( source ); this.TPos = TPos; this.End = End;
   }
   
-  private long getColPos()
+  public long SPos(){ return( TPos ); }
+  
+  public long EPos(){ return( End ); }
+  
+  public long length(){ return( End - TPos ); }
+}
+
+//Basic IO Events.
+
+interface IOEventListener extends EventListener
+{
+  public void onSeek( IOEvent evt );
+  public void onRead( IOEvent evt );
+  public void onWrite( IOEvent evt );
+}
+
+public class RandomAccessFileV extends RandomAccessFile implements Runnable
+{
+  //My event listener list for graphical components that listen for stream update events.
+  
+  protected EventListenerList list = new EventListenerList();
+  
+  //Disable events. This is to stop graphics components from updating while doing intensive operations.
+  
+  public boolean Events = true;
+  
+  //Trigger Position.
+  
+  private long TPos = 0;
+  
+  //Updated pos.
+  
+  private long pos = 0;
+  
+  //Running thread.
+  
+  private boolean Running = false;
+  
+  //Event trigger.
+  
+  private boolean Trigger = false;
+  
+  //Read or write event.
+  
+  private boolean Read = false;
+  
+  //Main event thread.
+  
+  private Thread EventThread;
+
+  //Add and remove event listeners.
+
+  public void addMyEventListener( IOEventListener listener )
   {
-    try { return ( ( Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer() ) & 0x0F ); } catch ( java.io.IOException e ) { }
-    return( -1 );
+    //Event thread is created for sequential read, or write length.
+    
+    if( !Running ) { EventThread = new Thread(this); EventThread.start(); }
+    
+    list.add( IOEventListener.class, listener ); Events = true;
   }
-
-  //Monitor when scrolling.
   
-  private boolean isScrolling = false;
-  private boolean isSelect = false;
-
-  //The end of the data stream.
-
-  long End = 0;
-
-  //The table which will update as you scroll through the IO stream.
-
-  JTable tdata;
-
-  //Number of rows in draw space.
-
-  int TRows = 0;
-
-  //The table model.
-
-  AddressModel TModel;
-
-  //The currently selected rows and cols in table. Relative to scroll bar.
-
-  long SRow = 0, SCol = 0;
-  long ERow = 0, ECol = 0;
-  
-  //Byte buffer betwean io stream. Updated based on number of rows that can be displayed.
-
-  private byte[] data = new byte[0];
-  
-  //A fast speclized scroll bar for VHex.
-
-  LongScrollBar ScrollBar;
-  
-  //The scrollbar class.
-  
-  private class LongScrollBar extends JScrollBar
+  public void removeMyEventListener( IOEventListener listener )
   {
-    private long End = 0, Pos = 0;
+    list.remove( IOEventListener.class, listener );
     
-    private int RelUp = 0x6FFFFFFF, RelDown = 0x10000000;
+    //If all event listeners are removed. Disable event thread.
     
-    public LongScrollBar(int orientation, int value, int visible, int minimum, long maximum)
+    Running = ( list.getListenerList().length > 0 ); Events = false;
+  }
+  
+  //Fire the event to all my graphics components, for editing the stream, or decoding data types.
+  
+  void fireIOEventSeek ( IOEvent evt )
+  {
+    Object[] listeners = list.getListenerList();
+    
+    if ( Events )
     {
-      super( orientation, value, visible, minimum, maximum > 0x7FFFFFFF ? 0x7FFFFFFF : (int)maximum );
-      End = maximum;
+      for ( int i = 0; i < listeners.length; i = i + 2 )
+      {
+        if ( listeners[i] == IOEventListener.class )
+        {
+          ((IOEventListener)listeners[i+1]).onSeek( evt );
+        }
+      }
+    }
+  }
+
+  //This is a delayed event to find the length of the data, for sequential read or write.
+  
+  void fireIOEvent ( IOEvent evt )
+  {
+    Object[] listeners = list.getListenerList();
+    
+    if ( Events )
+    {
+      for ( int i = 0; i < listeners.length; i = i + 2 )
+      {
+        if ( listeners[i] == IOEventListener.class )
+        {
+          if( Read )
+          {
+            ((IOEventListener)listeners[i+1]).onRead( evt );
+          }
+          
+          else
+          {
+            ((IOEventListener)listeners[i+1]).onWrite( evt );
+          }
+        }
+      }
+    }
+  }
+  
+  //64 bit address pointer. Used by things in virtual ram address space such as program instructions, and data.
+  
+  private long VAddress = 0x0000000000000000L;
+  
+  //Positions of an file can be mapped into ram address space locations.
+
+  private class VRA
+  {
+    //General address map properties.
+    
+    private long Pos = 0x0000000000000000L, Len = 0x0000000000000000L, VPos = 0x0000000000000000L, VLen = 0x0000000000000000L;
+    
+    //File offset end position.
+    
+    private long FEnd = 0x0000000000000000L;
+    
+    //Virtual address end position. If grater than actual data the rest is 0 filled space.
+    
+    private long VEnd = 0x0000000000000000L;
+    
+    //Construct area map. Both long/int size. Note End position can match the start position as the same byte. End position is minus 1.
+    
+    public VRA( long Offset, long DataLen, long Address, long AddressLen )
+    {
+      Pos = Offset; Len = DataLen; VPos = Address; VLen = AddressLen;
+      
+      //Negative not allowed because of java's signified compare.
+      
+      if( Pos < 0 ) { Pos = 0; } if( VPos < 0 ) { VPos = 0; }
+      if( Len < 0 ) { Len = 0; } if( VLen < 0 ) { VLen = 0; }
+      
+      //Data offset length can't be higher than virtual offset length.
+      
+      if( Len > VLen ){ Len = VLen; }
+      
+      //Calculate file offset end positions and virtual end positions.
+      
+      FEnd = Pos + ( Len - 1 ); VEnd = VPos + ( VLen - 1 );
     }
     
-    public void setValue( int v )
+    //Set the end of an address when another address writes into this address.
+    
+    public void setEnd( long Address )
     {
-      isScrolling = true;
+      //Set end of the current address to the start of added address.
       
-      if( End > 0x7FFFFFFF )
+      VEnd = Address;
+      
+      //Calculate address length.
+      
+      VLen = ( VEnd + 1 ) - VPos;
+      
+      //If there still is data after the added address.
+      
+      Len = Math.min( Len, VLen ); 
+      
+      //Calculate the bytes written into.
+      
+      FEnd = Pos + ( Len - 1 );
+    }
+    
+    //Addresses that write over the start of an address.
+    
+    public void setStart( long Address )
+    {
+      //Add Data offset to bytes written over at start of address.
+        
+      Pos += Address - VPos;
+        
+      //Move Virtual address start to end of address.
+        
+      VPos = Address;
+        
+      //Recalculate length between the new end position.
+        
+      Len = ( FEnd + 1 ) - Pos; VLen = ( VEnd + 1 ) - VPos;
+    }
+    
+    //String Representation for address space.
+    
+    public String toString()
+    {
+      return( "File(Offset)=" + String.format( "%1$016X", Pos ) + "---FileEnd(Offset)=" + String.format( "%1$016X", FEnd ) + "---Start(Address)=" + String.format( "%1$016X", VPos ) + "---End(Address)=" + String.format( "%1$016X", VEnd ) + "---Length=" + VLen );
+    }
+  }
+  
+  //The mapped addresses.
+  
+  private java.util.ArrayList<VRA> Map = new java.util.ArrayList<VRA>();
+  
+  //The virtual address that the current virtual address pointer is in range of.
+  
+  private VRA curVra;
+  
+  //Speeds up search. By going up or down from current virtual address.
+  
+  private int Index = -1;
+  
+  //Map.size() is slower than storing the mapped address space size.
+  
+  private int MSize = 1;
+  
+  //Construct the reader using an file, or disk drive.
+  
+  public RandomAccessFileV( File file, String mode ) throws FileNotFoundException { super( file, mode ); Map.add( new VRA( 0, 0, 0, 0x7FFFFFFFFFFFFFFFL ) ); curVra = Map.get(0); }
+  
+  public RandomAccessFileV( String name, String mode ) throws FileNotFoundException { super( name, mode ); Map.add( new VRA( 0, 0, 0, 0x7FFFFFFFFFFFFFFFL ) ); curVra = Map.get(0); }
+  
+  //Temporary read only data.
+  
+  private static File TFile;
+  
+  private static File mkf() throws IOException { TFile = File.createTempFile("",".tmp"); TFile.deleteOnExit(); return( TFile ); }
+  
+  public RandomAccessFileV( byte[] data ) throws IOException
+  {
+    super( mkf(), "r" ); super.write( data );
+    
+    Map.add( new VRA( 0, data.length, 0, data.length ) ); curVra = Map.get(0);
+    
+    TFile.delete();
+  }
+  
+  public RandomAccessFileV( byte[] data, long Address ) throws IOException
+  {
+    super( mkf(), "r" ); super.write( data );
+    
+    Map.add( new VRA( 0, (long)data.length, Address, (long)data.length ) ); curVra = Map.get(0);
+    
+    TFile.delete();
+  }
+
+  //Reset the Virtual ram map.
+  
+  public void resetV()
+  {
+    Map.clear();
+    
+    Map.add( new VRA( 0, 0, 0, 0x7FFFFFFFFFFFFFFFL ) );
+    
+    MSize = 1; Index = -1; VAddress = 0;
+  }
+  
+  //Get the virtual address pointer. Relative to the File offset pointer.
+  
+  public long getVirtualPointer() throws IOException { return( super.getFilePointer() + VAddress ); }
+  
+  //Add an virtual address.
+  
+  public void addV( long Offset, long DataLen, long Address, long AddressLen ) 
+  {
+    VRA Add = new VRA( Offset, DataLen, Address, AddressLen );
+    VRA Cmp = null;
+    
+    //The numerical range the address lines up to in index in the address map.
+    
+    int e = 0;
+    
+    //fixes lap over ERROR.
+    
+    boolean sw = true;
+    
+    //If grater than last address then add to end.
+    
+    if( MSize > 0 && Add.VPos > Map.get( MSize - 1 ).VEnd ){ Map.add( Add ); MSize++; return; }
+    
+    //Else add and write in alignment.
+    
+    for( int i = 0; i < MSize; i++ )
+    {
+      Cmp = Map.get( i );
+      
+      //If the added address writes to the end, or in the Middle of an address.
+      
+      if( Add.VPos <= Cmp.VEnd && Add.VPos > Cmp.VPos && sw )
       {
-        if( Pos < ( End - 0x7FFFFFFF ) && v >= RelUp )
+        //Address range position.
+        
+        e = i + 1;
+        
+        //If the added address does not write to the end of the address add it to the next element.
+        
+        if( Cmp.VEnd > Add.VEnd )
         {
-          Pos += ( v - ( 0x7FFFFFFF - RelUp ) ); v = RelUp;
+          sw = false; Map.add( e, new VRA( Cmp.Pos, Cmp.Len, Cmp.VPos, Cmp.VLen ) ); MSize++;
         }
         
-        else if( Pos > 0  && v <= RelDown )
-        {
-          Pos -= ( RelDown - v ); v = RelDown;
-        }
+        //Set end of the current address to the start of added address.
         
-        if( Pos > ( End - 0x7FFFFFFF ) ){ Pos = End - 0x7FFFFFFF; }
-        
-        else if( Pos < 0 ) { Pos = 0; }
+        Cmp.setEnd( Add.VPos - 1 );
       }
       
-      super.setValue( v ); TModel.updateData();
+      //If added Address writes to the start of Address.
       
-      isScrolling = false;
+      else if( Add.VPos <= Cmp.VPos && Cmp.VPos <= Add.VEnd || !sw )
+      {        
+        //Address range position.
+        
+        e = i;
+        
+        //Add Data offset to bytes written over at start of address.
+        
+        Cmp.setStart( Add.VEnd + 1 );
+        
+        //Remove overwritten addresses that are negative in length remaining.
+        
+        if( Cmp.VLen <= 0 ) { Map.remove( i ); i--; MSize--; }
+        
+        //Else if 0 or less data. Set data length and offset 0.
+        
+        else if( Cmp.Len <= 0 ){ Cmp.Pos = 0; Cmp.Len = 0; Cmp.FEnd = 0; }
+        
+        sw = true;
+      }
     }
     
-    public void setValue( long v )
-    {
-      isScrolling = true;
-      
-      if( v > RelUp ) { Pos = v - RelUp; v = RelUp; }
-      
-      super.setValue( (int)v ); TModel.updateData();
-      
-      isScrolling = false;
-    }
+    //Add address in order to it's position in range.
     
-    public long getRelValue()
-    {
-      return( Math.min( Pos + super.getValue(), End - TRows ) );
-    }
+    Map.add( e, Add ); MSize++;
+    
+    //If added address lines up with Virtual address pointer. Seek the new address position.
+    
+    try { if( VAddress >= Add.VPos && VAddress <= Add.VEnd ) { seekV( VAddress ); } } catch( IOException ex ) {  }
   }
-
-  //Enable relative scrolling for files larger than 4Gb.
-
-  boolean Rel = false;
-
-  //Virtual mode, or offset mode.
-
-  private boolean Virtual = false;
-
-  //The main hex edior display.
-
-  class AddressModel extends AbstractTableModel
+  
+  //Adjust the Virtual offset pointer relative to the mapped virtual ram address and file pointer.
+  
+  public void seekV( long Address ) throws IOException
   {
-    private String[] Offset = new String[] { "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
-
-    //Divide into rows of 16 offsets.
-
-    private int RowLen = 16;
-
-    //If virtual mode.
-
-    public AddressModel(boolean mode)
+    //If address is in range of current address index.
+    
+    if( Address >= curVra.VPos && Address <= ( curVra.VPos + curVra.Len ) )
     {
-      if (mode)
+      super.seek( ( Address - curVra.VPos ) + curVra.Pos );
+      
+      VAddress = Address - super.getFilePointer();
+    }
+    
+    //If address is grater than the next vra iterate up in indexes.
+    
+    else if( Address >= curVra.VPos || Index == -1 )
+    {
+      VRA e = null;
+      
+      for( int n = Index + 1; n < MSize; n++ )
       {
-        Offset[0] = "Virtual Address (h)";
+        e = Map.get( n );
+        
+        if( Address >= e.VPos && Address <= ( e.VPos + e.Len ) )
+        {
+          Index = n; curVra = e;
+          
+          super.seek( ( Address - e.VPos ) + e.Pos );
+          
+          VAddress = Address - super.getFilePointer();
+          
+          return;
+        }
       }
     }
-
-    //Get number of columns.
-
-    public int getColumnCount()
+    
+    //else iterate down in indexes.
+    
+    else if( Address <= curVra.VPos )
     {
-      return (Offset.length);
-    }
-
-    //Get number of rows in Display area.
-
-    public int getRowCount()
-    {
-      return (TRows);
-    }
-
-    //Get the column.
-
-    public String getColumnName(int col)
-    {
-      return (Offset[col]);
-    }
-
-    //The address col and byte values.
-
-    public Object getValueAt(int row, int col)
-    {
-      //Caulate position.
+      VRA e = null;
       
-      long pos = ( ScrollBar.getRelValue() + row ) << 4;
-      
-      //First col is address.
-      
-      if (col == 0)
+      for( int n = Index - 1; n > -1; n-- )
       {
-        return ("0x" + String.format("%1$016X", pos ));
+        e = Map.get( n );
+        
+        if( Address >= e.VPos && Address <= ( e.VPos + e.Len ) )
+        {
+          Index = n; curVra = e;
+          
+          super.seek( ( Address - e.VPos ) + e.Pos );
+          
+          VAddress = Address - super.getFilePointer();
+          
+          return;
+        }
       }
-
-      //Else byte to hex.
-
+    }
+    
+    VAddress = Address - super.getFilePointer(); fireIOEvent( new IOEvent( this, VAddress, VAddress ) );
+  }
+  
+  public int readV() throws IOException
+  {
+    //Seek address if outside current address space.
+    
+    if( getVirtualPointer() > curVra.VEnd ) { seekV( getVirtualPointer() ); }
+    
+    //Read in current offset. If any data to be read.
+    
+    if( super.getFilePointer() >= curVra.Pos && super.getFilePointer() <= curVra.FEnd ) { return( super.read() ); }
+    
+    //No data then 0 space.
+    
+    VAddress += 1; return( 0 );
+  }
+  
+  //Read len bytes from current virtual offset pointer.
+  
+  public int readV( byte[] b ) throws IOException
+  {
+    int Pos = 0, n = 0;
+    
+    //Seek address if outside current address space.
+    
+    if( getVirtualPointer() > curVra.VEnd ) { seekV( getVirtualPointer() ); }
+    
+    //Start reading.
+    
+    while( Pos < b.length )
+    {
+      //Read in current offset.
+      
+      if( super.getFilePointer() >= curVra.Pos && super.getFilePointer() <= curVra.FEnd && curVra.Len > 0 )
+      {
+        //Number of bytes that can be read from current area.
+        
+        n = (int)Math.min( ( curVra.FEnd + 1 ) - super.getFilePointer(), b.length );
+        
+        super.read( b, Pos, n ); Pos += n;
+      }
+      
+      //Else 0 space. Skip n to Next address.
+      
       else
       {
-        return (String.format("%1$02X", data[ (row << 4) + (col - 1) ]));
+        n = (int)( ( curVra.VPos + curVra.Len ) - ( super.getFilePointer() - curVra.Pos ) );
+        
+        if( n < 0 ) { n = b.length - Pos; }
+        
+        VAddress += n; Pos += n;
+        
+        seekV( getVirtualPointer() );
       }
     }
-
-    //JTable uses this method to determine the default renderer/editor for each cell.
-
-    public Class getColumnClass(int c)
-    {
-      return (getValueAt(0, c).getClass());
-    }
-
-    //First column is not editbale as it is the address.
-
-    public boolean isCellEditable(int row, int col)
-    {
-      return (col >= 1);
-    }
-
-    //Seting values writes directly to the IO stream.
-
-    public void setValueAt(Object value, int row, int col)
-    {
-      int b = Integer.parseInt((String) value, 16);
-
-      data[(row * RowLen) + (col - 1)] = (byte) b;
-
-      //Write the new byte value to stream.
-
-      try
-      {
-        //If offset mode use offset seek, and write.
-
-        if (!Virtual)
-        {
-          IOStream.write(b);
-        }
-
-        //If Virtual use Virtual map seek, and write.
-
-        else
-        {
-          IOStream.writeV(b);
-        }
-      }
-      catch (java.io.IOException e1)
-      {}
-
-      //Update table.
-
-      fireTableCellUpdated(row, col);
-    }
-
-    //Update table data.
-
-    public void updateData()
-    {
-      //Read data at scroll position.
-
-      try
-      {
-        //If offset mode use offset seek.
-
-        if (!Virtual)
-        {
-          IOStream.Events = false;
-          
-          long t = IOStream.getFilePointer();
-          
-          IOStream.seek( ScrollBar.getRelValue() << 4 );
-          IOStream.read( data );
-          IOStream.seek( t );
-          
-          IOStream.Events = true;
-        }
-
-        //If Virtual use Virtual map seek.
-
-        else
-        {
-          IOStream.Events = false;
-          
-          long t = IOStream.getVirtualPointer();
-          
-          IOStream.seekV( ScrollBar.getRelValue() << 4 );
-          IOStream.readV( data );
-          IOStream.seekV( t );
-          
-          IOStream.Events = true;
-        }
-      }
-      catch (java.io.IOException e1) {}
-
-      fireTableDataChanged();
-    }
+    
+    return( 0 );
   }
-
-  //The preferred table column size.
-
-  class AddressColumnModel extends DefaultTableColumnModel
+  
+  //Read len bytes at offset to len from current virtual offset pointer.
+  
+  public int readV( byte[] b, int off, int len ) throws IOException
   {
-	  int pixelWidth = 0;
-	
-    public void addColumn(TableColumn c)
+    int Pos = off, n = 0; len += off;
+    
+    //Seek address if outside current address space.
+    
+    if( getVirtualPointer() > curVra.VEnd ) { seekV( getVirtualPointer() ); }
+    
+    //Start reading.
+    
+    while( Pos < len )
     {
-	  if( pixelWidth <= 0 )
-	  {
-	    java.awt.FontMetrics fm = tdata.getFontMetrics(tdata.getFont());
-      pixelWidth = fm.stringWidth("C");
-	  }
-	  
-      //Address column.
-
-      if (super.getColumnCount() == 0)
+      //Read in current offset.
+      
+      if( super.getFilePointer() >= curVra.Pos && super.getFilePointer() <= curVra.FEnd && curVra.Len > 0 )
       {
-        c.setMinWidth( pixelWidth * 18 + 2 ); c.setMaxWidth( pixelWidth * 18 + 2 );
+        //Number of bytes that can be read from current area.
+        
+        n = (int)Math.min( ( curVra.FEnd + 1 ) - super.getFilePointer(), len );
+        
+        super.read( b, Pos, n ); Pos += n;
       }
-
-      //Byte value columns.
-
+      
+      //Else 0 space. Skip n to Next address.
+      
       else
       {
-        c.setMinWidth( pixelWidth * 2 + 2 ); c.setMaxWidth( pixelWidth * 2 + 2 );
-      }
-
-      //Add column.
-
-      super.addColumn(c);
-    }
-  }
-
-  //A simple cell editor for my hex editor.
-
-  class CellHexEditor extends DefaultCellEditor
-  {
-    final JTextField textField; //The table text componet.
-
-    int pos = 0; //Charicter position in cell.
-
-    int Row = 0, Col = 0; //Curent cell.
-
-    boolean CellMove = false; //Moving cells.
-
-    class HexDocument extends PlainDocument
-    {
-      @Override public void replace(int offset, int length, String text, AttributeSet attrs) throws BadLocationException
-      {
-        //Validate hex input.
-
-        char c = text.toUpperCase().charAt(0);
-
-        if (c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39)
-        {
-          pos = offset + 1;
-          super.replace(offset, length, text, attrs);
-          UpdatePos();
-        }
-
-        textField.select(pos, pos + 1);
+        n = (int)( curVra.VLen - ( super.getFilePointer() - curVra.Pos ) );
+        
+        if( n < 0 ) { n = len - Pos; }
+        
+        VAddress += n; Pos += n;
+        
+        seekV( getVirtualPointer() );
       }
     }
-
-    //Move left, or right. Cursor position.
-
-    public void UpdatePos()
-    {
-      //Move the editor while entering hex.
-
-      if (pos < 0)
-      {
-        Col -= 1;
-
-        if (Col <= 0)
-        {
-          Col = 16;
-
-          if (Row == 0)
-          {
-            ScrollBar.setValue(ScrollBar.getValue() - 1);
-          }
-          else
-          {
-            Row -= 1;
-          }
-        }
-
-        tdata.editCellAt(Row, Col); tdata.getEditorComponent().requestFocus();
-        pos = 1; CellMove = true; return;
-      }
-
-      if (pos > 1)
-      {
-        Col += 1;
-
-        if (Col >= 17)
-        {
-          Col = 1;
-
-          if (Row >= (TRows - 1))
-          {
-            ScrollBar.setValue(ScrollBar.getValue() + 1);
-          }
-          else
-          {
-            Row += 1;
-          }
-        }
-
-        tdata.editCellAt(Row, Col); tdata.getEditorComponent().requestFocus();
-        pos = 0; CellMove = true; return;
-      }
-
-      //Select the curent hex digit user is editing.
-
-      CellMove = false;
-    }
-
-    public CellHexEditor()
-    {
-      super(new JTextField());
-      textField = (JTextField) getComponent();
-
-      textField.addFocusListener(new FocusAdapter()
-      {
-        @Override public void focusGained(FocusEvent e)
-        {
-          if (!CellMove)
-          {
-            pos = Math.max(0, textField.getCaretPosition() - 1);
-          }
-          textField.select(pos, pos + 1);
-        }
-      });
-
-      textField.addMouseListener(new MouseAdapter()
-      {
-        @Override public void mousePressed(MouseEvent e)
-        {
-          pos = Math.max(0, textField.getCaretPosition() - 1);
-          textField.select(pos, pos + 1);
-        }
-
-        @Override public void mouseReleased(MouseEvent e)
-        {
-          pos = Math.max(0, textField.getCaretPosition() - 1);
-          textField.select(pos, pos + 1);
-        }
-
-        @Override public void mouseClicked(MouseEvent e)
-        {
-          pos = Math.max(0, textField.getCaretPosition() - 1);
-          textField.select(pos, pos + 1);
-        }
-      });
-
-      textField.addKeyListener(new KeyListener()
-      {
-        public void keyPressed(KeyEvent e)
-        {
-          int c = e.getKeyCode();
-
-          if (c == e.VK_LEFT) { pos -= 1; } else if (c == e.VK_RIGHT) { pos += 1; }
-
-          UpdatePos();
-        }
-
-        public void keyReleased(KeyEvent e)
-        {
-          textField.select(pos, pos + 1);
-        }
-
-        public void keyTyped(KeyEvent e) {}
-      });
-
-      textField.setDocument(new HexDocument());
-    }
-
-    @Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column)
-    {
-      final JTextField textField = (JTextField) super.getTableCellEditorComponent(table, value, isSelected, row, column);
-
-      Row = row; Col = column; return (textField);
-    }
-  }
-
-  //Only recaulatue number of table rows on resize. Speeds up table redering.
-
-  class CalcRows extends ComponentAdapter
-  {
-    public void componentResized(ComponentEvent e)
-    {
-      TRows = (tdata.getHeight() / tdata.getRowHeight()) + 1;
-      data = java.util.Arrays.copyOf( data, TRows * 16 );
-      TModel.updateData();
-    }
+    
+    return( 0 );
   }
   
-  //If no mode setting then assume offset mode.
-
-  public VHex(RandomAccessFileV f) { this(f, false); }
-
-  //Initialize the hex UI component. With file system stream.
-
-  public VHex(RandomAccessFileV f, boolean mode)
+  //Write an byte at Virtual address pointer if mapped.
+  
+  public void writeV( int b ) throws IOException
   {
-    //Register this componet to update on IO system calls.
+    //Seek address if outside current address space.
     
-    f.addMyEventListener( this );
+    if( getVirtualPointer() > curVra.VEnd ) { seekV( getVirtualPointer() ); }
     
-    //Row resize calulation.
+    //Write the byte if in range of address.
     
-    super.addComponentListener(new CalcRows());
-
-    Virtual = mode;
-
-    //Reference the file stream.
-
-    IOStream = f;
-
-    TModel = new AddressModel(mode);
-
-    tdata = new JTable(TModel, new AddressColumnModel());
-
-    tdata.createDefaultColumnsFromModel();
-
-    //Columns can not be re-arranged.
-
-    tdata.getTableHeader().setReorderingAllowed(false);
-
-    //Columns can not be re-arranged.
-
-    tdata.getTableHeader().setReorderingAllowed(false);
-
-    //Do not alow resizing of cells.
-
-    tdata.getTableHeader().setResizingAllowed(false);
-
-    //Set the table editor.
-
-    tdata.setDefaultEditor(String.class, new CellHexEditor());
-
-    //Setup Scroll bar system.
-
-    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 0, 0, 0, ( Virtual ? 0x7FFFFFFFFFFFFFFFL : IOStream.length() ) >> 4 ); } catch (java.io.IOException e) {}
-
-    //Custom selection handling.
-
-    tdata.addMouseListener(new MouseAdapter()
-    {
-      @Override public void mousePressed(MouseEvent e)
-      {
-        isSelect = true;
-        try
-        {
-          if( !Virtual )
-          {
-            IOStream.seek( ( ScrollBar.getRelValue() + tdata.rowAtPoint(e.getPoint()) << 4 ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) );
-          }
-          else
-          {
-            IOStream.seekV( ( ScrollBar.getRelValue() + tdata.rowAtPoint(e.getPoint()) << 4 ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) );
-          }
-        }
-        catch( java.io.IOException e1 ) {}
-        isSelect = false;
-      }
-    });
-
-    tdata.addMouseMotionListener(new MouseMotionAdapter()
-    {
-      @Override public void mouseDragged(MouseEvent e)
-      {
-        //Automatically scroll while selecting bytes.
-
-        if (e.getY() > tdata.getHeight())
-        {
-          ScrollBar.setValue(Math.min(ScrollBar.getValue() + 4, 0x7FFFFFFF));
-          ERow = getRowPos() + (TModel.getRowCount() - 1);
-        }
-        else if (e.getY() < 0)
-        {
-          ScrollBar.setValue(Math.max(ScrollBar.getValue() - 4, 0));
-          ERow = getRowPos();
-        }
-        else
-        {
-          ERow = ScrollBar.getRelValue() + tdata.rowAtPoint(e.getPoint());
-          ECol = tdata.columnAtPoint(e.getPoint());
-        }
-
-        //Force the table to rerender cells.
-
-        TModel.fireTableDataChanged();
-      }
-    });
-
-    //Custom table selection rendering.
-
-    tdata.setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
-    {
-      @Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int r, int column)
-      {
-        final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, r, column);
-
-        long row = r + ScrollBar.getRelValue();
-
-        //Alternate shades between rows.
-
-        if (row % 2 == 0)
-        {
-          c.setBackground(Color.white);
-          c.setForeground(Color.black);
-        }
-        else
-        {
-          c.setBackground(new Color(242, 242, 242));
-          c.setForeground(Color.black);
-        }
-
-        //If selection is in same row
-
-        if (SRow == ERow && row == SRow)
-        {
-          if (SCol > ECol && column >= ECol && column <= SCol)
-          {
-            c.setBackground(new Color(57, 105, 138));
-            c.setForeground(Color.white);
-          }
-          else if (column <= ECol && column >= SCol)
-          {
-            c.setBackground(new Color(57, 105, 138));
-            c.setForeground(Color.white);
-          }
-        }
-
-        //Selection start to end.
-
-        else if (SRow <= ERow)
-        {
-          if (row == SRow && column >= SCol)
-          {
-            c.setBackground(new Color(57, 105, 138));
-            c.setForeground(Color.white);
-          }
-          else if (row == ERow && column <= ECol)
-          {
-            c.setBackground(new Color(57, 105, 138));
-            c.setForeground(Color.white);
-          }
-          else if (row > SRow && row < ERow)
-          {
-            c.setBackground(new Color(57, 105, 138));
-            c.setForeground(Color.white);
-          }
-        }
-
-        //Selection end to start.
-
-        else if (SRow >= ERow)
-        {
-          if (row == SRow && column <= SCol)
-          {
-            c.setBackground(new Color(57, 105, 138));
-            c.setForeground(Color.white);
-          }
-          else if (row < SRow && row > ERow)
-          {
-            c.setBackground(new Color(57, 105, 138));
-            c.setForeground(Color.white);
-          }
-          else if (row == ERow && column >= ECol)
-          {
-            c.setBackground(new Color(57, 105, 138));
-            c.setForeground(Color.white);
-          }
-        }
-
-        //First col is address.
-
-        if (column == 0)
-        {
-          c.setBackground(Color.black);
-          c.setForeground(Color.white);
-        }
-
-        return (c);
-      }
-    });
-
-    //Add everything to main component.
-
-    super.setLayout(new BorderLayout());
-    super.add(tdata.getTableHeader(), BorderLayout.PAGE_START);
-    super.add(tdata, BorderLayout.CENTER);
-    super.add(ScrollBar, BorderLayout.EAST);
-
-    TModel.updateData();
+    if( super.getFilePointer() >= curVra.Pos && super.getFilePointer() <= curVra.FEnd ) { super.write( b ); return; }
+    
+    //Move virtual pointer.
+    
+    VAddress++;
   }
   
-  //On seeking a new position in stream.
+  //Write set of byte at Virtual address pointer to only mapped bytes.
   
-  public void onSeek( IOEvent e )
+  public void writeV( byte[] b ) throws IOException
   {
-    if( !isScrolling )
+    int Pos = 0, n = 0;
+    
+    //Seek address if outside current address space.
+    
+    if( getVirtualPointer() > curVra.VEnd ) { seekV( getVirtualPointer() ); }
+    
+    //Start Writing.
+    
+    while( Pos < b.length )
     {
-      SRow = getRowPos(); SCol = getColPos() + 1;
+      //Write in current offset.
       
-      ECol = SCol; ERow = SRow;
+      if( super.getFilePointer() >= curVra.Pos && super.getFilePointer() <= curVra.FEnd && curVra.Len > 0 )
+      {
+        //Number of bytes that can be written in current area.
+        
+        n = (int)Math.min( ( curVra.FEnd + 1 ) - super.getFilePointer(), b.length );
+        
+        super.write( b, Pos, n ); Pos += n;
+      }
       
-      if( !isSelect ) { ScrollBar.setValue( SRow ); }
+      //Else 0 space. Skip n to Next address.
+      
+      else
+      {
+        n = (int)( curVra.VLen - ( super.getFilePointer() - curVra.Pos ) );
+        
+        if( n < 0 ) { n = b.length - Pos; }
+        
+        VAddress += n; Pos += n;
+        
+        seekV( getVirtualPointer() );
+      }
     }
-    
-    TModel.updateData();
   }
   
-  //On Reading a new byte in stream.
+  //Write len bytes at offset to len from current virtual offset pointer.
   
-  public void onRead( IOEvent e ) { }
+  public void writeV( byte[] b, int off, int len ) throws IOException
+  {
+    int Pos = off, n = 0; len += off;
+    
+    //Seek address if outside current address space.
+    
+    if( getVirtualPointer() > curVra.VEnd ) { seekV( getVirtualPointer() ); }
+    
+    //Start writing.
+    
+    while( Pos < len )
+    {
+      //Write in current offset.
+      
+      if( super.getFilePointer() >= curVra.Pos && super.getFilePointer() <= curVra.FEnd && curVra.Len > 0 )
+      {
+        //Number of bytes that can be written in current area.
+        
+        n = (int)Math.min( ( curVra.FEnd + 1 ) - super.getFilePointer(), len );
+        
+        super.write( b, Pos, n ); Pos += n;
+      }
+      
+      //Else 0 space. Skip n to Next address.
+      
+      else
+      {
+        n = (int)( curVra.VLen - ( super.getFilePointer() - curVra.Pos ) );
+        
+        if( n < 0 ) { n = len - Pos; }
+        
+        VAddress += n; Pos += n;
+        
+        seekV( getVirtualPointer() );
+      }
+    }
+  }
   
-  //On writing a new byte in stream.
+  //fire seek event.
   
-  public void onWrite( IOEvent e ) { }
+  @Override public void seek( long Offset ) throws IOException
+  {
+    while( Events && Trigger ) { EventThread.interrupt(); }
+    
+    super.seek( Offset ); fireIOEventSeek( new IOEvent( this, Offset, Offset ) );
+  }
+  
+  //Seek. Same as seek, but is a little faster of a read ahread trick.
+  
+  @Override public int skipBytes( int n ) throws IOException
+  {
+    while( Events && Trigger ) { EventThread.interrupt(); }
+    
+    int b = super.skipBytes( n );
+    
+    fireIOEventSeek( new IOEvent( this, super.getFilePointer(), super.getFilePointer() ) );
+    
+    return( b );
+  }
+  
+  //Read and write events.
+  
+  @Override public int read() throws IOException
+  {
+    //Trigger writing event.
+    
+    while( Events && Trigger && !Read ) { EventThread.interrupt(); }
+    
+    //Start read event tracing.
+    
+    if( Events && !Trigger ) { TPos = super.getFilePointer(); Read = true; Trigger = true; }
+    
+    return( super.read() );
+  }
+  
+  @Override public int read( byte[] b ) throws IOException
+  {
+    //Trigger writing event.
+    
+    while( Events && Trigger && !Read ) { EventThread.interrupt(); }
+    
+    //Start read event tracing.
+    
+    if( Events && !Trigger ) { TPos = super.getFilePointer(); Read = true; Trigger = true; }
+    
+    return( super.read( b ) );
+  }
+  
+  @Override public int read( byte[] b, int off, int len ) throws IOException
+  {
+    //Trigger writing event.
+    
+    while( Events && Trigger && !Read ) { EventThread.interrupt(); }
+    
+    //Start read event tracing.
+    
+    if( Events && !Trigger ) { TPos = super.getFilePointer(); Read = true; Trigger = true; }
+    
+    return( super.read( b, off, len ) );
+  }
+
+  
+  @Override public void write( int b ) throws IOException
+  {
+    //Trigger read event.
+    
+    while( Events && Trigger && Read ) { EventThread.interrupt(); }
+    
+    //Start write event tracing.
+    
+    if( Events && !Trigger ) { TPos = super.getFilePointer(); Read = false; Trigger = true; }
+    
+    super.write( b );
+  }
+  
+  @Override public void write( byte[] b ) throws IOException
+  {
+    //Trigger read event.
+    
+    while( Events && Trigger && Read ) { EventThread.interrupt(); }
+    
+    //Start write event tracing.
+    
+    if( Events && !Trigger ) { TPos = super.getFilePointer(); Read = false; Trigger = true; }
+    
+    super.write( b );
+  }
+  
+  @Override public void write( byte[] b, int off, int len ) throws IOException
+  {
+    //Trigger read event.
+    
+    while( Events && Trigger && Read ) { EventThread.interrupt(); }
+    
+    //Start write event tracing.
+    
+    if( Events && !Trigger ) { TPos = super.getFilePointer(); Read = false; Trigger = true; }
+    
+    super.write( b, off, len );
+  }
+  
+  //Debug The address mapped memory.
+  
+  public void Debug()
+  {
+    String s = "";
+    
+    for( int i = 0; i < MSize; s += Map.get( i++ ) + "\r\n" );
+    
+    System.out.println( s );
+  }
+  
+  //Main Event thread.
+  
+  public void run()
+  {
+    if( !Running ) //Run once.
+    {
+      Running = true;
+      
+      while( Running )
+      {
+        //If read, or write is triggered.
+        
+        if( Trigger )
+        {
+          try
+          {
+            if( pos == super.getFilePointer() )
+            {
+              fireIOEvent( new IOEvent( this, TPos, pos ) ); Trigger = false;
+            }
+            else{ pos = super.getFilePointer(); }
+          }
+          catch( IOException e ) { e.printStackTrace(); }
+        }
+        
+        //Fire event right away if interrupted, by a different IO event.
+        
+        try{ Thread.sleep( 100 ); } catch(InterruptedException e) { }
+      }
+    }
+  }
 }
