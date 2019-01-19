@@ -46,6 +46,10 @@ public class VHex extends JComponent implements IOEventListener
   private long SRow = 0, SCol = 0;
   private long ERow = 0, ECol = 0;
   
+  //Selection Color.
+  
+  private Color SelectC = new Color(57, 105, 138);
+  
   //Byte buffer betwean io stream. Updated based on number of rows that can be displayed.
 
   private byte[] data = new byte[0];
@@ -556,12 +560,12 @@ public class VHex extends JComponent implements IOEventListener
         {
           if (SCol > ECol && column >= ECol && column <= SCol)
           {
-            c.setBackground(new Color(57, 105, 138));
+            c.setBackground( SelectC );
             c.setForeground(Color.white);
           }
           else if (column <= ECol && column >= SCol)
           {
-            c.setBackground(new Color(57, 105, 138));
+            c.setBackground( SelectC );
             c.setForeground(Color.white);
           }
         }
@@ -572,17 +576,17 @@ public class VHex extends JComponent implements IOEventListener
         {
           if (row == SRow && column >= SCol)
           {
-            c.setBackground(new Color(57, 105, 138));
+            c.setBackground( SelectC );
             c.setForeground(Color.white);
           }
           else if (row == ERow && column <= ECol)
           {
-            c.setBackground(new Color(57, 105, 138));
+            c.setBackground( SelectC );
             c.setForeground(Color.white);
           }
           else if (row > SRow && row < ERow)
           {
-            c.setBackground(new Color(57, 105, 138));
+            c.setBackground( SelectC );
             c.setForeground(Color.white);
           }
         }
@@ -593,17 +597,17 @@ public class VHex extends JComponent implements IOEventListener
         {
           if (row == SRow && column <= SCol)
           {
-            c.setBackground(new Color(57, 105, 138));
+            c.setBackground( SelectC );
             c.setForeground(Color.white);
           }
           else if (row < SRow && row > ERow)
           {
-            c.setBackground(new Color(57, 105, 138));
+            c.setBackground( SelectC );
             c.setForeground(Color.white);
           }
           else if (row == ERow && column >= ECol)
           {
-            c.setBackground(new Color(57, 105, 138));
+            c.setBackground( SelectC );
             c.setForeground(Color.white);
           }
         }
@@ -636,6 +640,8 @@ public class VHex extends JComponent implements IOEventListener
   {
     System.out.println("Seek Stream Pos = " + e.SPos() + "" );
     
+    SelectC = new Color( 57, 105, 138 );
+    
     if( !isScrolling )
     {
       //The edtirors row position.
@@ -644,7 +650,7 @@ public class VHex extends JComponent implements IOEventListener
       
       //The IO stream position.
       
-      SRow = getRowPos(); SCol = getColPos() + 1;
+      SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
       
       ECol = SCol; ERow = SRow;
       
@@ -664,15 +670,43 @@ public class VHex extends JComponent implements IOEventListener
     }
   }
   
-  //On Reading a new byte in stream.
+  //On Reading bytes in stream.
   
   public void onRead( IOEvent e )
   {
+    SelectC = new Color( 33, 255, 33 );
+    
+    SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
+    ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
+    
+    //The edtirors row position.
+      
+    long CRow = ScrollBar.getRelValue() & 0x7FFFFFFFFFFFFFF0L;
+      
+    //Only update scroll bar, and data if on outide of the editor.
+      
+    if( ERow >= ( CRow + ( TRows << 4 ) ) ) { ScrollBar.setValue( ERow - ( ( TRows - 1 ) << 4 ) ); }
+    
+    TModel.fireTableDataChanged();
   }
   
-  //On writing a new byte in stream.
+  //On writing bytes in stream.
   
   public void onWrite( IOEvent e )
   {
+    SelectC = new Color( 255, 33, 33 );
+    
+    SRow = ( e.SPos() - 1 ) & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
+    ERow = ( e.EPos() - 1 ) & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
+    
+    //The edtirors row position.
+      
+    long CRow = ScrollBar.getRelValue() & 0x7FFFFFFFFFFFFFF0L;
+      
+    //Only update scroll bar, and data if on outide of the editor.
+      
+    if( ERow >= ( CRow + ( TRows << 4 ) ) ) { ScrollBar.setValue( ERow - ( ( TRows - 1 ) << 4 ) ); }
+    
+    else { TModel.updateData(); }
   }
 }
