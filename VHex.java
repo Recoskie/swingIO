@@ -5,7 +5,7 @@ import java.awt.event.*;
 import javax.swing.event.*;
 import javax.swing.text.*;
 
-public class VHex extends JComponent implements IOEventListener
+public class VHex extends JComponent implements IOEventListener, MouseWheelListener
 {
   //The file system stream reference that will be used.
 
@@ -50,7 +50,7 @@ public class VHex extends JComponent implements IOEventListener
   
   private Color SelectC = new Color(57, 105, 138);
   
-  //Byte buffer betwean io stream. Updated based on number of rows that can be displayed.
+  //Byte buffer between io stream. Updated based on number of rows that can be displayed.
 
   private byte[] data = new byte[0];
   
@@ -193,6 +193,8 @@ public class VHex extends JComponent implements IOEventListener
     {
       isScrolling = true;
       
+      if( tdata.isEditing() ) { tdata.getCellEditor().stopCellEditing(); }
+      
       if( VisibleEnd > 0x7FFFFFF0 )
       {
         if( Pos < ( VisibleEnd - 0x7FFFFFF0 ) && v >= RelUp )
@@ -274,11 +276,11 @@ public class VHex extends JComponent implements IOEventListener
 
   private class CellHexEditor extends DefaultCellEditor
   {
-    final JTextField textField; //The table text componet.
+    final JTextField textField; //The table text component.
 
-    private int pos = 0; //Charicter position in cell.
+    private int pos = 0; //Character position in cell.
 
-    private int Row = 0, Col = 0; //Curent cell.
+    private int Row = 0, Col = 0; //Current cell.
 
     boolean CellMove = false; //Moving cells.
 
@@ -513,13 +515,13 @@ public class VHex extends JComponent implements IOEventListener
 
         if (e.getY() > tdata.getHeight())
         {
-          ScrollBar.setValue(Math.min(ScrollBar.getValue() + 64, 0x7FFFFFFF));
-          ERow = getRowPos() + (TModel.getRowCount() - 1);
+          ScrollBar.setValue( ScrollBar.getValue() + 64 );
+          ERow = ScrollBar.getRelValue() + ( ( TRows - 1 ) << 4 );
         }
-        else if (e.getY() < 0)
+        else if ( e.getY() < 0 )
         {
           ScrollBar.setValue(Math.max(ScrollBar.getValue() - 64, 0));
-          ERow = getRowPos();
+          ERow = ScrollBar.getRelValue();
         }
         else
         {
@@ -623,6 +625,10 @@ public class VHex extends JComponent implements IOEventListener
         return (c);
       }
     });
+    
+    //Add scroll wheal handler.
+    
+    tdata.addMouseWheelListener(this);
 
     //Add everything to main component.
 
@@ -634,17 +640,24 @@ public class VHex extends JComponent implements IOEventListener
     TModel.updateData();
   }
   
+  //Adjust scroll bar on scroll wheal.
+  
+  @Override public void mouseWheelMoved(MouseWheelEvent e)
+  {
+    if( tdata.isEditing() ) { tdata.getCellEditor().stopCellEditing(); }
+    
+    ScrollBar.setValue( ScrollBar.getRelValue() + ( e.getUnitsToScroll() << 4 ) );
+  }
+  
   //On seeking a new position in stream.
   
   public void onSeek( IOEvent e )
   {
-    System.out.println("Seek Stream Pos = " + e.SPos() + "" );
-    
     SelectC = new Color( 57, 105, 138 );
     
     if( !isScrolling )
     {
-      //The edtirors row position.
+      //The editors row position.
       
       long CRow = ScrollBar.getRelValue() & 0x7FFFFFFFFFFFFFF0L;
       
@@ -661,7 +674,7 @@ public class VHex extends JComponent implements IOEventListener
         ScrollBar.setValue( SRow );
       }
       
-      //Else fire tabel rendering changed for selection.
+      //Else fire table rendering changed for selection.
       
       else
       {
@@ -679,11 +692,11 @@ public class VHex extends JComponent implements IOEventListener
     SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
     ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
     
-    //The edtirors row position.
+    //The editors row position.
       
     long CRow = ScrollBar.getRelValue() & 0x7FFFFFFFFFFFFFF0L;
       
-    //Only update scroll bar, and data if on outide of the editor.
+    //Only update scroll bar, and data if on outside of the editor.
     
     if( SRow <= CRow ) { ScrollBar.setValue( SRow ); }
       
@@ -701,11 +714,11 @@ public class VHex extends JComponent implements IOEventListener
     SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
     ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
     
-    //The edtirors row position.
+    //The editors row position.
       
     long CRow = ScrollBar.getRelValue() & 0x7FFFFFFFFFFFFFF0L;
       
-    //Only update scroll bar, and data if on outide of the editor.
+    //Only update scroll bar, and data if on outside of the editor.
     
     if( SRow <= CRow ) { ScrollBar.setValue( SRow ); }
       
