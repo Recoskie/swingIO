@@ -176,7 +176,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
   }
   
-  //Modified scrollbar class to handel the full 64 bit address space.
+  //Modified scrollbar class to Handel the full 64 bit address space.
   
   private class LongScrollBar extends JScrollBar
   {
@@ -427,7 +427,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
   }
 
-  //Only recaulatue number of table rows on resize. Speeds up table redering.
+  //Only recalculate number of table rows on resize. Speeds up table rendering.
 
   private class CalcRows extends ComponentAdapter
   {
@@ -447,11 +447,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public VHex(RandomAccessFileV f, boolean mode)
   {
-    //Register this componet to update on IO system calls.
+    //Register this component to update on IO system calls.
     
-    f.addMyEventListener( this );
+    f.addIOEventListener( this );
     
-    //Row resize calulation.
+    //Row resize calculation.
     
     super.addComponentListener( new CalcRows() );
 
@@ -481,7 +481,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     //Setup Scroll bar system.
 
-    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 0, 0, 0, Virtual ? 0x7FFFFFFFFFFFFFFFL : IOStream.length() ); } catch (java.io.IOException e) {}
+    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0x7FFFFFFFFFFFFFFFL : IOStream.length() ); } catch (java.io.IOException e) {}
     
     ScrollBar.setUnitIncrement( 16 );
 
@@ -520,7 +520,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         }
         else if ( e.getY() < 0 )
         {
-          ScrollBar.setValue(Math.max(ScrollBar.getValue() - 64, 0));
+          ScrollBar.setValue( ScrollBar.getValue() - 64 );
           ERow = ScrollBar.getRelValue();
         }
         else
@@ -667,7 +667,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       ECol = SCol; ERow = SRow;
       
-      //Only update scroll bar, and data if on outide of the editor.
+      //Only update scroll bar, and data if on outside of the editor.
       
       if( SRow < CRow || SRow >= ( CRow + ( TRows << 4 ) ) )
       {
