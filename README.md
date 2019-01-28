@@ -1,5 +1,7 @@
 # VHex
 
+Note the latest updates to [RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) is required with event handling. In order to watch IO at system level live. Virtual space events are still in development.<br />
+
 VHex uses [RandomAccessFileV](https://github.com/Recoskie/RandomAccessFileV) which is a powerful mapping tool for fragmented data. This component is designed to have both a simulated Virtual memory space mode, and file offset mode. For mapping and modifying binary applications. Or the virtual map can also be used to map fragmented data in disk images when doing data recovery.
 
 # IO Event Handling.
