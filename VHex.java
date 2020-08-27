@@ -543,7 +543,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
           }
           else
           {
-            IOStream.seekV( ( ScrollBar.getRelValue() + ( ( tdata.rowAtPoint(e.getPoint()) << 4 ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) ) ) );
+            IOStream.seekV( ( ScrollBar.getRelValue() + ( tdata.rowAtPoint(e.getPoint()) << 4 ) ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) );
           }
         }
         catch( java.io.IOException e1 ) {}
@@ -706,7 +706,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       //The IO stream position.
       
-      SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
+      if(!Virtual){SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;}
+      else{SRow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.EPos() & 0xF ) + 1;}
       
       ECol = SCol; ERow = SRow;
       
