@@ -53,6 +53,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   //Byte buffer between io stream. Updated based on number of rows that can be displayed.
 
   private byte[] data = new byte[0];
+  private byte[] udata = new byte[0];
   
   //A modified scroll bar for VHex. Allows for a much larger scroll area of very big data.
 
@@ -98,7 +99,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       //Byte to hex.
       
-      if ( ScrollBar.End > ( ScrollBar.getRelValue() + row + col ) && ( ScrollBar.getRelValue() + row + col ) >= 0 )
+      if ( udata[row + col] >= 0 )
       {
         return ( String.format( "%1$02X", data[ row + col ] ) );
       }
@@ -138,6 +139,10 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       //Read data at scroll position.
 
+      int rd = 0, pos = 0, end = 0;
+      
+      udata=new byte[data.length];
+
       try
       {
         //If offset mode use offset seek.
@@ -145,11 +150,23 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         if (!Virtual)
         {
           IOStream.Events = false;
+
+          //backup current address. 
           
           long t = IOStream.getFilePointer();
+
+          //seek scroll bar position.
           
           IOStream.seek( ScrollBar.getRelValue() );
-          IOStream.read( data );
+
+          rd = IOStream.read( data ); rd = rd < 0 ? 0 : rd;
+
+          //Undefined bytes only happen at end of file. Or failed to read file.
+
+          for( int i = rd; i < data.length; i++ ) { udata[i] = -1; }
+
+          //back to original pos.
+
           IOStream.seek( t );
           
           IOStream.Events = true;
@@ -160,11 +177,34 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         else
         {
           IOStream.Events = false;
-          
+
+          //backup current address.          
+
           long t = IOStream.getVirtualPointer();
+
+          while( pos < data.length )
+          {
+            //seek scroll bar position.
           
-          IOStream.seekV( ScrollBar.getRelValue() );
-          IOStream.readV( data );
+            IOStream.seekV( ScrollBar.getRelValue() + pos );
+
+            //Number of bytes that can be read before no data.
+
+            rd = IOStream.readV( data, pos, data.length - pos ); rd = rd < 0 ? 0 : rd; pos += rd;
+
+            //Calculate undefined space to next address.
+
+            end = (int)(IOStream.nextV() - IOStream.getVirtualPointer()) + pos;
+
+            if( end > data.length || end <= 0 ) { end=data.length; }
+
+            //space that is undefined.
+
+            for( int i = pos; i < end; i++ ) { udata[i] = -1; } pos = end;
+          }
+
+          //back to original pos.
+
           IOStream.seekV( t );
           
           IOStream.Events = true;
