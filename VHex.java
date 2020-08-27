@@ -177,6 +177,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   }
   
   //Modified scrollbar class to Handel the full 64 bit address space.
+  //Because java treats a long as singifiyed we can't go any bigger than 0x7FFFFFFFFFFFFFFF.
   
   private class LongScrollBar extends JScrollBar
   {
@@ -192,6 +193,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     @Override public void setValue( int v )
     {
       isScrolling = true;
+      
+      if( ( RPos + v ) < 0 ) { v = 0; } //Scroll less than 0. Creates a out of bounds error.
       
       if( tdata.isEditing() ) { tdata.getCellEditor().stopCellEditing(); }
       
@@ -264,7 +267,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       //Byte value columns.
 
-      else { c.setMinWidth( pixelWidth * 2 + 2 ); c.setMaxWidth( pixelWidth * 2 + 2 ); }
+      else { c.setMinWidth( pixelWidth * 2 + 3 ); c.setMaxWidth( pixelWidth * 2 + 3 ); }
 
       //Add column.
 
@@ -500,7 +503,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
           }
           else
           {
-            IOStream.seekV( ( ScrollBar.getRelValue() + ( tdata.rowAtPoint(e.getPoint()) << 4 ) ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) );
+            IOStream.seekV( ( ScrollBar.getRelValue() + ( ( tdata.rowAtPoint(e.getPoint()) << 4 ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) ) ) );
           }
         }
         catch( java.io.IOException e1 ) {}
@@ -646,7 +649,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     if( tdata.isEditing() ) { tdata.getCellEditor().stopCellEditing(); }
     
-    ScrollBar.setValue( ScrollBar.getRelValue() + ( e.getUnitsToScroll() << 4 ) );
+    ScrollBar.setValue( Math.max( 0, ScrollBar.getRelValue() + ( e.getUnitsToScroll() << 4 ) ) );
   }
   
   //On seeking a new position in stream.
