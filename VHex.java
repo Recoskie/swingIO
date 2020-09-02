@@ -53,7 +53,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   //Byte buffer between io stream. Updated based on number of rows that can be displayed.
 
   private byte[] data = new byte[0];
-  private byte[] udata = new byte[0];
+  private boolean[] udata = new boolean[0]; //Bytes that could not be read.
   
   //A modified scroll bar for VHex. Allows for a much larger scroll area of very big data.
 
@@ -99,7 +99,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       //Byte to hex.
       
-      if ( udata[row + col] >= 0 )
+      if ( !udata[row + col] )
       {
         return ( String.format( "%1$02X", data[ row + col ] ) );
       }
@@ -141,7 +141,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       int rd = 0, pos = 0, end = 0;
       
-      udata=new byte[data.length];
+      udata = new boolean[data.length];
 
       try
       {
@@ -163,7 +163,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
           //Undefined bytes only happen at end of file. Or failed to read file.
 
-          for( int i = rd; i < data.length; i++ ) { udata[i] = -1; }
+          for( int i = rd; i < data.length; i++ ) { udata[i] = true; }
 
           //back to original pos.
 
@@ -200,7 +200,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
             //space that is undefined.
 
-            for( int i = pos; i < end; i++ ) { udata[i] = -1; } pos = end;
+            for( int i = pos; i < end; i++ ) { udata[i] = true; } pos = end;
           }
 
           //back to original pos.
@@ -300,9 +300,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         java.awt.FontMetrics fm = tdata.getFontMetrics(tdata.getFont());
         pixelWidth = fm.stringWidth("C");
       }
-    
+      
       //Address column.
-
+      
       if (super.getColumnCount() == 0) { c.setMinWidth( pixelWidth * 18 + 2 ); c.setMaxWidth( pixelWidth * 18 + 2 ); }
 
       //Byte value columns.
@@ -706,8 +706,14 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       //The IO stream position.
       
-      if(!Virtual){SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;}
-      else{SRow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.EPos() & 0xF ) + 1;}
+      if(!Virtual)
+      {
+        SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
+      }
+      else
+      {
+        SRow = e.SPosV() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
+      }
       
       ECol = SCol; ERow = SRow;
       
@@ -733,8 +739,16 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     SelectC = new Color( 33, 255, 33 );
     
-    SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
-    ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
+    if(!Virtual)
+    {
+      SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
+      ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
+    }
+    else
+    {
+      SRow = e.SPosV() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
+      ERow = e.EPosV() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPosV() & 0xF );
+    }
     
     //The editors row position.
       
@@ -755,8 +769,16 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     SelectC = new Color( 255, 33, 33 );
     
-    SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
-    ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
+    if(!Virtual)
+    {
+      SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
+      ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
+    }
+    else
+    {
+      SRow = e.SPosV() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
+      ERow = e.EPosV() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPosV() & 0xF ); 
+    }
     
     //The editors row position.
       
