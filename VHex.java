@@ -217,16 +217,17 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   }
   
   //Modified scrollbar class to Handel the full 64 bit address space.
-  //Because java treats a long as singifiyed we can't go any bigger than 0x7FFFFFFFFFFFFFFF.
+  //Virtual space is treated as unsigned. Except physical file positions.
   
   private class LongScrollBar extends JScrollBar
   {
     private long End = 0, VisibleEnd = 0, Pos = 0, RPos = 0;
     private int RelUp = 0x70000000, RelDown = 0x10000000;
+    private int ov = 0;
     
     public LongScrollBar(int orientation, int value, int visible, int minimum, long maximum)
     {
-      super( orientation, value, visible, minimum, maximum > 0x7FFFFFF0 ? 0x7FFFFFF0 : (int) ( ( maximum + 15 ) & 0x7FFFFFF0 ) );
+      super( orientation, value, visible, minimum, Long.compareUnsigned( maximum, 0x7FFFFFF0 ) > 0 ? 0x7FFFFFF0 : (int) ( ( maximum + 15 ) & 0x7FFFFFF0 ) );
       End = maximum; VisibleEnd = End - visible;
     }
     
@@ -234,30 +235,25 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       isScrolling = true;
       
-      if( ( RPos + v ) < 0 ) { v = 0; } //Scroll less than 0. Creates a out of bounds error.
-      
       if( tdata.isEditing() ) { tdata.getCellEditor().stopCellEditing(); }
       
-      if( VisibleEnd > 0x7FFFFFF0 )
+      if( Long.compareUnsigned( VisibleEnd, 0x7FFFFFF0 ) > 0 )
       {
-        if( Pos < ( VisibleEnd - 0x7FFFFFF0 ) && v >= RelUp )
+        if( ov < v )
         {
           Pos += ( v - ( 0x7FFFFFF0 - RelUp ) ); v = RelUp;
         }
         
-        else if( Pos > 0  && v <= RelDown )
+        else if( ov > v )
         {
           Pos -= ( RelDown - v ); v = RelDown;
         }
-        
-        if( Pos > ( VisibleEnd - 0x7FFFFFF0 ) ){ Pos = ( VisibleEnd - 0x7FFFFFF0 ) & 0x7FFFFFFFFFFFFFF0L; }
-        
-        else if( Pos < 0 ) { Pos = 0; }
       }
       
-      RPos = Pos + ( v & 0x7FFFFFF0 );
+      RPos = v + Pos; ov = v;
       
-      super.setValue( v & 0x7FFFFFF0 ); TModel.updateData();
+      super.setValue( v & 0x7FFFFFF0 );
+      TModel.updateData();
       
       isScrolling = false;
     }
@@ -273,9 +269,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       RPos = v;
       
-      if( v > RelUp ) { Pos = v - RelUp; v = RelUp; }
+      if( Long.compareUnsigned( v, RelUp ) > 0 ) { Pos = v - RelUp; v = RelUp; }
       
-      if( v > VisibleEnd ){ v = VisibleEnd; }
+      if( Long.compareUnsigned( v, VisibleEnd ) > 0 ){ v = VisibleEnd; }
       
       super.setValue( ( (int) v ) & 0x7FFFFFF0 ); TModel.updateData();
       
@@ -524,7 +520,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     //Setup Scroll bar system.
 
-    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0x7FFFFFFFFFFFFFFFL : IOStream.length() ); } catch (java.io.IOException e) {}
+    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() ); } catch (java.io.IOException e) {}
     
     ScrollBar.setUnitIncrement( 16 );
 
@@ -702,7 +698,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       //The editors row position.
       
-      long CRow = ScrollBar.getRelValue() & 0x7FFFFFFFFFFFFFF0L;
+      long CRow = ScrollBar.getRelValue() & 0xFFFFFFFFFFFFFFF0L;
       
       //The IO stream position.
       
@@ -712,7 +708,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       }
       else
       {
-        SRow = e.SPosV() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
+        SRow = e.SPosV() & 0xFFFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
       }
       
       ECol = SCol; ERow = SRow;
@@ -746,8 +742,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
     else
     {
-      SRow = e.SPosV() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
-      ERow = e.EPosV() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPosV() & 0xF );
+      SRow = e.SPosV() & 0xFFFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
+      ERow = e.EPosV() & 0xFFFFFFFFFFFFFFF0L; ECol = ( e.EPosV() & 0xF );
     }
     
     //The editors row position.
@@ -776,13 +772,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
     else
     {
-      SRow = e.SPosV() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
-      ERow = e.EPosV() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPosV() & 0xF ); 
+      SRow = e.SPosV() & 0xFFFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
+      ERow = e.EPosV() & 0xFFFFFFFFFFFFFFF0L; ECol = ( e.EPosV() & 0xF ); 
     }
     
     //The editors row position.
       
-    long CRow = ScrollBar.getRelValue() & 0x7FFFFFFFFFFFFFF0L;
+    long CRow = ScrollBar.getRelValue() & 0xFFFFFFFFFFFFFFF0L;
       
     //Only update scroll bar, and data if on outside of the editor.
     
