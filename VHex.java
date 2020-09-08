@@ -194,13 +194,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
             //Calculate undefined space to next address.
 
-            end = (int)(IOStream.nextV() - IOStream.getVirtualPointer()) + pos;
+            end = (int)IOStream.endV();
 
-            if( end > data.length || end <= 0 ) { end=data.length; }
+            if( ( end + pos ) > data.length || end <= 0 ) { end = data.length - pos; }
 
             //space that is undefined.
 
-            for( int i = pos; i < end; i++ ) { udata[i] = true; } pos = end;
+            for( int i = 0; i < end; pos++, i++ ) { udata[pos] = true; }
           }
 
           //back to original pos.
@@ -221,7 +221,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   
   private class LongScrollBar extends JScrollBar
   {
-    private long End = 0, VisibleEnd = 0, Pos = 0, RPos = 0;
+    private long End = 0, VisibleEnd = 0, Pos = 0;
     private int RelUp = 0x70000000, RelDown = 0x10000000;
     private int ov = 0;
     
@@ -239,21 +239,17 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       if( Long.compareUnsigned( VisibleEnd, 0x7FFFFFF0 ) > 0 )
       {
-        if( ov < v )
-        {
-          Pos += ( v - ( 0x7FFFFFF0 - RelUp ) ); v = RelUp;
-        }
+        Pos += ( v - ov );
+
+        if( ov < v && v > RelUp ) {  v = RelUp; }
         
-        else if( ov > v )
-        {
-          Pos -= ( RelDown - v ); v = RelDown;
-        }
+        else if( ov > v && v < RelDown ) { v = RelDown; }
       }
+      else { Pos = v; }
+
+      ov = v;
       
-      RPos = v + Pos; ov = v;
-      
-      super.setValue( v & 0x7FFFFFF0 );
-      TModel.updateData();
+      super.setValue( v & 0x7FFFFFF0 ); TModel.updateData();
       
       isScrolling = false;
     }
@@ -267,18 +263,20 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       isScrolling = true;
       
-      RPos = v;
+      Pos = v; v &= 0x7FFFFFF0;
       
-      if( Long.compareUnsigned( v, RelUp ) > 0 ) { Pos = v - RelUp; v = RelUp; }
+      if( v > RelUp ) { v = RelUp; }
       
-      if( Long.compareUnsigned( v, VisibleEnd ) > 0 ){ v = VisibleEnd; }
+      if( v < VisibleEnd ){ v = VisibleEnd; }
+
+      ov = (int)v;
       
       super.setValue( ( (int) v ) & 0x7FFFFFF0 ); TModel.updateData();
       
       isScrolling = false;
     }
     
-    public long getRelValue() { return( RPos ); }
+    public long getRelValue() { return( Pos ); }
   }
 
   //The table column size.
