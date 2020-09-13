@@ -71,7 +71,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         //backup current address. 
           
-        long t = IOStream.getFilePointer();
+        t = IOStream.getFilePointer();
           
         IOStream.seek( offset );
 
@@ -81,7 +81,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         //restore address.
 
-        IOStream.seek( t );
+        IOStream.seek( t ); t = 0;
           
         IOStream.Events = true;
       }
@@ -94,7 +94,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         //backup current address.          
 
-        long t = IOStream.getVirtualPointer();
+        t = IOStream.getVirtualPointer();
 
         while( pos < data.length )
         {
@@ -111,7 +111,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         //restore address.
 
-        IOStream.seekV( t );
+        IOStream.seekV( t ); t = 0;
           
         IOStream.Events = true;
       }
@@ -259,7 +259,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       x += ( ( ecellX ) & 1 ) * ( cell / 2 );
 
-      int y = ( ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
+      y = ( ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
 
       g.fillRect( x, y, cell / 2, pheight );
     }
@@ -293,7 +293,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       //Cell alignment.
 
-      int x = ( ( ( ecellX / 2 ) + 1 ) * cell ) + addcol;
+      x = ( ( ( ecellX / 2 ) + 1 ) * cell ) + addcol;
 
       //Character alignment.
       
@@ -303,7 +303,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       x -= 2;
 
-      int y = ( ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
+      y = ( ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
 
       g.drawLine( x, y, x, y + pheight );
     }
@@ -320,7 +320,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Selection Handler.
 
-  private int y = 0, y2 = 0;
+  private int x = 0, y = 0;
   private long t = 0;
 
   private void Selection(Graphics g)
@@ -329,21 +329,21 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( sel > sele) { t = sele; sele = sel; sel = t; }
     
-    y = (int)(sel - offset) >> 4; y2 = (int)(sele - offset) >> 4; y2 -= y; y2 += 1; y += 1;
+    x = (int)(sel - offset) >> 4; y = (int)(sele - offset) >> 4; y -= x; y += 1; x += 1;
 
-    if( y < 1 ){ y2 += y - 1; y = 1; }
+    if( x < 1 ){ y += x - 1; x = 1; }
 
-    if( y > 0 ) { g.fillRect( addcol, y * pheight, endw - addcol, y2 * pheight ); }
+    if( x > 0 ) { g.fillRect( addcol, x * pheight, endw - addcol, y * pheight ); }
 
     //Clear the start and end pos.
 
     g.setColor(Color.white);
 
-    if( sel - offset >= 0 ) { g.fillRect( addcol, y * pheight, (int)(sel & 0xF) * cell, pheight ); }
+    if( sel - offset >= 0 ) { g.fillRect( addcol, x * pheight, (int)(sel & 0xF) * cell, pheight ); }
 
-    y += y2 - 1; y2 = addcol + ( ( (int)sele + 1 ) & 0xF )  * cell;
+    x += y - 1; y = addcol + ( ( (int)sele + 1 ) & 0xF )  * cell;
     
-    if( sele - offset >= 0 ) { g.fillRect( y2, y * pheight, endw - y2, pheight ); }
+    if( sele - offset >= 0 ) { g.fillRect( y, x * pheight, endw - y, pheight ); }
 
     if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
   }
@@ -374,13 +374,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     if( !emode )
     {
-      int x = e.getX(); if( x > endw ) { x = endw - 1; }
+      x = e.getX(); if( x > endw ) { x = endw - 1; }
 
       x -= addcol; if ( x < 0 ) { x = 0; }
 
       x = ( x / cell ) & 0xF;
     
-      int y = ( e.getY() / pheight ) - 1; y <<= 4;
+      y = ( e.getY() / pheight ) - 1; y <<= 4;
 
       sele = x + y + offset; repaint();
     }
@@ -394,13 +394,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void mousePressed(MouseEvent e)
   {
-    int x = e.getX(); if( x > endw ) { x = endw - 1; }
+    x = e.getX(); if( x > endw ) { x = endw - 1; }
 
     x -= addcol; if ( x < 0 ) { x = 0; }
 
     x = ( x / cell ) & 0xF;
     
-    int y = ( e.getY() / pheight ) - 1; y <<= 4;
+    y = ( e.getY() / pheight ) - 1; y <<= 4;
 
     sel = x + y + offset;
 
