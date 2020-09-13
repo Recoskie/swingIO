@@ -259,7 +259,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       x += ( ( ecellX ) & 1 ) * ( cell / 2 );
 
-      int y = ( ecellY + 1 ) * pheight;
+      int y = ( ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
 
       g.fillRect( x, y, cell / 2, pheight );
     }
@@ -303,7 +303,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       x -= 2;
 
-      int y = ( ecellY + 1 ) * pheight;
+      int y = ( ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
 
       g.drawLine( x, y, x, y + pheight );
     }
@@ -372,15 +372,18 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void mouseDragged(MouseEvent e)
   {
-    int x = e.getX(); if( x > endw ) { x = endw - 1; }
+    if( !emode )
+    {
+      int x = e.getX(); if( x > endw ) { x = endw - 1; }
 
-    x -= addcol; if ( x < 0 ) { x = 0; }
+      x -= addcol; if ( x < 0 ) { x = 0; }
 
-    x = ( x / cell ) & 0xF;
+      x = ( x / cell ) & 0xF;
     
-    int y = ( e.getY() / pheight ) - 1; y <<= 4;
+      int y = ( e.getY() / pheight ) - 1; y <<= 4;
 
-    sele = x + y + offset; repaint();
+      sele = x + y + offset; repaint();
+    }
   }
 
   public void mouseExited(MouseEvent e) { }
@@ -407,7 +410,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       ecellX = (  ecellX * 2 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell / 2 ) );
 
-      ecellY = e.getY() / pheight; ecellY -= 1;
+      ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1;
     }
 
     try{ if( !Virtual ) { IOStream.seek( x + y + offset ); } else { IOStream.seekV( x + y + offset ); } } catch( Exception er ) { }
@@ -423,7 +426,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       ecellX = (  ecellX * 2 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell / 2 ) );
 
-      ecellY = e.getY() / pheight; ecellY -= 1;
+      ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1;
 
       setCursor(new Cursor(Cursor.TEXT_CURSOR));
 
