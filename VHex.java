@@ -301,11 +301,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.setColor(Color.white);
 
-    if( ( sel & 0xF ) >= 0x1 ) { g.fillRect( addcol, y * pheight, (int)(sel & 0xF) * cell, pheight ); }
+    if( sel - offset >= 0 ) { g.fillRect( addcol, y * pheight, (int)(sel & 0xF) * cell, pheight ); }
 
     y += y2 - 1; y2 = addcol + ( ( (int)sele + 1 ) & 0xF )  * cell;
     
-    if( (sele & 0xF) <= 0xE ) { g.fillRect( y2, y * pheight, endw - y2, pheight ); }
+    if( sele - offset >= 0 ) { g.fillRect( y2, y * pheight, endw - y2, pheight ); }
 
     if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
   }
@@ -314,7 +314,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   
   @Override public void mouseWheelMoved(MouseWheelEvent e)
   { 
-    ScrollBar.setValue( Math.max( 0, offset + ( e.getUnitsToScroll() << 4 ) ) );
+    offset += e.getUnitsToScroll() << 4; if( !Virtual && offset < 0 ) { offset = 0; } updateData();
   }
 
   public void mouseMoved(MouseEvent e) { }
@@ -368,9 +368,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = sel; } else { sel = e.SPosV(); sele = sel; }
 
-    if( ( offset - sel ) > Rows * 16 ) { offset = sel; }
+    if( ( sel - offset ) >= Rows * 16 ) { offset = sel; updateData(); }
 
-    repaint();
+    else{ repaint(); }
   }
   
   //On Reading bytes in stream.
@@ -378,6 +378,12 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   public void onRead( IOEvent e )
   {
     SelectC = new Color( 33, 255, 33, 128 );
+
+    if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
+
+    if( ( sel - offset ) >= Rows * 16 ) { offset = sel; updateData(); }
+
+    else { repaint(); }
   }
   
   //On writing bytes in stream.
@@ -385,5 +391,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   public void onWrite( IOEvent e )
   {
     SelectC = new Color( 255, 33, 33, 128 );
+
+    if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
+
+    if( ( sel - offset ) > Rows * 16 ) { offset = sel; }
+
+    updateData();
   }
 }
