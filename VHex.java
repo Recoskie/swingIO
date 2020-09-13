@@ -1,54 +1,24 @@
 import javax.swing.*;
-import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
-import javax.swing.event.*;
-import javax.swing.text.*;
 
-public class VHex extends JComponent implements IOEventListener, MouseWheelListener
+public class VHex extends JComponent implements IOEventListener, MouseWheelListener, MouseMotionListener, MouseListener
 {
   //The file system stream reference that will be used.
 
   private RandomAccessFileV IOStream;
-  
-  //Convert IO stream into row or col position.
-  
-  private long getRowPos()
-  {
-    try { return ( ( Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer() ) & 0xFFFFFFFFFFFFFFF0L ); } catch ( java.io.IOException e ) { }
-    return( -1 );
-  }
-  
-  private long getColPos()
-  {
-    try { return ( ( Virtual ? IOStream.getVirtualPointer() : IOStream.getFilePointer() ) & 0x0F ); } catch ( java.io.IOException e ) { }
-    return( -1 );
-  }
 
   //Monitor when scrolling.
   
   private boolean isScrolling = false;
 
-  //The table which will update as you scroll through the IO stream.
-
-  private JTable tdata;
-  
-  //The table model.
-
-  AddressModel TModel;
-
   //Number of rows in draw space.
 
-  private int TRows = 0;
-
-  //The currently selected rows and cols in table. Relative to scroll bar.
-
-  private long SRow = 0, SCol = 0;
-  private long ERow = 0, ECol = 0;
+  private int Rows = 0;
   
   //Selection Color.
   
-  private Color SelectC = new Color(57, 105, 138);
+  private Color SelectC = new Color(57, 105, 138, 128);
   
   //Byte buffer between io stream. Updated based on number of rows that can be displayed.
 
@@ -63,157 +33,90 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   private boolean Virtual = false;
 
-  //The main hex editor display.
+  //Pixel width and height of default font.
 
-  private class AddressModel extends AbstractTableModel
+  private int pwidth = 0, pheight = 0;
+
+  //Hex editor offset.
+
+  private long offset = 0;
+
+  //Start and end index of selected bytes.
+
+  private long sel = 0, sele = 0;
+
+  //The address column.
+
+  private String s = "Offset (h)";
+
+  //Update data.
+
+  public void updateData()
   {
-    private String[] Offset = new String[] { "Offset (h)", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F" };
+    //Read data at scroll position.
 
-    //If virtual mode.
+    int rd = 0, pos = 0, end = 0;
+      
+    udata = new boolean[data.length];
 
-    public AddressModel( boolean mode ) { if (mode) { Offset[0] = "Virtual Address (h)"; } }
-
-    //Get number of columns.
-
-    public int getColumnCount() { return ( Offset.length ); }
-
-    //Get number of rows in Display area.
-
-    public int getRowCount() { return ( TRows ); }
-
-    //Get the column.
-
-    public String getColumnName( int col ) { return ( Offset[ col ] ); }
-
-    //The address col and byte values.
-
-    public Object getValueAt( int row, int col )
+    try
     {
-      //Calculate position.
-      
-      row <<= 4; col -= 1;
-      
-      //First col is address.
-      
-      if ( col < 0 ) { return ( "0x" + String.format( "%1$016X", ScrollBar.getRelValue() + row ) ); }
+      //If offset mode use offset seek.
 
-      //Byte to hex.
-      
-      if ( !udata[row + col] )
+      if (!Virtual)
       {
-        return ( String.format( "%1$02X", data[ row + col ] ) );
+        IOStream.Events = false;
+
+        //backup current address. 
+          
+        long t = IOStream.getFilePointer();
+          
+        IOStream.seek( offset );
+
+        rd = IOStream.read( data ); rd = rd < 0 ? 0 : rd;
+
+        for( int i = rd; i < data.length; i++ ) { udata[i] = true; }
+
+        //restore address.
+
+        IOStream.seek( t );
+          
+        IOStream.Events = true;
       }
+
+      //If Virtual use Virtual map seek.
+
       else
       {
-        return("??");
-      }
-    }
+        IOStream.Events = false;
 
-    //JTable uses this method to determine the default render/editor for each cell.
+        //backup current address.          
 
-    public Class getColumnClass( int c ) { return ( getValueAt( 0, c ).getClass() ); }
+        long t = IOStream.getVirtualPointer();
 
-    //First column is not editable as it is the address.
-
-    public boolean isCellEditable( int row, int col )
-    {
-      return ( !TModel.getValueAt( row, col ).equals("??") && col >= 1 );
-    }
-
-    //Setting values writes directly to the IO stream.
-
-    public void setValueAt( Object value, int row, int col )
-    {
-      int b = Integer.parseInt((String) value, 16);
-
-      data[ ( row << 4 ) + ( col - 1 ) ] = (byte)b;
-
-      //Write the new byte value to stream.
-
-      try { if ( Virtual ) { IOStream.writeV(b); } else { IOStream.write(b); } } catch (java.io.IOException e1) {}
-    }
-
-    //Update table data.
-
-    public void updateData()
-    {
-      //Read data at scroll position.
-
-      int rd = 0, pos = 0, end = 0;
-      
-      udata = new boolean[data.length];
-
-      try
-      {
-        //If offset mode use offset seek.
-
-        if (!Virtual)
+        while( pos < data.length )
         {
-          IOStream.Events = false;
+          IOStream.seekV( offset + pos );
 
-          //backup current address. 
-          
-          long t = IOStream.getFilePointer();
+          rd = IOStream.readV( data, pos, data.length - pos ); rd = rd < 0 ? 0 : rd; pos += rd;
 
-          //seek scroll bar position.
-          
-          IOStream.seek( ScrollBar.getRelValue() );
+          end = (int)IOStream.endV();
 
-          rd = IOStream.read( data ); rd = rd < 0 ? 0 : rd;
+          if( ( end + pos ) > data.length || end <= 0 ) { end = data.length - pos; }
 
-          //Undefined bytes only happen at end of file. Or failed to read file.
-
-          for( int i = rd; i < data.length; i++ ) { udata[i] = true; }
-
-          //back to original pos.
-
-          IOStream.seek( t );
-          
-          IOStream.Events = true;
+          for( int i = 0; i < end; pos++, i++ ) { udata[pos] = true; }
         }
 
-        //If Virtual use Virtual map seek.
+        //restore address.
 
-        else
-        {
-          IOStream.Events = false;
-
-          //backup current address.          
-
-          long t = IOStream.getVirtualPointer();
-
-          while( pos < data.length )
-          {
-            //seek scroll bar position.
+        IOStream.seekV( t );
           
-            IOStream.seekV( ScrollBar.getRelValue() + pos );
-
-            //Number of bytes that can be read before no data.
-
-            rd = IOStream.readV( data, pos, data.length - pos ); rd = rd < 0 ? 0 : rd; pos += rd;
-
-            //Calculate undefined space to next address.
-
-            end = (int)IOStream.endV();
-
-            if( ( end + pos ) > data.length || end <= 0 ) { end = data.length - pos; }
-
-            //space that is undefined.
-
-            for( int i = 0; i < end; pos++, i++ ) { udata[pos] = true; }
-          }
-
-          //back to original pos.
-
-          IOStream.seekV( t );
-          
-          IOStream.Events = true;
-        }
+        IOStream.Events = true;
       }
-      catch (java.io.IOException e1) {}
-
-      fireTableDataChanged();
     }
+    catch (java.io.IOException e1) {}
+
+    repaint();
   }
   
   //Modified scrollbar class to Handel the full 64 bit address space.
@@ -221,7 +124,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   
   private class LongScrollBar extends JScrollBar
   {
-    private long End = 0, VisibleEnd = 0, Pos = 0;
+    private long End = 0, VisibleEnd = 0;
     private int RelUp = 0x70000000, RelDown = 0x10000000;
     private int ov = 0;
     
@@ -233,37 +136,35 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     
     @Override public void setValue( int v )
     {
-      isScrolling = true;
-      
-      if( tdata.isEditing() ) { tdata.getCellEditor().stopCellEditing(); }
-      
       if( Long.compareUnsigned( VisibleEnd, 0x7FFFFFF0 ) > 0 )
       {
-        Pos += ( v - ov );
+        offset += ( v - ov );
 
         if( ov < v && v > RelUp ) {  v = RelUp; }
         
         else if( ov > v && v < RelDown ) { v = RelDown; }
       }
-      else { Pos = v; }
+      else { offset = v; }
 
       ov = v;
       
-      super.setValue( v & 0x7FFFFFF0 ); TModel.updateData();
+      super.setValue( v & 0x7FFFFFF0 );
       
       isScrolling = false;
+
+      updateData();
     }
     
     @Override public void setVisibleAmount( int v )
     {
-      super.setVisibleAmount( v ); VisibleEnd = End - v; setValue( Pos + super.getValue() );
+      super.setVisibleAmount( v ); VisibleEnd = End - v; setValue( offset + super.getValue() );
     }
     
     public void setValue( long v )
     {
       isScrolling = true;
       
-      Pos = v; v &= 0x7FFFFFF0;
+      offset = v; v &= 0x7FFFFFF0;
       
       if( v > RelUp ) { v = RelUp; }
       
@@ -271,208 +172,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       ov = (int)v;
       
-      super.setValue( ( (int) v ) & 0x7FFFFFF0 ); TModel.updateData();
+      super.setValue( ( (int) v ) & 0x7FFFFFF0 );
       
       isScrolling = false;
-    }
-    
-    public long getRelValue() { return( Pos ); }
-  }
-
-  //The table column size.
-
-  private class AddressColumnModel extends DefaultTableColumnModel
-  {
-    int pixelWidth = 0;
-  
-    public void addColumn(TableColumn c)
-    {
-      //Init width.
-      
-      if( pixelWidth <= 0 )
-      {
-        java.awt.FontMetrics fm = tdata.getFontMetrics(tdata.getFont());
-        pixelWidth = fm.stringWidth("C");
-      }
-      
-      //Address column.
-      
-      if (super.getColumnCount() == 0) { c.setMinWidth( pixelWidth * 18 + 2 ); c.setMaxWidth( pixelWidth * 18 + 2 ); }
-
-      //Byte value columns.
-
-      else { c.setMinWidth( pixelWidth * 2 + 3 ); c.setMaxWidth( pixelWidth * 2 + 3 ); }
-
-      //Add column.
-
-      super.addColumn(c);
-    }
-  }
-
-  //A simple cell editor for my hex editor.
-
-  private class CellHexEditor extends DefaultCellEditor
-  {
-    final JTextField textField; //The table text component.
-
-    private int pos = 0; //Character position in cell.
-
-    private int Row = 0, Col = 0; //Current cell.
-
-    boolean CellMove = false; //Moving cells.
-
-    private class HexDocument extends PlainDocument
-    {
-      @Override public void replace(int offset, int length, String text, AttributeSet attrs) throws BadLocationException
-      {
-        //Validate hex input.
-
-        char c = text.toUpperCase().charAt(0);
-
-        if (c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39)
-        {
-          pos = offset + 1;
-          super.replace(offset, length, text, attrs);
-          UpdatePos();
-        }
-
-        textField.select(pos, pos + 1);
-      }
-    }
-
-    //Move left, or right. Cursor position.
-
-    private void UpdatePos()
-    {
-      //Move the editor while entering hex.
-
-      if (pos < 0)
-      {
-        Col -= 1;
-
-        if (Col <= 0)
-        {
-          Col = 16;
-
-          if (Row == 0)
-          {
-            ScrollBar.setValue(ScrollBar.getValue() - 1);
-          }
-          else
-          {
-            Row -= 1;
-          }
-        }
-
-        tdata.editCellAt( Row, Col ); tdata.getEditorComponent().requestFocus();
-        pos = 1; CellMove = true; return;
-      }
-
-      if (pos > 1)
-      {
-        Col += 1;
-
-        if (Col >= 17)
-        {
-          Col = 1;
-
-          if (Row >= (TRows - 1))
-          {
-            ScrollBar.setValue(ScrollBar.getValue() + 1);
-          }
-          else
-          {
-            Row += 1;
-          }
-        }
-
-        tdata.editCellAt( Row, Col ); tdata.getEditorComponent().requestFocus();
-        pos = 0; CellMove = true; return;
-      }
-
-      //Select the current hex digit user is editing.
-
-      CellMove = false;
-    }
-
-    public CellHexEditor()
-    {
-      super(new JTextField());
-      textField = (JTextField) getComponent();
-
-      textField.addFocusListener(new FocusAdapter()
-      {
-        @Override public void focusGained(FocusEvent e)
-        {
-          if (!CellMove)
-          {
-            pos = Math.max(0, textField.getCaretPosition() - 1);
-          }
-          textField.select(pos, pos + 1);
-          TModel.fireTableDataChanged();
-        }
-      });
-
-      textField.addMouseListener(new MouseAdapter()
-      {
-        @Override public void mousePressed(MouseEvent e)
-        {
-          pos = Math.max(0, textField.getCaretPosition() - 1);
-          textField.select(pos, pos + 1);
-        }
-
-        @Override public void mouseReleased(MouseEvent e)
-        {
-          pos = Math.max(0, textField.getCaretPosition() - 1);
-          textField.select(pos, pos + 1);
-        }
-
-        @Override public void mouseClicked(MouseEvent e)
-        {
-          pos = Math.max(0, textField.getCaretPosition() - 1);
-          textField.select(pos, pos + 1);
-        }
-      });
-
-      textField.addKeyListener(new KeyListener()
-      {
-        public void keyPressed(KeyEvent e)
-        {
-          int c = e.getKeyCode();
-
-          if (c == e.VK_LEFT) { pos -= 1; } else if (c == e.VK_RIGHT) { pos += 1; }
-
-          UpdatePos();
-        }
-
-        public void keyReleased(KeyEvent e)
-        {
-          textField.select(pos, pos + 1);
-        }
-
-        public void keyTyped(KeyEvent e) {}
-      });
-
-      textField.setDocument(new HexDocument());
-    }
-
-    @Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column)
-    {
-      final JTextField textField = (JTextField) super.getTableCellEditorComponent(table, value, isSelected, row, column);
-
-      Row = row; Col = column; return (textField);
-    }
-  }
-
-  //Only recalculate number of table rows on resize. Speeds up table rendering.
-
-  private class CalcRows extends ComponentAdapter
-  {
-    public void componentResized(ComponentEvent e)
-    {
-      TRows = ( ( tdata.getHeight() - 8 ) / tdata.getRowHeight()) + 1;
-      data = java.util.Arrays.copyOf( data, TRows * 16 );
-      ScrollBar.setVisibleAmount( TRows << 4 );
     }
   }
   
@@ -486,35 +188,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     //Register this component to update on IO system calls.
     
-    f.addIOEventListener( this );
-    
-    //Row resize calculation.
-    
-    super.addComponentListener( new CalcRows() );
-
-    Virtual = mode;
+    f.addIOEventListener( this ); Virtual = mode; if( mode ) { s = "Virtual Address (h)"; }
 
     //Reference the file stream.
 
     IOStream = f;
-
-    TModel = new AddressModel( mode );
-
-    tdata = new JTable( TModel, new AddressColumnModel() );
-
-    tdata.createDefaultColumnsFromModel();
-
-    //Columns can not be re-arranged.
-
-    tdata.getTableHeader().setReorderingAllowed( false );
-
-    //Do not allow resizing of cells.
-
-    tdata.getTableHeader().setResizingAllowed( false );
-
-    //Set the table editor.
-
-    tdata.setDefaultEditor( String.class, new CellHexEditor() );
 
     //Setup Scroll bar system.
 
@@ -524,266 +202,188 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     //Custom selection handling.
 
-    tdata.addMouseListener(new MouseAdapter()
-    {
-      @Override public void mousePressed(MouseEvent e)
-      {
-        if( TModel.getValueAt( tdata.rowAtPoint(e.getPoint()), tdata.columnAtPoint(e.getPoint()) ).equals("??") ) { return; }
-        try
-        {
-          if( !Virtual )
-          {
-            IOStream.seek( ( ScrollBar.getRelValue() + ( tdata.rowAtPoint(e.getPoint()) << 4 ) ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) );
-          }
-          else
-          {
-            IOStream.seekV( ( ScrollBar.getRelValue() + ( tdata.rowAtPoint(e.getPoint()) << 4 ) ) + ( tdata.columnAtPoint(e.getPoint()) - 1 ) );
-          }
-        }
-        catch( java.io.IOException e1 ) {}
-      }
-    });
+    super.addMouseListener(this); super.addMouseMotionListener(this);
 
-    tdata.addMouseMotionListener(new MouseMotionAdapter()
-    {
-      @Override public void mouseDragged(MouseEvent e)
-      {
-        //Automatically scroll while selecting bytes.
-
-        if (e.getY() > tdata.getHeight())
-        {
-          ScrollBar.setValue( ScrollBar.getValue() + 64 );
-          ERow = ScrollBar.getRelValue() + ( ( TRows - 1 ) << 4 );
-        }
-        else if ( e.getY() < 0 )
-        {
-          ScrollBar.setValue( ScrollBar.getValue() - 64 );
-          ERow = ScrollBar.getRelValue();
-        }
-        else
-        {
-          ERow = ScrollBar.getRelValue() + ( tdata.rowAtPoint(e.getPoint()) << 4 );
-          ECol = tdata.columnAtPoint(e.getPoint());
-        }
-        
-        TModel.fireTableDataChanged();
-      }
-    });
-
-    //Custom table selection rendering.
-
-    tdata.setDefaultRenderer( Object.class, new DefaultTableCellRenderer()
-    {
-      @Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int r, int column)
-      {
-        final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, r, column);
-
-        long row = ( r << 4 ) + ScrollBar.getRelValue();
-
-        //Alternate shades between rows.
-
-        if (row % 2 == 0)
-        {
-          c.setBackground(Color.white);
-          c.setForeground(Color.black);
-        }
-        else
-        {
-          c.setBackground(new Color(242, 242, 242));
-          c.setForeground(Color.black);
-        }
-
-        //If selection is in same row
-
-        if (SRow == ERow && row == SRow)
-        {
-          if (SCol > ECol && column >= ECol && column <= SCol)
-          {
-            c.setBackground( SelectC );
-            c.setForeground(Color.white);
-          }
-          else if (column <= ECol && column >= SCol)
-          {
-            c.setBackground( SelectC );
-            c.setForeground(Color.white);
-          }
-        }
-
-        //Selection start to end.
-
-        else if (SRow <= ERow)
-        {
-          if (row == SRow && column >= SCol)
-          {
-            c.setBackground( SelectC );
-            c.setForeground(Color.white);
-          }
-          else if (row == ERow && column <= ECol)
-          {
-            c.setBackground( SelectC );
-            c.setForeground(Color.white);
-          }
-          else if (row > SRow && row < ERow)
-          {
-            c.setBackground( SelectC );
-            c.setForeground(Color.white);
-          }
-        }
-
-        //Selection end to start.
-
-        else if (SRow >= ERow)
-        {
-          if (row == SRow && column <= SCol)
-          {
-            c.setBackground( SelectC );
-            c.setForeground(Color.white);
-          }
-          else if (row < SRow && row > ERow)
-          {
-            c.setBackground( SelectC );
-            c.setForeground(Color.white);
-          }
-          else if (row == ERow && column >= ECol)
-          {
-            c.setBackground( SelectC );
-            c.setForeground(Color.white);
-          }
-        }
-
-        //First col is address.
-
-        if (column == 0)
-        {
-          c.setBackground(Color.black);
-          c.setForeground(Color.white);
-        }
-
-        return (c);
-      }
-    });
-    
     //Add scroll wheal handler.
     
-    tdata.addMouseWheelListener(this);
+    super.addMouseWheelListener(this);
 
     //Add everything to main component.
 
-    super.setLayout(new BorderLayout());
-    super.add(tdata.getTableHeader(), BorderLayout.PAGE_START);
-    super.add(tdata, BorderLayout.CENTER);
-    super.add(ScrollBar, BorderLayout.EAST);
+    super.setLayout(new BorderLayout()); super.add(ScrollBar, BorderLayout.EAST);
+  }
 
-    TModel.updateData();
+  //Basic graphics.
+
+  private int index = 0, cell = 0, addcol = 0, endw = 0;
+  private int cpos = 0;
+
+  public void paintComponent(Graphics g)
+  {
+    //Initialize once.
+
+    if( pwidth == 0 )
+    {
+      java.awt.FontMetrics fm = g.getFontMetrics(g.getFont());
+
+      pwidth = fm.stringWidth("C"); pheight = fm.getHeight();
+
+      cell = pwidth * 2 + 1;
+      
+      addcol = pwidth * 18 + 2;
+
+      endw = cell * 16 + addcol;
+
+      cpos = ( addcol / 2 ) - ( fm.stringWidth(s) / 2 );
+    }
+
+    if( Rows != ( getHeight() / pheight ) ) { Rows = getHeight() / pheight; data = java.util.Arrays.copyOf( data, Rows * 16 ); updateData(); return; }
+
+    //Begin Graphics for hex editor component.
+
+    g.setColor(new Color(238,238,238)); g.fillRect(0,0,pheight,endw);
+
+    g.setColor(Color.white);
+
+    g.fillRect(addcol,pheight,endw-addcol,getHeight());
+
+    Selection( g );
+
+    g.setColor(Color.black);
+
+    g.drawString( s, cpos, pheight - 3 );
+
+    g.fillRect(0,pheight,addcol,getHeight());
+
+    for(int i1 = addcol, index = 0; i1 < endw; i1 += cell, index++ )
+    {
+      g.drawString( String.format( "%1$02X", index ), i1 + 1 , pheight - 3 ); g.drawLine( i1, pheight, i1, getHeight() );
+    }
+
+    g.drawLine( endw, pheight, endw, getHeight() );
+		
+    for(int i1 = pheight, index = 0; i1 < getHeight(); i1 += pheight )
+    {
+      g.drawLine( addcol, i1, endw, i1 );
+
+      for(int i2 = addcol; i2 < endw; i2 += cell, index++ )
+      {
+        g.drawString( udata[index] ? "??" : String.format( "%1$02X", data[index] ), i2 + 1, i1 + pheight - 3 );
+      }
+    }
+
+    g.setColor(Color.white);
+
+    for(int i1 = pheight, index = 0; i1 < getHeight(); i1 += pheight, index += 16 )
+    {
+      g.drawString( "0x" + String.format( "%1$016X", offset + index), 3, i1 + pheight - 3 );
+    }
+  }
+
+  //Selection Handler.
+
+  private int y = 0, y2 = 0;
+  private long t = 0;
+
+  private void Selection(Graphics g)
+  {
+    g.setColor(SelectC);
+
+    if( sel > sele) { t = sele; sele = sel; sel = t; }
+    
+    y = (int)(sel - offset) >> 4; y2 = (int)(sele - offset) >> 4; y2 -= y; y2 += 1; y += 1;
+
+    if( y < 1 ){ y2 += y - 1; y = 1; }
+
+    if( y > 0 ) { g.fillRect( addcol, y * pheight, endw - addcol, y2 * pheight ); }
+
+    //Clear the start and end pos.
+
+    g.setColor(Color.white);
+
+    if( ( sel & 0xF ) >= 0x1 ) { g.fillRect( addcol, y * pheight, (int)(sel & 0xF) * cell, pheight ); }
+
+    y += y2 - 1; y2 = addcol + ( ( (int)sele + 1 ) & 0xF )  * cell;
+    
+    if( (sele & 0xF) <= 0xE ) { g.fillRect( y2, y * pheight, endw - y2, pheight ); }
+
+    if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
   }
   
   //Adjust scroll bar on scroll wheal.
   
   @Override public void mouseWheelMoved(MouseWheelEvent e)
+  { 
+    ScrollBar.setValue( Math.max( 0, offset + ( e.getUnitsToScroll() << 4 ) ) );
+  }
+
+  public void mouseMoved(MouseEvent e) { }
+
+  public void mouseDragged(MouseEvent e)
   {
-    if( tdata.isEditing() ) { tdata.getCellEditor().stopCellEditing(); }
+    int x = e.getX(); if( x > endw ) { x = endw - 1; }
+
+    x -= addcol; if ( x < 0 ) { x = 0; }
+
+    x = ( x / cell ) & 0xF;
     
-    ScrollBar.setValue( Math.max( 0, ScrollBar.getRelValue() + ( e.getUnitsToScroll() << 4 ) ) );
+    int y = ( e.getY() / pheight ) - 1; y <<= 4;
+
+    sele = x + y + offset; repaint();
+  }
+
+  public void mouseExited(MouseEvent e) { }
+
+  public void mouseEntered(MouseEvent e) { }
+
+  public void mouseReleased(MouseEvent e) { }
+
+  public void mousePressed(MouseEvent e)
+  {
+    int x = e.getX(); if( x > endw ) { x = endw - 1; }
+
+    x -= addcol; if ( x < 0 ) { x = 0; }
+
+    x = ( x / cell ) & 0xF;
+    
+    int y = ( e.getY() / pheight ) - 1; y <<= 4;
+
+    sel = x + y + offset;
+
+    try{ if( !Virtual ) { IOStream.seek( x + y + offset ); } else { IOStream.seekV( x + y + offset ); } } catch( Exception er ) { }
+  }
+
+  //Begin hex edit mode.
+
+  public void mouseClicked(MouseEvent e)
+  {
+    
   }
   
   //On seeking a new position in stream.
   
   public void onSeek( IOEvent e )
   {
-    SelectC = new Color( 57, 105, 138 );
-    
-    if( !isScrolling )
-    {
-      //The editors row position.
-      
-      long CRow = ScrollBar.getRelValue() & 0xFFFFFFFFFFFFFFF0L;
-      
-      //The IO stream position.
-      
-      if(!Virtual)
-      {
-        SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
-      }
-      else
-      {
-        SRow = e.SPosV() & 0xFFFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
-      }
-      
-      ECol = SCol; ERow = SRow;
-      
-      //Only update scroll bar, and data if on outside of the editor.
-      
-      if( SRow < CRow || SRow >= ( CRow + ( TRows << 4 ) ) )
-      {
-        ScrollBar.setValue( SRow );
-      }
-      
-      //Else fire table rendering changed for selection.
-      
-      else
-      {
-        TModel.fireTableDataChanged();
-      }
-    }
+    SelectC = new Color( 57, 105, 138, 128 );
+
+    if( !Virtual ) { sel = e.SPos(); sele = sel; } else { sel = e.SPosV(); sele = sel; }
+
+    if( ( offset - sel ) > Rows * 16 ) { offset = sel; }
+
+    repaint();
   }
   
   //On Reading bytes in stream.
   
   public void onRead( IOEvent e )
   {
-    SelectC = new Color( 33, 255, 33 );
-    
-    if(!Virtual)
-    {
-      SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
-      ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
-    }
-    else
-    {
-      SRow = e.SPosV() & 0xFFFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
-      ERow = e.EPosV() & 0xFFFFFFFFFFFFFFF0L; ECol = ( e.EPosV() & 0xF );
-    }
-    
-    //The editors row position.
-      
-    long CRow = ScrollBar.getRelValue() & 0x7FFFFFFFFFFFFFF0L;
-      
-    //Only update scroll bar, and data if on outside of the editor.
-    
-    if( SRow <= CRow ) { ScrollBar.setValue( SRow ); }
-      
-    if( ERow >= ( CRow + ( TRows << 4 ) ) ) { ScrollBar.setValue( ERow - ( ( TRows - 1 ) << 4 ) ); }
-    
-    TModel.fireTableDataChanged();
+    SelectC = new Color( 33, 255, 33, 128 );
   }
   
   //On writing bytes in stream.
   
   public void onWrite( IOEvent e )
   {
-    SelectC = new Color( 255, 33, 33 );
-    
-    if(!Virtual)
-    {
-      SRow = e.SPos() & 0x7FFFFFFFFFFFFFF0L; SCol = ( e.SPos() & 0xF ) + 1;
-      ERow = e.EPos() & 0x7FFFFFFFFFFFFFF0L; ECol = ( e.EPos() & 0xF );
-    }
-    else
-    {
-      SRow = e.SPosV() & 0xFFFFFFFFFFFFFFF0L; SCol = ( e.SPosV() & 0xF ) + 1;
-      ERow = e.EPosV() & 0xFFFFFFFFFFFFFFF0L; ECol = ( e.EPosV() & 0xF ); 
-    }
-    
-    //The editors row position.
-      
-    long CRow = ScrollBar.getRelValue() & 0xFFFFFFFFFFFFFFF0L;
-      
-    //Only update scroll bar, and data if on outside of the editor.
-    
-    if( SRow <= CRow ) { ScrollBar.setValue( SRow ); }
-      
-    if( ERow >= ( CRow + ( TRows << 4 ) ) ) { ScrollBar.setValue( ERow - ( ( TRows - 1 ) << 4 ) ); }
-    
-    else { TModel.updateData(); }
+    SelectC = new Color( 255, 33, 33, 128 );
   }
 }
