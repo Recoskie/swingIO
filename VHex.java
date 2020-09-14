@@ -2,7 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public class VHex extends JComponent implements IOEventListener, MouseWheelListener, MouseMotionListener, MouseListener, Runnable
+public class VHex extends JComponent implements IOEventListener, MouseWheelListener, MouseMotionListener, MouseListener, KeyListener, Runnable
 {
   //The file system stream reference that will be used.
 
@@ -48,7 +48,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   //Edit mode.
 
   private boolean emode = false;
-  private int ecellX = 0, ecellY = 0;
+  private long ecellX = 0, ecellY = 0;
   private boolean drawc = true;
 
   //Update data.
@@ -204,10 +204,16 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     
     super.addMouseWheelListener(this);
 
+    //Key listener for edit mode.
+
+    super.addKeyListener(this);
+
     //Add everything to main component.
 
     super.setLayout(new BorderLayout()); super.add(ScrollBar, BorderLayout.EAST);
   }
+
+  public void addNotify() { super.addNotify(); requestFocus(); }
 
   //Basic graphics.
 
@@ -255,13 +261,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       //Cell alignment.
 
-      x = ( ( ( ecellX / 2 ) ) * cell ) + addcol;
+      x = ( ( ( (int)ecellX / 2 ) ) * cell ) + addcol;
 
       //Character alignment.
       
-      x += ( ( ecellX ) & 1 ) * ( cell / 2 );
+      x += ( ( (int)ecellX ) & 1 ) * ( cell / 2 );
 
-      y = ( ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
+      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
 
       g.fillRect( x, y, cell / 2, pheight );
     }
@@ -295,17 +301,17 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       //Cell alignment.
 
-      x = ( ( ( ecellX / 2 ) + 1 ) * cell ) + addcol;
+      x = ( ( ( (int)ecellX / 2 ) + 1 ) * cell ) + addcol;
 
       //Character alignment.
       
-      x -= ( ( ecellX + 1 ) & 1 ) * ( cell / 2 );
+      x -= ( ( (int)ecellX + 1 ) & 1 ) * ( cell / 2 );
 
       //Border.
       
       x -= 2;
 
-      y = ( ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
+      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
 
       g.drawLine( x, y, x, y + pheight );
     }
@@ -434,6 +440,56 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       emode = true; repaint();
     }
   }
+
+   public void keyReleased(KeyEvent e) { }
+
+   public void keyPressed(KeyEvent e)
+   {
+     if( emode )
+     {
+       int c = e.getKeyCode();
+
+       if (c == e.VK_UP)
+       {
+         ecellY -= 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch(Exception er) { }
+       }
+       else if (c == e.VK_DOWN)
+       {
+         ecellY += 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch(Exception er) { }
+       }
+
+       else if (c == e.VK_LEFT)
+       {
+         ecellX -= 1; if( ecellX < 0 ){ ecellX = 31; ecellY -= 1; }
+
+         try
+         {
+           if( ecellX % 2 == 1 ) { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
+
+           else { repaint(); }
+
+         } catch(Exception er) { }
+       }
+       else if (c == e.VK_RIGHT)
+       {
+         ecellX += 1; if( ecellX > 31 ){ ecellX = 0; ecellY += 1; }
+
+         try
+         {
+           if( ecellX % 2 == 0 ) { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
+
+           else { repaint(); }
+
+         } catch(Exception er) { }
+       }
+       else
+       {
+       
+       }
+     }
+   }
+
+   public void keyTyped(KeyEvent e) { }
   
   //On seeking a new position in stream.
   
@@ -443,7 +499,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = sel; } else { sel = e.SPosV(); sele = sel; }
 
-    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel; updateData(); } else{ repaint(); }
+    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel; updateData(); } else { repaint(); }
   }
   
   //On Reading bytes in stream.
