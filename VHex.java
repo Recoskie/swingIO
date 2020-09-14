@@ -330,11 +330,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     g.setColor(SelectC);
 
-    long sele2 = sele, sel2 = sel;
-
-    if( sel2 > sele2 ) { t = sele2; sele2 = sel2; sel2 = t; }
+    if( sel > sele ) { t = sele; sele = sel; sel = t; }
     
-    x = (int)(sel2 - offset) >> 4; y = (int)(sele2 - offset) >> 4; y -= x; y += 1; x += 1;
+    x = (int)(sel - offset) >> 4; y = (int)(sele - offset) >> 4; y -= x; y += 1; x += 1;
 
     if( x < 1 ){ y += x - 1; x = 1; }
 
@@ -344,9 +342,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.setColor(Color.white);
 
-    if( sel2 - offset >= 0 ) { g.fillRect( addcol, x * pheight, (int)(sel2 & 0xF) * cell, pheight ); }
+    if( sel - offset >= 0 ) { g.fillRect( addcol, x * pheight, (int)(sel & 0xF) * cell, pheight ); }
 
-    x += y - 1; y = addcol + ( ( (int)sele2 + 1 ) & 0xF )  * cell;
+    x += y - 1; y = addcol + ( ( (int)sele + 1 ) & 0xF )  * cell;
     
     if( y > addcol ) { g.fillRect( y, x * pheight, endw - y, pheight ); }
 
@@ -354,6 +352,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       g.fillRect( (int)( addcol + ( ecellX >> 1 ) * cell ), (int)( ( ecellY - ( offset >> 4 ) + 1 ) * pheight ), cell, pheight );
     }
+
+    if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
   }
   
   //Adjust scroll bar on scroll wheal.
@@ -378,8 +378,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
   }
 
-  private int slide = 0;
-
   public void mouseDragged( MouseEvent e )
   {
     if( !emode )
@@ -392,25 +390,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     
       y = ( e.getY() / pheight ) - 1; y <<= 4;
 
-      //Slide Selection animation.
-
-      if( ( x + y ) >= Rows << 4 )
-      {
-        offset += 16; y = ( Rows - 1 ) << 4;
-
-        if( slide == 0 ) { new Thread(this).start(); }
-        
-        slide = 1;
-      }
-      if ( y < 0 )
-      {
-        if( offset > 0 || Virtual ) { offset -= 16; } y = 0;
-      
-        if( slide == 0 ) { new Thread(this).start(); }
-        
-        slide = -1;
-      }
-
       sele = x + y + offset;
       
       repaint();
@@ -419,9 +398,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void mouseExited( MouseEvent e ) { }
 
-  public void mouseEntered( MouseEvent e ) { slide = 0; }
+  public void mouseEntered( MouseEvent e ) { }
 
-  public void mouseReleased( MouseEvent e ) { slide = 0; }
+  public void mouseReleased( MouseEvent e ) { }
 
   public void mousePressed( MouseEvent e )
   {
@@ -437,14 +416,16 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if (emode && e.getX() > addcol && e.getX() < endw && e.getY() > pheight)
     {
-      checkEdit(); ecellX = ( e.getX() - addcol ) / cell;
+      checkEdit();
+
+      ecellX = ( e.getX() - addcol ) / cell;
 
       ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
 
       ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1; canEdit();
     }
 
-    try{ if( !Virtual ) { IOStream.seek( sel ); } else { IOStream.seekV( sel ); } } catch( Exception er ) { }
+    try{ if( !Virtual ) { IOStream.seek( x + y + offset ); } else { IOStream.seekV( x + y + offset ); } } catch( Exception er ) { }
   }
 
   //Begin hex edit mode.
@@ -463,7 +444,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       {
         setCursor(new Cursor(Cursor.TEXT_CURSOR));
 
-        if( !emode ) { new Thread(this).start(); }
+        try{ if( !emode ) { new Thread(this).start(); } } catch ( Exception er ) {}
 
         emode = true; repaint();
       }
@@ -599,33 +580,5 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Text cursor line animation.
 
-  public void run() { try { while( emode ) { Thread.sleep(500); drawc = !drawc; repaint(); } } catch( Exception er ) {}
-    
-    //Slide animation.
-
-    if( slide != 0 )
-    {
-      while( slide < 0 )
-      {
-        if( offset > 0 || Virtual ) { offset -= 16; }
-        
-        sele -= 16;
-      
-        try { Thread.sleep( 20 ); } catch( Exception er ) { }
-      
-        updateData();
-      }
-
-      while( slide > 0 )
-      {
-        offset += 16; sele += 16;
-      
-        try { Thread.sleep( 20 ); } catch( Exception er ) { }
-      
-        updateData();
-      }
-
-      slide = 0;
-    }
-  }
+  public void run() { try { while( emode ) { Thread.sleep(500); drawc = !drawc; repaint(); } } catch( Exception er ) {} }
 }
