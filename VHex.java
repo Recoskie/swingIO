@@ -467,7 +467,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
    //Exit edit mode if byte is undefined.
 
-   private void canEdit() { x = (int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset ); if( x < data.length && x > 0 && udata[x] ) { endEdit(); } }
+   private void canEdit() { int x = (int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset ); if( x < data.length && x > 0 && udata[x] ) { endEdit(); } }
 
    //End edit mode safely.
 
