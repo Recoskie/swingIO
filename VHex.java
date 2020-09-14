@@ -562,7 +562,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
-    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); } else { repaint(); }
+    if( ( sel - offset ) >= Rows << 4 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); } else { repaint(); }
   }
   
   //On writing bytes in stream.
@@ -573,7 +573,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
-    if( ( sel - offset ) > Rows * 16 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; }
+    if( ( sel - offset ) > Rows << 4 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; }
 
     updateData();
   }
