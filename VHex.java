@@ -421,9 +421,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       ecellX = ( e.getX() - addcol ) / cell;
 
-      ecellX = (  ecellX * 2 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell / 2 ) );
+      ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
 
-      ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1;
+      ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1; canEdit();
     }
 
     try{ if( !Virtual ) { IOStream.seek( x + y + offset ); } else { IOStream.seekV( x + y + offset ); } } catch( Exception er ) { }
@@ -437,15 +437,18 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       ecellX = ( e.getX() - addcol ) / cell;
 
-      ecellX = (  ecellX * 2 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell / 2 ) );
+      ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
 
       ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1;
 
-      setCursor(new Cursor(Cursor.TEXT_CURSOR));
+      if( !udata[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] )
+      {
+        setCursor(new Cursor(Cursor.TEXT_CURSOR));
 
-      try{ if( !emode ) { new Thread(this).start(); } } catch ( Exception er ) {}
+        try{ if( !emode ) { new Thread(this).start(); } } catch ( Exception er ) {}
 
-      emode = true; repaint();
+        emode = true; repaint();
+      }
     }
   }
 
@@ -463,9 +466,15 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
      }
    }
 
+   //Exit edit mode if byte is undefined.
+
+   private void canEdit() { if( udata[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] ) { endEdit(); } }
+
    //End edit mode safely.
 
    public void endEdit() { if( emode ) { emode = false; checkEdit(); setCursor(new Cursor(Cursor.DEFAULT_CURSOR)); repaint(); } }
+
+   //Editor controls.
 
    public void keyPressed( KeyEvent e )
    {
@@ -475,11 +484,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
        if (c == e.VK_UP)
        {
-         checkEdit(); ecellY -= 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
+         checkEdit(); ecellY -= 1; canEdit(); try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
        }
        else if (c == e.VK_DOWN)
        {
-         checkEdit(); ecellY += 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
+         checkEdit(); ecellY += 1; canEdit(); try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
        }
 
        else if (c == e.VK_LEFT)
@@ -490,7 +499,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
          try
          {
-           if( ecellX % 2 == 1 ) { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
+           if( ecellX % 2 == 1 ) { canEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
 
            else { repaint(); }
 
@@ -504,7 +513,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
          try
          {
-           if( ecellX % 2 == 0 ) { checkEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
+           if( ecellX % 2 == 0 ) { canEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
 
            else { repaint(); }
 
