@@ -416,6 +416,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if (emode && e.getX() > addcol && e.getX() < endw && e.getY() > pheight)
     {
+      checkEdit();
+
       ecellX = ( e.getX() - addcol ) / cell;
 
       ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
