@@ -453,6 +453,20 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
    private boolean wr = false;
 
+   //Writes modified byte before moving.
+
+   private void checkEdit()
+   {
+     if( wr )
+     {
+       try { IOStream.write( data[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] ); wr = false; } catch( Exception er ) {}
+     }
+   }
+
+   //End edit mode safely.
+
+   public void endEdit() { if( emode ) { emode = false; checkEdit(); setCursor(new Cursor(Cursor.DEFAULT_CURSOR)); repaint(); } }
+
    public void keyPressed( KeyEvent e )
    {
      if( emode )
@@ -461,15 +475,17 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
        if (c == e.VK_UP)
        {
-         ecellY -= 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
+         checkEdit(); ecellY -= 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
        }
        else if (c == e.VK_DOWN)
        {
-         ecellY += 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
+         checkEdit(); ecellY += 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
        }
 
        else if (c == e.VK_LEFT)
        {
+         if( ecellX % 2 == 0 ) { checkEdit(); }
+
          ecellX -= 1; if( ecellX < 0 ){ ecellX = 31; ecellY -= 1; }
 
          try
@@ -482,31 +498,19 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
        }
        else if (c == e.VK_RIGHT)
        {
+         if( ecellX % 2 == 1 ) { checkEdit(); }
+
          ecellX += 1; if( ecellX > 31 ){ ecellX = 0; ecellY += 1; }
 
          try
          {
-           if( ecellX % 2 == 0 ) { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
+           if( ecellX % 2 == 0 ) { checkEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
 
            else { repaint(); }
 
          } catch( Exception er ) { }
        }
-       else if( c == e.VK_ENTER || c == e.VK_ESCAPE )
-       {
-         //Write modified byte before exiting edit mode.
-
-         emode = false;
-
-         if( wr )
-         {
-           try { IOStream.write( data[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] ); } catch( Exception er ) {}
-         }
-
-         setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-
-         repaint();
-       }
+       else if( c == e.VK_ENTER || c == e.VK_ESCAPE ) { endEdit(); }
        else
        {
          //Validate hex input.
@@ -546,7 +550,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   
   public void onRead( IOEvent e )
   {
-    emode = false; SelectC = new Color( 33, 255, 33, 128 );
+    endEdit(); SelectC = new Color( 33, 255, 33, 128 );
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
