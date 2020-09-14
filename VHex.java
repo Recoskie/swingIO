@@ -116,7 +116,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         IOStream.Events = true;
       }
     }
-    catch (java.io.IOException e1) {}
+    catch ( Exception er ) {}
 
     repaint();
   }
@@ -217,9 +217,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Basic graphics.
 
-  private int index = 0, cell = 0, addcol = 0, endw = 0;
-  private int cpos = 0;
-  private int x = 0, y = 0;
+  private int index = 0, cell = 0, addcol = 0, endw = 0, cpos = 0, x = 0, y = 0;
   private long t = 0;
 
   public void paintComponent( Graphics g )
@@ -380,6 +378,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
   }
 
+  private int slide = 0;
+
   public void mouseDragged( MouseEvent e )
   {
     if( !emode )
@@ -392,15 +392,36 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     
       y = ( e.getY() / pheight ) - 1; y <<= 4;
 
-      sele = x + y + offset; repaint();
+      //Slide Selection animation.
+
+      if( ( x + y ) >= Rows << 4 )
+      {
+        offset += 16; y = ( Rows - 1 ) << 4;
+
+        if( slide == 0 ) { new Thread(this).start(); }
+        
+        slide = 1;
+      }
+      if ( y < 0 )
+      {
+        offset -= 16; y = 0;
+      
+        if( slide == 0 ) { new Thread(this).start(); }
+        
+        slide = -1;
+      }
+
+      sel = x + y + offset;
+      
+      repaint();
     }
   }
 
   public void mouseExited( MouseEvent e ) { }
 
-  public void mouseEntered( MouseEvent e ) { }
+  public void mouseEntered( MouseEvent e ) { slide = 0; }
 
-  public void mouseReleased( MouseEvent e ) { }
+  public void mouseReleased( MouseEvent e ) { slide = 0; }
 
   public void mousePressed( MouseEvent e )
   {
@@ -416,9 +437,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if (emode && e.getX() > addcol && e.getX() < endw && e.getY() > pheight)
     {
-      checkEdit();
-
-      ecellX = ( e.getX() - addcol ) / cell;
+      checkEdit(); ecellX = ( e.getX() - addcol ) / cell;
 
       ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
 
@@ -444,7 +463,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       {
         setCursor(new Cursor(Cursor.TEXT_CURSOR));
 
-        try{ if( !emode ) { new Thread(this).start(); } } catch ( Exception er ) {}
+        if( !emode ) { new Thread(this).start(); }
 
         emode = true; repaint();
       }
@@ -580,5 +599,45 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Text cursor line animation.
 
-  public void run() { try { while( emode ) { Thread.sleep(500); drawc = !drawc; repaint(); } } catch( Exception er ) {} }
+  public void run() { try { while( emode ) { Thread.sleep(500); drawc = !drawc; repaint(); } } catch( Exception er ) {}
+    
+    //Slide animation.
+
+    if( slide != 0 )
+    {
+      y = (int)getLocationOnScreen().y;
+
+      while( slide < 0 )
+      {
+        offset -= 16;
+        
+        t = 0; if( sel > sele) { t = sele; sele = sel; sel = t; }
+        
+        sel -= 16;
+
+        if( t != 0 ) { t = sele; sele = sel; sel = t; }
+      
+        try { Thread.sleep( 20 ); } catch( Exception er ) { }
+      
+        updateData();
+      }
+
+      while( slide > 0 )
+      {
+        offset += 16;
+        
+        t = 0; if( sel > sele) { t = sele; sele = sel; sel = t; }
+
+        sele += 16;
+
+        if( t != 0 ) { t = sele; sele = sel; sel = t; }
+      
+        try { Thread.sleep( 20 ); } catch( Exception er ) { }
+      
+        updateData();
+      }
+
+      slide = 0;
+    }
+  }
 }
