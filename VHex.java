@@ -81,7 +81,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         //restore address.
 
-        IOStream.seek( t ); t = 0;
+        IOStream.seek( t );
           
         IOStream.Events = true;
       }
@@ -111,7 +111,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         //restore address.
 
-        IOStream.seekV( t ); t = 0;
+        IOStream.seekV( t );
           
         IOStream.Events = true;
       }
@@ -213,6 +213,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   private int index = 0, cell = 0, addcol = 0, endw = 0;
   private int cpos = 0;
+  private int x = 0, y = 0;
+  private long t = 0;
 
   public void paintComponent(Graphics g)
   {
@@ -249,11 +251,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     else
     {
-      g.setColor(SelectC);
+      g.setColor(new Color( 57, 105, 138, 128 ));
 
       //Cell alignment.
 
-      int x = ( ( ( ecellX / 2 ) ) * cell ) + addcol;
+      x = ( ( ( ecellX / 2 ) ) * cell ) + addcol;
 
       //Character alignment.
       
@@ -319,9 +321,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   }
 
   //Selection Handler.
-
-  private int x = 0, y = 0;
-  private long t = 0;
 
   private void Selection(Graphics g)
   {
@@ -444,29 +443,25 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = sel; } else { sel = e.SPosV(); sele = sel; }
 
-    if( ( sel - offset ) >= Rows * 16 ) { offset = sel; updateData(); }
-
-    else{ repaint(); }
+    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel; updateData(); } else{ repaint(); }
   }
   
   //On Reading bytes in stream.
   
   public void onRead( IOEvent e )
   {
-    SelectC = new Color( 33, 255, 33, 128 );
+    emode = false; SelectC = new Color( 33, 255, 33, 128 );
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
-    if( ( sel - offset ) >= Rows * 16 ) { offset = sel; updateData(); }
-
-    else { repaint(); }
+    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel; updateData(); } else { repaint(); }
   }
   
   //On writing bytes in stream.
   
   public void onWrite( IOEvent e )
   {
-    SelectC = new Color( 255, 33, 33, 128 );
+    emode = false; SelectC = new Color( 255, 33, 33, 128 );
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
