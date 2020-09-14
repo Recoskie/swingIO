@@ -49,7 +49,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   private boolean emode = false;
   private long ecellX = 0, ecellY = 0;
-  private boolean drawc = true;
+  private boolean drawc = false;
 
   //Update data.
 
@@ -208,7 +208,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     super.addKeyListener(this);
 
-    //Add everything to main component.
+    //Add scroll bar to component.
 
     super.setLayout(new BorderLayout()); super.add(ScrollBar, BorderLayout.EAST);
   }
@@ -222,7 +222,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   private int x = 0, y = 0;
   private long t = 0;
 
-  public void paintComponent(Graphics g)
+  public void paintComponent( Graphics g )
   {
     //Initialize once.
 
@@ -328,7 +328,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Selection Handler.
 
-  private void Selection(Graphics g)
+  private void Selection( Graphics g )
   {
     g.setColor(SelectC);
 
@@ -355,12 +355,12 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   
   //Adjust scroll bar on scroll wheal.
   
-  @Override public void mouseWheelMoved(MouseWheelEvent e)
+  public void mouseWheelMoved( MouseWheelEvent e )
   {
     offset += e.getUnitsToScroll() << 4; if( !Virtual && offset < 0 ) { offset = 0; } updateData();
   }
 
-  public void mouseMoved(MouseEvent e)
+  public void mouseMoved( MouseEvent e )
   {
     if(emode)
     {
@@ -375,7 +375,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
   }
 
-  public void mouseDragged(MouseEvent e)
+  public void mouseDragged( MouseEvent e )
   {
     if( !emode )
     {
@@ -391,13 +391,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
   }
 
-  public void mouseExited(MouseEvent e) { }
+  public void mouseExited( MouseEvent e ) { }
 
-  public void mouseEntered(MouseEvent e) { }
+  public void mouseEntered( MouseEvent e ) { }
 
-  public void mouseReleased(MouseEvent e) { }
+  public void mouseReleased( MouseEvent e ) { }
 
-  public void mousePressed(MouseEvent e)
+  public void mousePressed( MouseEvent e )
   {
     x = e.getX(); if( x > endw ) { x = endw - 1; }
 
@@ -423,7 +423,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Begin hex edit mode.
 
-  public void mouseClicked(MouseEvent e)
+  public void mouseClicked( MouseEvent e )
   {
     if( e.getClickCount() == 2 && e.getX() > addcol && e.getX() < endw && e.getY() > pheight )
     {
@@ -441,9 +441,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
   }
 
-   public void keyReleased(KeyEvent e) { }
+   public void keyReleased( KeyEvent e ) { }
 
-   public void keyPressed(KeyEvent e)
+   public void keyPressed( KeyEvent e )
    {
      if( emode )
      {
@@ -451,11 +451,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
        if (c == e.VK_UP)
        {
-         ecellY -= 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch(Exception er) { }
+         ecellY -= 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
        }
        else if (c == e.VK_DOWN)
        {
-         ecellY += 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch(Exception er) { }
+         ecellY += 1; try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
        }
 
        else if (c == e.VK_LEFT)
@@ -468,7 +468,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
            else { repaint(); }
 
-         } catch(Exception er) { }
+         } catch( Exception er ) { }
        }
        else if (c == e.VK_RIGHT)
        {
@@ -480,16 +480,31 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
            else { repaint(); }
 
-         } catch(Exception er) { }
+         } catch( Exception er ) { }
        }
        else
        {
-       
+         //Validate hex input.
+
+         if (c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39)
+         {
+           c = c <= 0x39 ? c & 0x0F : c - 0x37;
+
+           x = (int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset );
+
+           data[x] = (byte)( ecellX & 1 ) > 0 ? (byte)( ( data[x] & 0xF0 ) | c ) : (byte) ( ( data[x] & 0x0F ) | c << 4 );
+
+           ecellX += 1; if( ecellX > 31 ){ ecellX = 0; ecellY += 1; }
+
+           try { if( ecellX % 2 == 0 ) { IOStream.write( data[x] ); } } catch( Exception er ) { }
+
+           repaint();
+         }
        }
      }
    }
 
-   public void keyTyped(KeyEvent e) { }
+   public void keyTyped( KeyEvent e ) { }
   
   //On seeking a new position in stream.
   
@@ -517,7 +532,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   
   public void onWrite( IOEvent e )
   {
-    emode = false; SelectC = new Color( 255, 33, 33, 128 );
+    SelectC = new Color( 255, 33, 33, 128 );
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
@@ -528,14 +543,5 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Text cursor line animation.
 
-  public void run()
-  {
-    try
-    { 
-      while(emode)
-      {
-        Thread.sleep(500); drawc = !drawc; repaint();
-      }
-    } catch( Exception er ) {}
-  }
+  public void run() { try { while( emode ) { Thread.sleep(500); drawc = !drawc; repaint(); } } catch( Exception er ) {} }
 }
