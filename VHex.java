@@ -232,16 +232,16 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       pwidth = fm.stringWidth("C"); pheight = fm.getHeight();
 
-      cell = pwidth * 2 + 1;
+      cell = ( pwidth << 1 ) + 1;
       
       addcol = pwidth * 18 + 2;
 
       endw = cell * 16 + addcol;
 
-      cpos = ( addcol / 2 ) - ( fm.stringWidth(s) / 2 );
+      cpos = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 );
     }
 
-    if( Rows != ( getHeight() / pheight ) ) { Rows = getHeight() / pheight; data = java.util.Arrays.copyOf( data, Rows * 16 ); updateData(); return; }
+    if( Rows != ( getHeight() / pheight ) ) { Rows = getHeight() / pheight; data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); return; }
 
     //Begin Graphics for hex editor component.
 
@@ -261,15 +261,15 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       //Cell alignment.
 
-      x = ( ( ( (int)ecellX / 2 ) ) * cell ) + addcol;
+      x = ( ( ( (int)ecellX >> 1 ) ) * cell ) + addcol;
 
       //Character alignment.
       
-      x += ( ( (int)ecellX ) & 1 ) * ( cell / 2 );
+      x += ( ( (int)ecellX ) & 1 ) * ( cell >> 1 );
 
       y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
 
-      g.fillRect( x, y, cell / 2, pheight );
+      g.fillRect( x, y, cell >> 1, pheight );
     }
 
     g.setColor(Color.black);
@@ -301,11 +301,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       //Cell alignment.
 
-      x = ( ( ( (int)ecellX / 2 ) + 1 ) * cell ) + addcol;
+      x = ( ( ( (int)ecellX >> 1 ) + 1 ) * cell ) + addcol;
 
       //Character alignment.
       
-      x -= ( ( (int)ecellX + 1 ) & 1 ) * ( cell / 2 );
+      x -= ( ( (int)ecellX + 1 ) & 1 ) * ( cell >> 1 );
 
       //Border.
       
@@ -467,7 +467,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
    //Exit edit mode if byte is undefined.
 
-   private void canEdit() { if( udata[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] ) { endEdit(); } }
+   private void canEdit() { x = (int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset ); if( x < data.length && x > 0 && udata[x] ) { endEdit(); } }
 
    //End edit mode safely.
 
@@ -562,6 +562,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
+    System.out.println("Read Pos = " + sel + ", End = " + sele + ", Virtual = " + Virtual + "");
+
     if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel; updateData(); } else { repaint(); }
   }
   
@@ -572,6 +574,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     SelectC = new Color( 255, 33, 33, 128 );
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
+
+    System.out.println("Write Pos = " + sel + ", End = " + sele + ", Virtual = " + Virtual + "");
 
     if( ( sel - offset ) > Rows * 16 ) { offset = sel; }
 
