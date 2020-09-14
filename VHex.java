@@ -320,7 +320,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.setColor(Color.white);
 
-    for(int i1 = pheight, index = -( (int)offset & 0xF ); i1 < getHeight(); i1 += pheight, index += 16 )
+    for(int i1 = pheight, index = 0; i1 < getHeight(); i1 += pheight, index += 16 )
     {
       g.drawString( "0x" + String.format( "%1$016X", offset + index), 3, i1 + pheight - 3 );
     }
@@ -551,7 +551,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = sel; } else { sel = e.SPosV(); sele = sel; }
 
-    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel; updateData(); } else { repaint(); }
+    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); } else { repaint(); }
   }
   
   //On Reading bytes in stream.
@@ -562,9 +562,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
-    System.out.println("Read Pos = " + sel + ", End = " + sele + ", Virtual = " + Virtual + "");
-
-    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel; updateData(); } else { repaint(); }
+    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); } else { repaint(); }
   }
   
   //On writing bytes in stream.
@@ -575,9 +573,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
-    System.out.println("Write Pos = " + sel + ", End = " + sele + ", Virtual = " + Virtual + "");
-
-    if( ( sel - offset ) > Rows * 16 ) { offset = sel; }
+    if( ( sel - offset ) > Rows * 16 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; }
 
     updateData();
   }
