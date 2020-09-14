@@ -330,9 +330,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     g.setColor(SelectC);
 
-    if( sel > sele) { t = sele; sele = sel; sel = t; }
+    long sele2 = sele, sel2 = sel;
+
+    if( sel2 > sele2 ) { t = sele2; sele2 = sel2; sel2 = t; }
     
-    x = (int)(sel - offset) >> 4; y = (int)(sele - offset) >> 4; y -= x; y += 1; x += 1;
+    x = (int)(sel2 - offset) >> 4; y = (int)(sele2 - offset) >> 4; y -= x; y += 1; x += 1;
 
     if( x < 1 ){ y += x - 1; x = 1; }
 
@@ -342,9 +344,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.setColor(Color.white);
 
-    if( sel - offset >= 0 ) { g.fillRect( addcol, x * pheight, (int)(sel & 0xF) * cell, pheight ); }
+    if( sel2 - offset >= 0 ) { g.fillRect( addcol, x * pheight, (int)(sel2 & 0xF) * cell, pheight ); }
 
-    x += y - 1; y = addcol + ( ( (int)sele + 1 ) & 0xF )  * cell;
+    x += y - 1; y = addcol + ( ( (int)sele2 + 1 ) & 0xF )  * cell;
     
     if( y > addcol ) { g.fillRect( y, x * pheight, endw - y, pheight ); }
 
@@ -352,8 +354,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       g.fillRect( (int)( addcol + ( ecellX >> 1 ) * cell ), (int)( ( ecellY - ( offset >> 4 ) + 1 ) * pheight ), cell, pheight );
     }
-
-    if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
   }
   
   //Adjust scroll bar on scroll wheal.
@@ -404,14 +404,14 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       }
       if ( y < 0 )
       {
-        offset -= 16; y = 0;
+        if( offset > 0 || Virtual ) { offset -= 16; } y = 0;
       
         if( slide == 0 ) { new Thread(this).start(); }
         
         slide = -1;
       }
 
-      sel = x + y + offset;
+      sele = x + y + offset;
       
       repaint();
     }
@@ -444,7 +444,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1; canEdit();
     }
 
-    try{ if( !Virtual ) { IOStream.seek( x + y + offset ); } else { IOStream.seekV( x + y + offset ); } } catch( Exception er ) { }
+    try{ if( !Virtual ) { IOStream.seek( sel ); } else { IOStream.seekV( sel ); } } catch( Exception er ) { }
   }
 
   //Begin hex edit mode.
@@ -605,17 +605,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( slide != 0 )
     {
-      y = (int)getLocationOnScreen().y;
-
       while( slide < 0 )
       {
-        offset -= 16;
+        if( offset > 0 || Virtual ) { offset -= 16; }
         
-        t = 0; if( sel > sele) { t = sele; sele = sel; sel = t; }
-        
-        sel -= 16;
-
-        if( t != 0 ) { t = sele; sele = sel; sel = t; }
+        sele -= 16;
       
         try { Thread.sleep( 20 ); } catch( Exception er ) { }
       
@@ -624,13 +618,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       while( slide > 0 )
       {
-        offset += 16;
-        
-        t = 0; if( sel > sele) { t = sele; sele = sel; sel = t; }
-
-        sele += 16;
-
-        if( t != 0 ) { t = sele; sele = sel; sel = t; }
+        offset += 16; sele += 16;
       
         try { Thread.sleep( 20 ); } catch( Exception er ) { }
       
