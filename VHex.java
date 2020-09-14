@@ -251,11 +251,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.fillRect(addcol,pheight,endw-addcol,getHeight());
 
-    if(!emode) { Selection( g ); }
-
     //Select character in edit mode.
 
-    else
+    Selection( g );
+
+    if( emode )
     {
       g.setColor(new Color( 57, 105, 138, 128 ));
 
@@ -348,7 +348,10 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     x += y - 1; y = addcol + ( ( (int)sele + 1 ) & 0xF )  * cell;
     
-    if( sele - offset >= 0 ) { g.fillRect( y, x * pheight, endw - y, pheight ); }
+    if( sele - offset >= 0 )
+    {
+      g.fillRect( y, x * pheight, endw - y, pheight );
+    }
 
     if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
   }
@@ -443,6 +446,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
    public void keyReleased( KeyEvent e ) { }
 
+   private boolean wr = false;
+
    public void keyPressed( KeyEvent e )
    {
      if( emode )
@@ -482,6 +487,21 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
          } catch( Exception er ) { }
        }
+       else if( c == e.VK_ENTER || c == e.VK_ESCAPE )
+       {
+         //Write modified byte before exiting edit mode.
+
+         emode = false;
+
+         if( wr )
+         {
+           try { IOStream.write( data[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] ); } catch( Exception er ) {}
+         }
+
+         setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+
+         repaint();
+       }
        else
        {
          //Validate hex input.
@@ -496,7 +516,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
            ecellX += 1; if( ecellX > 31 ){ ecellX = 0; ecellY += 1; }
 
-           try { if( ecellX % 2 == 0 ) { IOStream.write( data[x] ); } } catch( Exception er ) { }
+           try { if( ecellX % 2 == 0 ) { IOStream.write( data[x] ); wr = false; } else { wr = true; } } catch( Exception er ) { }
 
            repaint();
          }
