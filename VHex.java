@@ -409,7 +409,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         slide = -1;
       }
       
-      else { sele = x + y + offset; repaint(); }
+      else { slide = 0; sele = x + y + offset; repaint(); }
     }
   }
 
