@@ -118,7 +118,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
     catch ( Exception er ) {}
 
-    repaint();
+    t = 0; repaint();
   }
   
   //Modified scrollbar class to Handel the full 64 bit address space.
@@ -378,6 +378,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
   }
 
+  private byte slide = 0;
+
   public void mouseDragged( MouseEvent e )
   {
     if( !emode )
@@ -390,9 +392,24 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     
       y = ( e.getY() / pheight ) - 1; y <<= 4;
 
-      sele = x + y + offset;
+      if( ( x + y ) > ( ( Rows - 1 ) << 4 ) )
+      {
+        sele = x + ( ( Rows - 1 ) << 4 ) + offset;
+
+        if( slide == 0 ) { new Thread(this).start(); }
+
+        slide = 1;
+      }
+      else if( x + y < 16 )
+      {
+        sele = x + offset;
+        
+        if( slide == 0 ) { new Thread(this).start(); }
+
+        slide = -1;
+      }
       
-      repaint();
+      else { sele = x + y + offset; repaint(); }
     }
   }
 
@@ -400,7 +417,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void mouseEntered( MouseEvent e ) { }
 
-  public void mouseReleased( MouseEvent e ) { }
+  public void mouseReleased( MouseEvent e ) { slide = 0; }
 
   public void mousePressed( MouseEvent e )
   {
@@ -444,9 +461,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       {
         setCursor(new Cursor(Cursor.TEXT_CURSOR));
 
-        try{ if( !emode ) { new Thread(this).start(); } } catch ( Exception er ) {}
+        if( !emode ) { emode = true; new Thread(this).start(); }
 
-        emode = true; repaint();
+        repaint();
       }
     }
   }
@@ -483,7 +500,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
        if (c == e.VK_UP)
        {
-         checkEdit(); ecellY -= 1; canEdit(); try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
+         checkEdit(); ecellY -= 1; if( !Virtual && ecellY < 0 ) { ecellY = 0; } canEdit(); try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
        }
        else if (c == e.VK_DOWN)
        {
@@ -495,6 +512,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
          if( ecellX % 2 == 0 ) { checkEdit(); }
 
          ecellX -= 1; if( ecellX < 0 ){ ecellX = 31; ecellY -= 1; }
+
+         if( !Virtual && ecellY < 0 ) { ecellY = 0; }
 
          try
          {
@@ -509,6 +528,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
          if( ecellX % 2 == 1 ) { checkEdit(); }
 
          ecellX += 1; if( ecellX > 31 ){ ecellX = 0; ecellY += 1; }
+
+         if( !Virtual && ecellY < 0 ) { ecellY = 0; }
 
          try
          {
@@ -580,5 +601,22 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Text cursor line animation.
 
-  public void run() { try { while( emode ) { Thread.sleep(500); drawc = !drawc; repaint(); } } catch( Exception er ) {} }
+  public void run() 
+  {
+    try { while( emode ) { Thread.sleep(500); drawc = !drawc; repaint(); } } catch( Exception er ) { }
+
+    //Slide selection animation.
+
+    try
+    {
+      while( slide != 0 )
+      {
+        Thread.sleep(20);
+        
+        if( slide > 0 ) { offset += 16; sele += 16; } else { if( offset > 0 || Virtual ) { offset -= 16; sele -= 16; } }
+        
+        updateData();
+      }
+    } catch( Exception er ) { }
+  }
 }
