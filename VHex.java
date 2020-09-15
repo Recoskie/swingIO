@@ -33,6 +33,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   private int pwidth = 0, pheight = 0;
 
+  //Basic graphics.
+
+  private int index = 0, cell = 0, addcol = 0, endw = 0, cpos = 0, x = 0, y = 0;
+  private long t = 0;
+
   //Hex editor offset.
 
   private long offset = 0;
@@ -40,6 +45,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   //Start and end index of selected bytes.
 
   private long sel = 0, sele = 0;
+  private byte slide = 0;
 
   //The address column.
 
@@ -47,9 +53,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Edit mode.
 
-  private boolean emode = false;
+  private boolean emode = false, drawc = false, wr = false;
   private long ecellX = 0, ecellY = 0;
-  private boolean drawc = false;
 
   //Update data.
 
@@ -215,11 +220,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void addNotify() { super.addNotify(); requestFocus(); }
 
-  //Basic graphics.
-
-  private int index = 0, cell = 0, addcol = 0, endw = 0, cpos = 0, x = 0, y = 0;
-  private long t = 0;
-
   public void paintComponent( Graphics g )
   {
     //Initialize once.
@@ -283,7 +283,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.drawLine( endw, pheight, endw, getHeight() );
 		
-    for(int i1 = pheight, index = 0; i1 < getHeight(); i1 += pheight )
+    for(int i1 = pheight, index = 0; index < data.length; i1 += pheight )
     {
       g.drawLine( addcol, i1, endw, i1 );
 
@@ -318,7 +318,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.setColor(Color.white);
 
-    for(int i1 = pheight, index = 0; i1 < getHeight(); i1 += pheight, index += 16 )
+    for(int i1 = pheight, index = 0; index < data.length; i1 += pheight, index += 16 )
     {
       g.drawString( "0x" + String.format( "%1$016X", offset + index), 3, i1 + pheight - 3 );
     }
@@ -377,8 +377,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       }
     }
   }
-
-  private byte slide = 0;
 
   public void mouseDragged( MouseEvent e )
   {
@@ -469,8 +467,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   }
 
    public void keyReleased( KeyEvent e ) { }
-
-   private boolean wr = false;
 
    //Writes modified byte before moving.
 
