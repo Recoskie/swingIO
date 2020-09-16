@@ -31,12 +31,24 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Pixel width and height of default font.
 
-  private int pwidth = 0, pheight = 0;
+  private int charWidth = 0, lineHeight = 0;
 
   //Basic graphics.
 
-  private int index = 0, cell = 0, addcol = 0, endw = 0, cpos = 0, x = 0, y = 0;
-  private long t = 0;
+  private int index = 0; //Index when drawing bytes, or characters.
+  private int cell = 0; //Size of each hex cell.
+  private int addcol = 0; //The address column start.
+  private int hexend = 0; //End of hex columns.
+  private int textcol = 0; //Text column start.
+  private int addc = 0; //Center position of Address col string.
+  private int textc = 0; //Center position of text string.
+  private int endw = 0; //End of component.
+  private int x = 0, y = 0; //X and Y.
+  private long t = 0; //temporary value.
+
+  //Font with a fixed width.
+
+  Font font = new Font( "Monospaced", Font.BOLD, 16 );
 
   //Hex editor offset.
 
@@ -55,6 +67,10 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   private boolean emode = false, drawc = false, wr = false;
   private long ecellX = 0, ecellY = 0;
+
+  //Text pane.
+
+  private boolean text = false;
 
   //Update data.
 
@@ -218,36 +234,63 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     super.setLayout(new BorderLayout()); super.add(ScrollBar, BorderLayout.EAST);
   }
 
+  //Enable or disable the text editor.
+
+  public void enableText( boolean set )
+  {
+    text = set;
+
+    if( text ) { endw = textcol + ( charWidth << 4 ) + ( charWidth << 1 ); } else { endw = hexend; }
+
+    repaint();
+  }
+
+  //Set focus for key input.
+
   public void addNotify() { super.addNotify(); requestFocus(); }
+  
+  //Render the component.
 
   public void paintComponent( Graphics g )
   {
+    g.setFont( font );
+
     //Initialize once.
 
-    if( pwidth == 0 )
+    if( charWidth == 0 )
     {
-      java.awt.FontMetrics fm = g.getFontMetrics(g.getFont());
+      java.awt.FontMetrics fm = g.getFontMetrics(font); lineHeight = fm.getHeight();
 
-      pwidth = fm.stringWidth("C"); pheight = fm.getHeight();
+      //Get font width.
 
-      cell = ( pwidth << 1 ) + 1;
+      charWidth = fm.stringWidth("_");
+
+      //Cell size, and address column size.
+
+      cell = ( charWidth << 1 ) + 4;
       
-      addcol = pwidth * 18 + 2;
+      addcol = ( charWidth * 19 ) + 2;
 
-      endw = cell * 16 + addcol;
+      hexend = addcol + ( cell << 4 );
 
-      cpos = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 );
+      textcol = hexend + charWidth;
+
+      if( text ) { endw = textcol + ( charWidth << 4 ) + ( charWidth << 1 ); } else { endw = hexend; }
+
+      //Center position of strings.
+
+      addc = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 ); textc = textcol + ( fm.stringWidth("Text") >> 1 ) + ( charWidth << 2 );
     }
 
-    if( Rows != ( getHeight() / pheight ) ) { Rows = getHeight() / pheight; data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); return; }
+    if( Rows != ( getHeight() / lineHeight ) ) { Rows = getHeight() / lineHeight; data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); return; }
+
+    //Clear the component draw space.
+
+    g.setColor( Color.white ); g.fillRect( 0, 0, endw, getHeight() );
 
     //Begin Graphics for hex editor component.
 
-    g.setColor(new Color(238,238,238)); g.fillRect(0,0,pheight,endw);
-
-    g.setColor(Color.white);
-
-    g.fillRect(addcol,pheight,endw-addcol,getHeight());
+    g.setColor( new Color( 238, 238, 238 ) ); g.fillRect( 0, 0, endw, lineHeight );
 
     //Select character in edit mode.
 
@@ -255,7 +298,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( emode )
     {
-      g.setColor(new Color( 57, 105, 138, 128 ));
+      g.setColor( new Color( 57, 105, 138, 128 ) );
 
       //Cell alignment.
 
@@ -265,31 +308,55 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       x += ( ( (int)ecellX ) & 1 ) * ( cell >> 1 );
 
-      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
+      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * lineHeight;
 
-      g.fillRect( x, y, cell >> 1, pheight );
+      g.fillRect( x, y, cell >> 1, lineHeight );
     }
+
+    //Column description.
 
     g.setColor(Color.black);
+    
+    g.drawString( s, addc, lineHeight - 3 );
 
-    g.drawString( s, cpos, pheight - 3 );
+    g.fillRect(0,lineHeight,addcol,getHeight());
 
-    g.fillRect(0,pheight,addcol,getHeight());
+    if( text ) { g.drawString( "Text", textc, lineHeight - 6 ); }
 
-    for(int i1 = addcol, index = 0; i1 < endw; i1 += cell, index++ )
+    //Column cells.
+
+    for(int i1 = addcol, index = 0; i1 < hexend; i1 += cell, index++ )
     {
-      g.drawString( String.format( "%1$02X", index ), i1 + 1 , pheight - 3 ); g.drawLine( i1, pheight, i1, getHeight() );
+      g.drawString( String.format( "%1$02X", index ), i1 + 1 , lineHeight - 3 ); g.drawLine( i1, lineHeight, i1, getHeight() );
     }
 
-    g.drawLine( endw, pheight, endw, getHeight() );
-		
-    for(int i1 = pheight, index = 0; index < data.length; i1 += pheight )
-    {
-      g.drawLine( addcol, i1, endw, i1 );
+    g.drawLine( hexend, lineHeight, hexend, getHeight() );
 
-      for(int i2 = addcol; i2 < endw; i2 += cell, index++ )
+    //Render data.
+		
+    for(int i1 = lineHeight, index = 0; index < data.length; i1 += lineHeight )
+    {
+      g.drawLine( addcol, i1, hexend, i1 );
+
+      if( text )
       {
-        g.drawString( udata[index] ? "??" : String.format( "%1$02X", data[index] ), i2 + 1, i1 + pheight - 3 );
+        byte[] b = new byte[ 16 ];
+        
+        for( int i2 = 0; i2 < 16; i2++ )
+        {
+          byte d = data[ index + i2 ];
+
+          if( udata[ index + i2 ] ) { d = 0x3F; } else if( d == 0 || d == 9 || d == 10 ) { d = 0x20; }
+
+          b[i2] = d;
+        }
+
+        g.drawBytes(b, 0, 16, textcol, i1 + lineHeight - 6 );
+      }
+
+      for(int i2 = addcol; i2 < hexend; i2 += cell, index++ )
+      {
+        g.drawString( udata[index] ? "??" : String.format( "%1$02X", data[index] ), i2 + 1, i1 + lineHeight - 6 );
       }
     }
 
@@ -309,18 +376,18 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       x -= 2;
 
-      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * pheight;
+      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * lineHeight;
 
-      g.drawLine( x, y, x, y + pheight );
+      g.drawLine( x, y, x, y + lineHeight );
     }
 
     //Address offset.
 
     g.setColor(Color.white);
 
-    for(int i1 = pheight, index = 0; index < data.length; i1 += pheight, index += 16 )
+    for(int i1 = lineHeight, index = 0; index < data.length; i1 += lineHeight, index += 16 )
     {
-      g.drawString( "0x" + String.format( "%1$016X", offset + index), 3, i1 + pheight - 3 );
+      g.drawString( "0x" + String.format( "%1$016X", offset + index), 3, i1 + lineHeight - 3 );
     }
   }
 
@@ -336,21 +403,38 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( x < 1 ){ y += x - 1; x = 1; }
 
-    if( x > 0 ) { g.fillRect( addcol, x * pheight, endw - addcol, y * pheight ); }
+    if( x > 0 )
+    {
+      g.fillRect( addcol, x * lineHeight, hexend - addcol, y * lineHeight );
+
+      if( text ) { g.fillRect( textcol, x * lineHeight, ( charWidth << 4 ) + charWidth, y * lineHeight ); }
+    }
 
     //Clear the start and end pos.
 
     g.setColor(Color.white);
 
-    if( sel - offset >= 0 ) { g.fillRect( addcol, x * pheight, (int)(sel & 0xF) * cell, pheight ); }
+    if( sel - offset >= 0 )
+    {
+      g.fillRect( addcol, x * lineHeight, (int)(sel & 0xF) * cell, lineHeight );
 
-    x += y - 1; y = addcol + ( ( (int)sele + 1 ) & 0xF )  * cell;
+      if( text ) { g.fillRect( textcol, x * lineHeight, (int)(sel & 0xF) * charWidth, lineHeight ); }
+    }
+
+    x += y - 1; y = ( (int)sele + 1 ) & 0xF;
     
-    if( y > addcol ) { g.fillRect( y, x * pheight, endw - y, pheight ); }
+    if( y > 0 )
+    {
+      g.fillRect( addcol + y * cell, x * lineHeight, ( 16 - y ) * cell, lineHeight );
+
+      if( text ) { g.fillRect( textcol + y * charWidth, x * lineHeight, ( 17 - y ) * charWidth, lineHeight ); }
+    }
 
     if( emode )
     {
-      g.fillRect( (int)( addcol + ( ecellX >> 1 ) * cell ), (int)( ( ecellY - ( offset >> 4 ) + 1 ) * pheight ), cell, pheight );
+      g.fillRect( (int)( addcol + ( ecellX >> 1 ) * cell ), (int)( ( ecellY - ( offset >> 4 ) + 1 ) * lineHeight ), cell, lineHeight );
+
+      if( text ) { g.fillRect( (int)( textcol + ( ecellX >> 1 ) * charWidth ), (int)( ( ecellY - ( offset >> 4 ) + 1 ) * lineHeight ), charWidth, lineHeight ); }
     }
 
     if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
@@ -367,7 +451,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     if(emode)
     {
-      if( e.getX() > addcol && e.getX() < endw && e.getY() > pheight )
+      if( e.getX() > addcol && e.getX() < endw && e.getY() > lineHeight )
       {
         setCursor(new Cursor(Cursor.TEXT_CURSOR));
       }
@@ -388,7 +472,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       x = ( x / cell ) & 0xF;
     
-      y = ( e.getY() / pheight ) - 1; y <<= 4;
+      y = ( e.getY() / lineHeight ) - 1; y <<= 4;
 
       if( ( x + y ) > ( ( Rows - 1 ) << 4 ) )
       {
@@ -425,11 +509,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     x = ( x / cell ) & 0xF;
     
-    y = ( e.getY() / pheight ) - 1; y <<= 4;
+    y = ( e.getY() / lineHeight ) - 1; y <<= 4;
 
     sel = x + y + offset;
 
-    if (emode && e.getX() > addcol && e.getX() < endw && e.getY() > pheight)
+    if (emode && e.getX() > addcol && e.getX() < endw && e.getY() > lineHeight)
     {
       checkEdit();
 
@@ -437,7 +521,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
 
-      ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1; canEdit();
+      ecellY = ( e.getY() / lineHeight ) + (int)( offset >> 4 ); ecellY -= 1; canEdit();
     }
 
     try{ if( !Virtual ) { IOStream.seek( x + y + offset ); } else { IOStream.seekV( x + y + offset ); } } catch( Exception er ) { }
@@ -447,13 +531,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void mouseClicked( MouseEvent e )
   {
-    if( e.getClickCount() == 2 && e.getX() > addcol && e.getX() < endw && e.getY() > pheight )
+    if( e.getClickCount() == 2 && e.getX() > addcol && e.getX() < endw && e.getY() > lineHeight )
     {
       ecellX = ( e.getX() - addcol ) / cell;
 
       ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
 
-      ecellY = ( e.getY() / pheight ) + (int)( offset >> 4 ); ecellY -= 1;
+      ecellY = ( e.getY() / lineHeight ) + (int)( offset >> 4 ); ecellY -= 1;
 
       if( !udata[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] )
       {
