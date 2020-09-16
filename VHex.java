@@ -65,7 +65,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Edit mode.
 
-  private boolean emode = false, drawc = false, wr = false;
+  private boolean emode = false, etext = false, drawc = false, wr = false;
   private long ecellX = 0, ecellY = 0;
 
   //Text pane.
@@ -169,7 +169,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       }
       else { offset = v; }
 
-      ov = v;
+      ov = v & 0x7FFFFFF0;
       
       super.setValue( v & 0x7FFFFFF0 );
 
@@ -189,7 +189,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       if( v < VisibleEnd ){ v = VisibleEnd; }
 
-      ov = (int)v;
+      ov = (int)( v & 0x7FFFFFF0 );
       
       super.setValue( ( (int) v ) & 0x7FFFFFF0 );
     }
@@ -234,6 +234,14 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     super.setLayout(new BorderLayout()); super.add(ScrollBar, BorderLayout.EAST);
   }
 
+  //Get selected byte index.
+
+  public long selectPos() { return( Long.compareUnsigned( sel, sele ) <= 0 ? sel : sele ); }
+
+  //Get last selected byte index.
+
+  public long selectEnd() { return( Long.compareUnsigned( sel, sele ) >= 0 ? sel : sele ); }
+
   //Enable or disable the text editor.
 
   public void enableText( boolean set )
@@ -253,7 +261,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void paintComponent( Graphics g )
   {
-    g.setFont( font );
+    g.setFont( font ); offset &= 0xFFFFFFFFFFFFFFF0L;
 
     //Initialize once.
 
@@ -263,7 +271,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       //Get font width.
 
-      charWidth = fm.stringWidth("_");
+      charWidth = fm.stringWidth(" ");
 
       //Cell size, and address column size.
 
@@ -466,13 +474,29 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     if( !emode )
     {
-      x = e.getX(); if( x > endw ) { x = endw - 1; }
+      x = e.getX();
+      
+      if( text && x > hexend )
+      {
+        if( x > endw - ( charWidth << 1 ) ) { x = endw - ( ( charWidth << 1 ) + 1 ); }
 
-      x -= addcol; if ( x < 0 ) { x = 0; }
+        x -= textcol; if ( x < 0 ) { x = 0; }
 
-      x = ( x / cell ) & 0xF;
+        x = ( x / charWidth ) & 0xF;
     
-      y = ( e.getY() / lineHeight ) - 1; y <<= 4;
+        y = ( e.getY() / lineHeight ) - 1; y <<= 4;
+      }
+
+      else
+      {
+        if( x > hexend ) { x = hexend - 1; }
+
+        x -= addcol; if ( x < 0 ) { x = 0; }
+
+        x = ( x / cell ) & 0xF;
+    
+        y = ( e.getY() / lineHeight ) - 1; y <<= 4;
+      }
 
       if( ( x + y ) > ( ( Rows - 1 ) << 4 ) )
       {
@@ -503,13 +527,29 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void mousePressed( MouseEvent e )
   {
-    x = e.getX(); if( x > endw ) { x = endw - 1; }
-
-    x -= addcol; if ( x < 0 ) { x = 0; }
-
-    x = ( x / cell ) & 0xF;
+    x = e.getX();
     
-    y = ( e.getY() / lineHeight ) - 1; y <<= 4;
+    if( text && x > hexend )
+    {
+      if( x > endw - ( charWidth << 1 ) ) { x = endw - ( ( charWidth << 1 ) + 1 ); }
+
+      x -= textcol; if ( x < 0 ) { x = 0; }
+
+      x = ( x / charWidth ) & 0xF;
+    
+      y = ( e.getY() / lineHeight ) - 1; y <<= 4;
+    }
+
+    else
+    {
+      if( x > hexend ) { x = hexend - 1; }
+
+      x -= addcol; if ( x < 0 ) { x = 0; }
+
+      x = ( x / cell ) & 0xF;
+    
+      y = ( e.getY() / lineHeight ) - 1; y <<= 4;
+    }
 
     sel = x + y + offset;
 
