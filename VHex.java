@@ -242,7 +242,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public long selectEnd() { return( Long.compareUnsigned( sel, sele ) >= 0 ? sel : sele ); }
 
-  //Enable or disable the text editor.
+  //Enable, or disable the text editor.
 
   public void enableText( boolean set )
   {
@@ -304,23 +304,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     Selection( g );
 
-    if( emode )
-    {
-      g.setColor( new Color( 57, 105, 138, 128 ) );
-
-      //Cell alignment.
-
-      x = ( ( ( (int)ecellX >> 1 ) ) * cell ) + addcol;
-
-      //Character alignment.
-      
-      x += ( ( (int)ecellX ) & 1 ) * ( cell >> 1 );
-
-      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * lineHeight;
-
-      g.fillRect( x, y, cell >> 1, lineHeight );
-    }
-
     //Column description.
 
     g.setColor(Color.black);
@@ -372,19 +355,34 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( emode && drawc )
     {
-      //Cell alignment.
+      if( !etext )
+      {
+        //Cell alignment.
 
-      x = ( ( ( (int)ecellX >> 1 ) + 1 ) * cell ) + addcol;
+        x = ( ( ( (int)ecellX >> 1 ) + 1 ) * cell ) + addcol;
 
-      //Character alignment.
+        //Character alignment.
       
-      x -= ( ( (int)ecellX + 1 ) & 1 ) * ( cell >> 1 );
+        x -= ( ( (int)ecellX + 1 ) & 1 ) * ( cell >> 1 );
 
-      //Border.
+        //Border.
       
-      x -= 2;
+        x -= 2;
 
-      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * lineHeight;
+        y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * lineHeight;
+      }
+      else
+      {
+        //Char alignment.
+
+        x = ( ( ( (int)ecellX >> 1 ) + 1 ) * charWidth ) + textcol;
+
+        //Border.
+      
+        x -= 2;
+
+        y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * lineHeight;
+      }
 
       g.drawLine( x, y, x, y + lineHeight );
     }
@@ -438,14 +436,31 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       if( text ) { g.fillRect( textcol + y * charWidth, x * lineHeight, ( 17 - y ) * charWidth, lineHeight ); }
     }
 
-    if( emode )
+    if( emode && !etext )
     {
       g.fillRect( (int)( addcol + ( ecellX >> 1 ) * cell ), (int)( ( ecellY - ( offset >> 4 ) + 1 ) * lineHeight ), cell, lineHeight );
-
-      if( text ) { g.fillRect( (int)( textcol + ( ecellX >> 1 ) * charWidth ), (int)( ( ecellY - ( offset >> 4 ) + 1 ) * lineHeight ), charWidth, lineHeight ); }
     }
 
     if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
+
+    //Highlight current Hex digit in hex edit mode.
+
+    if( emode && !etext )
+    {
+      g.setColor( new Color( 57, 105, 138, 128 ) );
+
+      //Cell alignment.
+
+      x = ( ( ( (int)ecellX >> 1 ) ) * cell ) + addcol;
+
+      //Character alignment.
+      
+      x += ( ( (int)ecellX ) & 1 ) * ( cell >> 1 );
+
+      y = ( (int)ecellY - (int)( offset >> 4 ) + 1 ) * lineHeight;
+
+      g.fillRect( x, y, cell >> 1, lineHeight );
+    }
   }
   
   //Adjust scroll bar on scroll wheal.
@@ -551,27 +566,28 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       y = ( e.getY() / lineHeight ) - 1; y <<= 4;
     }
 
+    if( emode ) { checkEdit(); }
+
     sel = x + y + offset;
 
-    if (emode && e.getX() > addcol && e.getX() < endw && e.getY() > lineHeight)
+    if( text && emode && e.getX() > textcol && e.getX() < endw && e.getY() > lineHeight )
     {
-      checkEdit();
+      ecellX = ( ( e.getX() - textcol ) / charWidth ) << 1;
 
-      ecellX = ( e.getX() - addcol ) / cell;
+      ecellY = ( e.getY() / lineHeight ) + (int)( offset >> 4 ); ecellY -= 1;
 
-      ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
+      if( !udata[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] )
+      {
+        setCursor(new Cursor(Cursor.TEXT_CURSOR));
 
-      ecellY = ( e.getY() / lineHeight ) + (int)( offset >> 4 ); ecellY -= 1; canEdit();
+        if( !emode ) { emode = true; new Thread(this).start(); }
+
+        etext = true;
+
+        repaint();
+      }
     }
-
-    try{ if( !Virtual ) { IOStream.seek( x + y + offset ); } else { IOStream.seekV( x + y + offset ); } } catch( Exception er ) { }
-  }
-
-  //Begin hex edit mode.
-
-  public void mouseClicked( MouseEvent e )
-  {
-    if( e.getClickCount() == 2 && e.getX() > addcol && e.getX() < endw && e.getY() > lineHeight )
+    else if( emode && e.getX() > addcol && e.getX() < hexend && e.getY() > lineHeight )
     {
       ecellX = ( e.getX() - addcol ) / cell;
 
@@ -584,6 +600,52 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         setCursor(new Cursor(Cursor.TEXT_CURSOR));
 
         if( !emode ) { emode = true; new Thread(this).start(); }
+
+        etext = false;
+
+        repaint();
+      }
+    }
+
+    try{ if( !Virtual ) { IOStream.seek( x + y + offset ); } else { IOStream.seekV( x + y + offset ); } } catch( Exception er ) { }
+  }
+
+  //Begin hex edit mode.
+
+  public void mouseClicked( MouseEvent e )
+  {
+    if( e.getClickCount() == 2 && e.getX() > textcol && e.getX() < endw && e.getY() > lineHeight )
+    {
+      ecellX = ( ( e.getX() - textcol ) / charWidth ) << 1;
+
+      ecellY = ( e.getY() / lineHeight ) + (int)( offset >> 4 ); ecellY -= 1;
+
+      if( !udata[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] )
+      {
+        setCursor(new Cursor(Cursor.TEXT_CURSOR));
+
+        if( !emode ) { emode = true; new Thread(this).start(); }
+
+        if( !etext ) { checkEdit(); etext = true; }
+
+        repaint();
+      }
+    }
+    else if( e.getClickCount() == 2 && e.getX() > addcol && e.getX() < hexend && e.getY() > lineHeight )
+    {
+      ecellX = ( e.getX() - addcol ) / cell;
+
+      ecellX = (  ecellX << 1 ) + ( ( ( e.getX() - addcol ) % cell ) / ( cell >> 1 ) );
+
+      ecellY = ( e.getY() / lineHeight ) + (int)( offset >> 4 ); ecellY -= 1;
+
+      if( !udata[(int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset )] )
+      {
+        setCursor(new Cursor(Cursor.TEXT_CURSOR));
+
+        if( !emode ) { emode = true; new Thread(this).start(); }
+
+        etext = false;
 
         repaint();
       }
@@ -662,9 +724,20 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
        else if( c == e.VK_ENTER || c == e.VK_ESCAPE ) { endEdit(); }
        else
        {
+         //Validate text input.
+
+         if( etext && c > 0x20 )
+         {
+           x = (int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset );
+
+           data[x] = (byte)e.getKeyChar(); try { IOStream.write( data[x] ); } catch( Exception er ) { }
+
+           ecellX += 2; if( ecellX > 31 ){ ecellX = 0; ecellY += 1; }
+         }
+
          //Validate hex input.
 
-         if (c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39)
+         else if (c >= 0x41 && c <= 0x46 || c >= 0x30 && c <= 0x39)
          {
            c = c <= 0x39 ? c & 0x0F : c - 0x37;
 
