@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.*;
 import java.awt.event.*;
 
 public class VHex extends JComponent implements IOEventListener, MouseWheelListener, MouseMotionListener, MouseListener, KeyListener, Runnable
@@ -20,6 +21,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   private byte[] data = new byte[0];
   private boolean[] udata = new boolean[0]; //Bytes that could not be read.
+
+  //Editor display.
+
+  private BufferedImage icomp, idata;
+  private Graphics gcomp, gdata;
   
   //A modified scroll bar for VHex. Allows for a much larger scroll area of very big data.
 
@@ -205,7 +211,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     //Register this component to update on IO system calls.
     
-    f.addIOEventListener( this ); Virtual = mode; if( mode ) { s = "Virtual Address (h)"; }
+    f.addIOEventListener( this ); Virtual = mode; if( mode ) { s = "Virtual (h)"; }
 
     //Reference the file stream.
 
@@ -232,6 +238,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     //Add scroll bar to component.
 
     super.setLayout(new BorderLayout()); super.add(ScrollBar, BorderLayout.EAST);
+
+    System.out.println("height = " + getHeight() + "" );
   }
 
   //Get selected byte index.
@@ -290,45 +298,67 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       addc = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 ); textc = textcol + ( fm.stringWidth("Text") >> 1 ) + ( charWidth << 2 );
     }
 
-    if( Rows != ( getHeight() / lineHeight ) ) { Rows = getHeight() / lineHeight; data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); return; }
-
-    //Clear the component draw space.
-
-    g.setColor( Color.white ); g.fillRect( 0, 0, endw, getHeight() );
-
-    //Begin Graphics for hex editor component.
-
-    g.setColor( new Color( 238, 238, 238 ) ); g.fillRect( 0, 0, endw, lineHeight );
-
-    //Select character in edit mode.
-
-    Selection( g );
-
-    //Column description.
-
-    g.setColor(Color.black);
-    
-    g.drawString( s, addc, lineHeight - 3 );
-
-    g.fillRect(0,lineHeight,addcol,getHeight());
-
-    if( text ) { g.drawString( "Text", textc, lineHeight - 6 ); }
-
-    //Column cells.
-
-    for(int i1 = addcol, index = 0; i1 < hexend; i1 += cell, index++ )
+    if( Rows != ( getHeight() / lineHeight ) )
     {
-      g.drawString( String.format( "%1$02X", index ), i1 + 1 , lineHeight - 3 ); g.drawLine( i1, lineHeight, i1, getHeight() );
+      Rows = getHeight() / lineHeight;
+
+      data = java.util.Arrays.copyOf( data, Rows << 4 );
+
+      icomp = new BufferedImage( endw, getHeight(), BufferedImage.TYPE_INT_RGB ); gcomp = icomp.getGraphics();
+
+      gcomp.setColor(Color.white); gcomp.fillRect( 0, 0, endw, getHeight() );
+
+      //Begin Graphics for hex editor component.
+
+      gcomp.setColor( new Color( 238, 238, 238 ) ); gcomp.fillRect( 0, 0, endw, lineHeight );
+
+      //Column description.
+
+      gcomp.setFont(font); gcomp.setColor(Color.black);
+    
+      gcomp.drawString( s, addc, lineHeight - 3 );
+
+      gcomp.fillRect( 0, lineHeight, addcol, getHeight() );
+
+      if( text ) { gcomp.drawString( "Text", textc, lineHeight - 6 ); }
+
+      //Column cells.
+
+      for(int i1 = addcol, index = 0; i1 < hexend; i1 += cell, index++ )
+      {
+        gcomp.drawString( String.format( "%1$02X", index ), i1 + 1 , lineHeight - 3 ); gcomp.drawLine( i1, lineHeight, i1, getHeight() );
+      }
+
+      for(int i1 = lineHeight; i1 < getHeight(); i1 += lineHeight )
+      {
+        gcomp.drawLine( addcol, i1, hexend, i1 );
+      }
+
+      gcomp.drawLine( hexend, lineHeight, hexend, getHeight() );
+
+      //Render data at offset.
+
+      idata = new BufferedImage( endw, getHeight(), BufferedImage.TYPE_INT_RGB ); gdata = idata.getGraphics();
+      
+      updateData();
+      
+      return;
     }
 
-    g.drawLine( hexend, lineHeight, hexend, getHeight() );
+    //Draw rows and columns.
+
+    g.drawImage( icomp, 0, 0, this );
+
+    //Selection shader.
+
+    Selection( g );
+    
+    g.setColor(Color.black);
 
     //Render data.
 		
     for(int i1 = lineHeight, index = 0; index < data.length; i1 += lineHeight )
     {
-      g.drawLine( addcol, i1, hexend, i1 );
-
       if( text )
       {
         byte[] b = new byte[ 16 ];
@@ -404,41 +434,39 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     g.setColor(SelectC);
 
     if( sel > sele ) { t = sele; sele = sel; sel = t; }
-    
-    x = (int)(sel - offset) >> 4; y = (int)(sele - offset) >> 4; y -= x; y += 1; x += 1;
-
-    if( x < 1 ){ y += x - 1; x = 1; }
-
-    if( x > 0 )
-    {
-      g.fillRect( addcol, x * lineHeight, hexend - addcol, y * lineHeight );
-
-      if( text ) { g.fillRect( textcol, x * lineHeight, ( charWidth << 4 ) + charWidth, y * lineHeight ); }
-    }
 
     //Clear the start and end pos.
 
-    g.setColor(Color.white);
+    g.setColor(SelectC);
+
+    x = (int)( sel & 0xF ); y = (int)( sel - offset ) >> 4; y += 1;
+
+    int len = ( x + 1 ) + (int)( sele - sel ); len = len > 16 ? 16 : len;
 
     if( sel - offset >= 0 )
     {
-      g.fillRect( addcol, x * lineHeight, (int)(sel & 0xF) * cell, lineHeight );
+      if( !emode || etext ) { g.fillRect( addcol + ( x * cell ), y * lineHeight,  ( len - x ) * cell, lineHeight ); }
 
-      if( text ) { g.fillRect( textcol, x * lineHeight, (int)(sel & 0xF) * charWidth, lineHeight ); }
+      if( text ) { g.fillRect( textcol + ( x * charWidth ), y * lineHeight, ( len - x ) * charWidth, lineHeight ); }
     }
+    else{ y = 0; }
 
-    x += y - 1; y = ( (int)sele + 1 ) & 0xF;
+    x = y + 1; y = ( (int)( sele - offset ) >> 4 ) - x; y += 1;
     
     if( y > 0 )
     {
-      g.fillRect( addcol + y * cell, x * lineHeight, ( 16 - y ) * cell, lineHeight );
+      g.fillRect( addcol, x * lineHeight, cell << 4, y * lineHeight );
 
-      if( text ) { g.fillRect( textcol + y * charWidth, x * lineHeight, ( 17 - y ) * charWidth, lineHeight ); }
+      if( text ) { g.fillRect( textcol, x * lineHeight, charWidth << 4, y * lineHeight ); }
     }
 
-    if( emode && !etext )
+    y += x; x = (int)( sele & 0xF ) + 1;
+
+    if( y > ( ( sel - offset ) >> 4 ) + 1 )
     {
-      g.fillRect( (int)( addcol + ( ecellX >> 1 ) * cell ), (int)( ( ecellY - ( offset >> 4 ) + 1 ) * lineHeight ), cell, lineHeight );
+      g.fillRect( addcol, y * lineHeight, x * cell, lineHeight );
+
+      if( text ) { g.fillRect( textcol, y * lineHeight, x * charWidth, lineHeight ); }
     }
 
     if( t != 0 ) { t = sele; sele = sel; sel = t; t = 0; }
