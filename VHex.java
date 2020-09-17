@@ -267,6 +267,17 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( charWidth == 0 )
     {
+      //Load Custom font.
+
+      try
+      {
+        java.io.InputStream is = VHex.class.getResourceAsStream("Font/DOS.ttf");
+        font = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(16f);
+      }
+      catch( Exception er ) { font = new Font( "Monospaced", Font.BOLD, 16 ); }
+
+      //Font metrics.
+
       java.awt.FontMetrics fm = g.getFontMetrics(font); lineHeight = fm.getHeight();
 
       //Get font width.
@@ -312,7 +323,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.fillRect(0,lineHeight,addcol,getHeight());
 
-    if( text ) { g.drawString( "Text", textc, lineHeight - 6 ); }
+    if( text ) { g.drawString( "Text", textc, lineHeight - 3 ); }
 
     //Column cells.
 
@@ -347,7 +358,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       for(int i2 = addcol; i2 < hexend; i2 += cell, index++ )
       {
-        g.drawString( udata[index] ? "??" : String.format( "%1$02X", data[index] ), i2 + 1, i1 + lineHeight - 6 );
+        g.drawString( udata[index] ? "??" : String.format( "%1$02X", data[index] ), i2 + 1, i1 + lineHeight - 3 );
       }
     }
 
