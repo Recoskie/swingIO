@@ -37,13 +37,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   private int index = 0; //Index when drawing bytes, or characters.
   private int cell = 0; //Size of each hex cell.
-  private int addcol = 0; //The address column start.
+  private int addcol = 0; //The address column width.
   private int hexend = 0; //End of hex columns.
   private int textcol = 0; //Text column start.
   private int addc = 0; //Center position of Address col string.
   private int textc = 0; //Center position of text string.
   private int endw = 0; //End of component.
-  private int x = 0, y = 0; //X and Y.
+  private int x = 0, y = 0; //X, and Y.
   private long t = 0; //temporary value.
 
   //Font with a fixed width.
@@ -232,6 +232,15 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     //Add scroll bar to component.
 
     super.setLayout(new BorderLayout()); super.add(ScrollBar, BorderLayout.EAST);
+
+    //Load component font.
+
+    try
+    {
+      java.io.InputStream is = VHex.class.getResourceAsStream("Font/DOS.ttf");
+      font = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(16f);
+    }
+    catch( Exception er ) { }
   }
 
   //Get selected byte index.
@@ -267,17 +276,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( charWidth == 0 )
     {
-      //Load Custom font.
-
-      try
-      {
-        java.io.InputStream is = VHex.class.getResourceAsStream("Font/DOS.ttf");
-        font = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(16f);
-      }
-      catch( Exception er ) { font = new Font( "Monospaced", Font.BOLD, 16 ); }
-
-      //Font metrics.
-
       java.awt.FontMetrics fm = g.getFontMetrics(font); lineHeight = fm.getHeight();
 
       //Get font width.
@@ -335,6 +333,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     g.drawLine( hexend, lineHeight, hexend, getHeight() );
 
     //Render data.
+
+    byte[] b = new byte[ 16 ];
 		
     for(int i1 = lineHeight, index = 0; index < data.length; i1 += lineHeight )
     {
@@ -342,8 +342,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       if( text )
       {
-        byte[] b = new byte[ 16 ];
-        
         for( int i2 = 0; i2 < 16; i2++ )
         {
           byte d = data[ index + i2 ];
@@ -424,7 +422,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       g.fillRect( addcol, x * lineHeight, hexend - addcol, y * lineHeight );
 
-      if( text ) { g.fillRect( textcol, x * lineHeight, ( charWidth << 4 ) + charWidth, y * lineHeight ); }
+      if( text ) { g.fillRect( textcol, x * lineHeight, charWidth << 4, y * lineHeight ); }
     }
 
     //Clear the start and end pos.
@@ -444,7 +442,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       g.fillRect( addcol + y * cell, x * lineHeight, ( 16 - y ) * cell, lineHeight );
 
-      if( text ) { g.fillRect( textcol + y * charWidth, x * lineHeight, ( 17 - y ) * charWidth, lineHeight ); }
+      if( text ) { g.fillRect( textcol + y * charWidth, x * lineHeight, ( 16 - y ) * charWidth, lineHeight ); }
     }
 
     if( emode && !etext )
@@ -704,13 +702,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
        {
          if( ecellX % 2 == 0 ) { checkEdit(); }
 
-         ecellX -= 1; if( ecellX < 0 ){ ecellX = 31; ecellY -= 1; }
+         if( !etext ) { ecellX -= 1; } else { ecellX -= 2; } if( ecellX < 0 ){ ecellX = 31; ecellY -= 1; }
 
          if( !Virtual && ecellY < 0 ) { ecellY = 0; }
 
          try
          {
-           if( ecellX % 2 == 1 ) { canEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
+           if( etext || ecellX % 2 == 1 ) { canEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
 
            else { repaint(); }
 
@@ -720,13 +718,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
        {
          if( ecellX % 2 == 1 ) { checkEdit(); }
 
-         ecellX += 1; if( ecellX > 31 ){ ecellX = 0; ecellY += 1; }
+         if( !etext ) { ecellX += 1; } else { ecellX += 2; } if( ecellX > 31 ){ ecellX = 0; ecellY += 1; }
 
          if( !Virtual && ecellY < 0 ) { ecellY = 0; }
 
          try
          {
-           if( ecellX % 2 == 0 ) { canEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
+           if( etext || ecellX % 2 == 0 ) { canEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
 
            else { repaint(); }
 
