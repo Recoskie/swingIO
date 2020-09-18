@@ -348,7 +348,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         {
           byte d = data[ index + i2 ];
 
-          if( udata[ index + i2 ] ) { d = 0x3F; } else if( d == 0 || d == 9 || d == 10 ) { d = 0x20; }
+          if( udata[ index + i2 ] ) { d = 0x3F; } else if( d == 9 || d == 10 || d == 13 ) { d = 0x20; }
 
           b[i2] = d;
         }
