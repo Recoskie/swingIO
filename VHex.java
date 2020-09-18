@@ -438,7 +438,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       g.fillRect( addcol, x * lineHeight, (int)(sel & 0xF) * cell, lineHeight );
 
-      if( text ) { g.fillRect( textcol, x * lineHeight, charWidth[ (int)(sel & 0xF) - 1 ], lineHeight ); }
+      if( text && ( sel & 0xF ) != 0 ) { g.fillRect( textcol, x * lineHeight, charWidth[ (int)(sel & 0xF) - 1 ], lineHeight ); }
     }
 
     x += y - 1; y = ( (int)sele + 1 ) & 0xF;
