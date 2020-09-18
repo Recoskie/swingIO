@@ -29,12 +29,12 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   private boolean Virtual = false;
 
-  //Character width varies based on length of string even though it is Monospaced.
-  //This is because characters can be spaced apart as a fraction like 9+(1/3).
+  //Character width varies based on length of string even though it is Monospaced. This is because characters can be spaced apart as a fraction like 9+(1/3).
+  //Could divide a 17 in length string by 17 to get the fractional char width as float. However integers are faster, and do not need rounding.
 
-  int[] charWidth = new int[18];
+  private int[] charWidth = new int[18];
 
-  //Height is always the same.
+  //Height is always the same. Even if font is not Monospaced.
 
   private int lineHeight = 0;
 
@@ -289,9 +289,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       //Cell size, and address column size.
 
-      cell = ( charWidth[1] ) + 4;
+      cell = charWidth[1] + 4;
       
-      addcol = ( charWidth[17] ) + 2;
+      addcol = charWidth[17] + 4;
 
       hexend = addcol + ( cell << 4 );
 
@@ -361,7 +361,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       for(int i2 = addcol; i2 < hexend; i2 += cell, index++ )
       {
-        g.drawString( udata[index] ? "??" : String.format( "%1$02X", data[index] ), i2 + 1, i1 + lineHeight - 3 );
+        g.drawString( udata[index] ? "??" : String.format( "%1$02X", data[index] ), i2 + 2, i1 + lineHeight - 3 );
       }
     }
 
@@ -434,7 +434,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     g.setColor(Color.white);
 
-    if( ( sel & 0xF ) != 0 )
+    if( ( sel - offset ) > 0 )
     {
       g.fillRect( addcol, x * lineHeight, (int)(sel & 0xF) * cell, lineHeight );
 
