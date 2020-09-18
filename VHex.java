@@ -242,8 +242,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     try
     {
-      java.io.InputStream is = VHex.class.getResourceAsStream("Font/DOS.ttf");
-      font = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(16f);
+      font = Font.createFont(Font.TRUETYPE_FONT, VHex.class.getResourceAsStream("Font/DOS.ttf")).deriveFont(16f);
     }
     catch( Exception er ) { }
   }
@@ -283,7 +282,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       java.awt.FontMetrics fm = g.getFontMetrics(font); lineHeight = fm.getHeight();
 
-      //Get width, for different length stings.
+      //Get width, for different length strings.
 
       String sLen = ""; for( int i = 0; i < charWidth.length; sLen += " ", charWidth[i++]=fm.stringWidth( sLen ) );
 
