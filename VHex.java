@@ -40,6 +40,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Basic graphics.
 
+  private int scrollBarSize = 0; //Width of scroll bar.
   private int index = 0; //Index when drawing bytes, or characters.
   private int cell = 0; //Size of each hex cell.
   private int addcol = 0; //The address column width.
@@ -270,10 +271,12 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void addNotify() { super.addNotify(); requestFocus(); }
 
-  //Initialize component.
+  //Initialize the draw area and component size.
 
   public void init()
   {
+    scrollBarSize = ((Integer)UIManager.get("ScrollBar.width")).intValue();
+
     java.awt.FontMetrics fm = super.getFontMetrics(font); lineHeight = fm.getHeight();
 
     //Get width, for different length strings.
@@ -303,14 +306,14 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     if( charWidth[0] == 0 ) { init(); }
 
-    return( new Dimension( endw, lineHeight << 3 ) );
+    return( new Dimension( endw + scrollBarSize, lineHeight << 3 ) );
   }
 
   @Override public Dimension getPreferredSize()
   {
     if( charWidth[0] == 0 ) { init(); }
 
-    return( new Dimension( endw, endw + ( endw >> 1 ) ) );
+    return( new Dimension( endw + scrollBarSize, Math.max( super.getParent().getHeight(), lineHeight << 3 ) ) );
   }
   
   //Render the component.
@@ -318,10 +321,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   public void paintComponent( Graphics g )
   {
     g.setFont( font ); offset &= 0xFFFFFFFFFFFFFFF0L;
-
-    //Initialize once. If ignored by layout manager.
-
-    if( charWidth[0] == 0 ) { init(); }
 
     //Adjust byte buffer on larger height.
 
