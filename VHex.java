@@ -269,6 +269,49 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   //Set focus for key input.
 
   public void addNotify() { super.addNotify(); requestFocus(); }
+
+  //Initialize component.
+
+  public void init()
+  {
+    java.awt.FontMetrics fm = super.getFontMetrics(font); lineHeight = fm.getHeight();
+
+    //Get width, for different length strings.
+
+    String sLen = ""; for( int i = 0; i < charWidth.length; sLen += " ", charWidth[i++]=fm.stringWidth( sLen ) );
+
+    //Cell size, and address column size.
+
+    cell = charWidth[1] + 4;
+      
+    addcol = charWidth[17] + 4;
+
+    hexend = addcol + ( cell << 4 );
+
+    textcol = hexend + charWidth[0];
+
+    if( text ) { endw = textcol + charWidth[16]; } else { endw = hexend; }
+
+    //Center position of strings.
+
+    addc = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 ); textc = textcol + ( fm.stringWidth("Text") >> 1 ) + ( charWidth[4] );
+  }
+
+  //The component draw area.
+  
+  @Override public Dimension getMinimumSize()
+  {
+    if( charWidth[0] == 0 ) { init(); }
+
+    return( new Dimension( endw, lineHeight << 3 ) );
+  }
+
+  @Override public Dimension getPreferredSize()
+  {
+    if( charWidth[0] == 0 ) { init(); }
+
+    return( new Dimension( endw, endw + ( endw >> 1 ) ) );
+  }
   
   //Render the component.
 
@@ -276,32 +319,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     g.setFont( font ); offset &= 0xFFFFFFFFFFFFFFF0L;
 
-    //Initialize once.
+    //Initialize once. If ignored by layout manager.
 
-    if( charWidth[0] == 0 )
-    {
-      java.awt.FontMetrics fm = g.getFontMetrics(font); lineHeight = fm.getHeight();
+    if( charWidth[0] == 0 ) { init(); }
 
-      //Get width, for different length strings.
-
-      String sLen = ""; for( int i = 0; i < charWidth.length; sLen += " ", charWidth[i++]=fm.stringWidth( sLen ) );
-
-      //Cell size, and address column size.
-
-      cell = charWidth[1] + 4;
-      
-      addcol = charWidth[17] + 4;
-
-      hexend = addcol + ( cell << 4 );
-
-      textcol = hexend + charWidth[0];
-
-      if( text ) { endw = textcol + charWidth[16]; } else { endw = hexend; }
-
-      //Center position of strings.
-
-      addc = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 ); textc = textcol + ( fm.stringWidth("Text") >> 1 ) + ( charWidth[4] );
-    }
+    //Adjust byte buffer on larger height.
 
     if( Rows != ( getHeight() / lineHeight ) ) { Rows = getHeight() / lineHeight; data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); return; }
 
