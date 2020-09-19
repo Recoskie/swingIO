@@ -145,7 +145,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     }
     catch ( Exception er ) {}
 
-    t = 0; repaint();
+    t = 0;
   }
   
   //Modified scrollbar class to Handel the full 64 bit address space.
@@ -156,11 +156,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     private long End = 0, VisibleEnd = 0;
     private int RelUp = 0x70000000, RelDown = 0x10000000;
     private int ov = 0;
+    private VHex comp;
     
-    public LongScrollBar(int orientation, int value, int visible, int minimum, long maximum)
+    public LongScrollBar(int orientation, int value, int visible, int minimum, long maximum, VHex c )
     {
       super( orientation, value, visible, minimum, Long.compareUnsigned( maximum, 0x7FFFFFF0 ) > 0 ? 0x7FFFFFF0 : (int) ( ( maximum + 15 ) & 0x7FFFFFF0 ) );
       End = maximum; VisibleEnd = End - visible;
+      comp = c;
     }
     
     @Override public void setValue( int v )
@@ -179,7 +181,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       super.setValue( v & 0x7FFFFFF0 );
 
-      updateData();
+      updateData(); comp.repaint();
     }
     
     @Override public void setVisibleAmount( int v )
@@ -219,7 +221,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     //Setup Scroll bar system.
 
-    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() ); } catch (java.io.IOException e) {}
+    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length(), this ); } catch (java.io.IOException e) {}
     
     ScrollBar.setUnitIncrement( 16 );
 
@@ -324,7 +326,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     //Adjust byte buffer on larger height.
 
-    if( Rows != ( getHeight() / lineHeight ) ) { Rows = getHeight() / lineHeight; data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); return; }
+    if( Rows != ( getHeight() / lineHeight ) ) { Rows = getHeight() / lineHeight; data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); }
 
     //Clear the component draw space.
 
@@ -501,7 +503,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   
   public void mouseWheelMoved( MouseWheelEvent e )
   {
-    offset += e.getUnitsToScroll() << 4; if( !Virtual && offset < 0 ) { offset = 0; } updateData();
+    offset += e.getUnitsToScroll() << 4; if( !Virtual && offset < 0 ) { offset = 0; } updateData(); repaint();
   }
 
   public void mouseMoved( MouseEvent e )
@@ -799,7 +801,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = sel; } else { sel = e.SPosV(); sele = sel; }
 
-    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); } else { repaint(); }
+    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); }
+    
+    repaint();
   }
   
   //On Reading bytes in stream.
@@ -810,7 +814,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
 
-    if( ( sel - offset ) >= Rows << 4 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); } else { repaint(); }
+    if( ( sel - offset ) >= Rows << 4 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); } 
+    
+    repaint();
   }
   
   //On writing bytes in stream.
@@ -823,7 +829,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( ( sel - offset ) > Rows << 4 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; }
 
-    updateData();
+    updateData(); repaint();
   }
 
   //Text cursor line animation.
@@ -842,7 +848,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         
         if( slide > 0 ) { offset += 16; sele += 16; } else { if( offset > 0 || Virtual ) { offset -= 16; sele -= 16; } }
         
-        updateData();
+        updateData(); repaint();
       }
     } catch( Exception er ) { }
   }
