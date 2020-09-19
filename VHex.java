@@ -80,13 +80,13 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Update data.
 
+  private int rd = 0, pos = 0, end = 0;
+
   public void updateData()
   {
-    //Read data at scroll position.
-
-    int rd = 0, pos = 0, end = 0;
-      
-    udata = new boolean[data.length];
+    //Read data offset position.
+    
+    rd = 0; pos = 0; end = 0; udata = new boolean[data.length];
 
     try
     {
