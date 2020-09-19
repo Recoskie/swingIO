@@ -25,12 +25,10 @@ public class Window
   RandomAccessFileV file;
 
   public Window()
-  {
+  { 
     //Instance and setup a basic JFrame.
 
     JFrame frame = new JFrame( "Hex editor Component." );
-    
-    frame.setLocationRelativeTo( null );
     
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 
@@ -45,33 +43,36 @@ public class Window
       e.printStackTrace( System.out );
     }
 
-    //Map a offset to a virtual address.
-
-    file.addV( 0, 0xFF, 0x771241, 0xFF ); //Map first 256 bytes at 0x771241.
-    file.addV( 0x14D0, 0x33, 0x771241, 0x33 ); //Write over first 0x33 bytes from offset 0x14D0.
+    //Command line input.
+    
+    Cmd c = new Cmd( file ); c.start();
     
     //Instance and setup VHex editor component.
     
-    VHex Virtual = new VHex( file, true );
-    VHex Offset = new VHex( file, false );
+    VHex Virtual = new VHex( file, true ), Offset = new VHex( file, false );
 
-    //Add the two hex editor components side by side.
+    //Enable, or disable text representation.
+
+    Offset.enableText( true );
+    Virtual.enableText( true );
+
+    //Set the default flow Layout, for components.
 
     frame.setLayout( new GridLayout( 1, 2 ) );
-    
-    frame.add( Virtual );
-    frame.add( Offset );
 
-    //Seek virtual address 0x771280.
-    //Note hex editors automatically update on any IO operation.
+    //Add the hex editor components.
     
-    file.seekV( 0x771280 );
+    frame.add( Virtual ); frame.add( Offset );
 
-    //Pack the frame.
+    //Pack the frame to minim size of components.
     
     frame.pack();
 
-    //Set the frame visible.
+    //Move window to center of screen.
+
+    frame.setLocationRelativeTo( null );
+
+    //Set the window visible.
 
     frame.setVisible( true );
   }
