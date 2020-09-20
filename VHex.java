@@ -237,10 +237,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     super.addKeyListener(this);
 
-    //Add scroll bar to component.
-
-    super.setLayout(new BorderLayout()); super.add(ScrollBar, BorderLayout.EAST);
-
     //Load component font.
 
     try
@@ -279,7 +275,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     //Get width, for different length strings.
 
-    String sLen = ""; for( int i = 0; i < charWidth.length; sLen += " ", charWidth[i++]=fm.stringWidth( sLen ) );
+    String sLen = ""; for( int i = 0; i < charWidth.length; sLen += " ", charWidth[ i++ ] = fm.stringWidth( sLen ) );
 
     //Cell size, and address column size.
 
@@ -296,6 +292,12 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     //Center position of strings.
 
     addc = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 ); textc = textcol + ( fm.stringWidth("Text") >> 1 ) + ( charWidth[4] );
+
+    //Scroll bar at end of component.
+
+    super.setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
+
+    super.add( Box.createRigidArea( new Dimension( endw, 0 ) ) ); super.add( ScrollBar );
   }
 
   //The component draw area.
