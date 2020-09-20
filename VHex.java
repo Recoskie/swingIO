@@ -52,9 +52,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   private int x = 0, y = 0; //X, and Y.
   private long t = 0; //temporary value.
 
-  //Font with a fixed width.
+  //Font is loaded on Initialize.
 
-  Font font = new Font( "Monospaced", Font.BOLD, 16 );
+  Font font;
 
   //Hex editor offset.
 
@@ -237,17 +237,15 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     super.addKeyListener(this);
 
-    //Load component font.
+    //Load component font in 106 DPI.
+
+    float dpi = 12.0f * ( Toolkit.getDefaultToolkit().getScreenResolution() ) / 106.0f;
 
     try
     {
-      font = Font.createFont(Font.TRUETYPE_FONT, VHex.class.getResourceAsStream("Font/DOS.ttf")).deriveFont(16f);
+      font = Font.createFont( Font.TRUETYPE_FONT, VHex.class.getResourceAsStream("Font/DOS.ttf") ).deriveFont( dpi );
     }
-    catch( Exception er ) { }
-
-    //106 DPI.
-
-    font = font.deriveFont( 12.0f * ( Toolkit.getDefaultToolkit().getScreenResolution() ) / 106.0f );
+    catch( Exception er ) { font = new Font( "Monospaced", Font.BOLD, (int)( dpi + 0.5f ) ); }
   }
 
   //Get selected byte index.
