@@ -85,6 +85,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   public void updateData()
   {
     //Read data offset position.
+
+    offset &= 0xFFFFFFFFFFFFFFF0L;
     
     rd = 0; pos = 0; end = 0; udata = new boolean[data.length];
 
@@ -329,7 +331,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void paintComponent( Graphics g )
   {
-    g.setFont( font ); offset &= 0xFFFFFFFFFFFFFFF0L;
+    g.setFont( font );
 
     //Adjust byte buffer on larger height.
 
