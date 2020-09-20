@@ -201,6 +201,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       
       super.setValue( ( (int) v ) & 0x7FFFFFF0 );
     }
+
+    public void setMaximum( long v )
+    {
+      super.setMaximum( Long.compareUnsigned( v, 0x7FFFFFF0 ) > 0 ? 0x7FFFFFF0 : (int) ( ( v + 15 ) & 0x7FFFFFF0 ) );
+    }
   }
   
   //If no mode setting then assume offset mode.
@@ -223,7 +228,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length(), this ); } catch (java.io.IOException e) {}
     
-    ScrollBar.setUnitIncrement( 16 );
+    ScrollBar.setUnitIncrement( 16 ); ScrollBar.setBlockIncrement( 16 );
 
     //Custom selection handling.
 
@@ -263,6 +268,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     text = set;
 
     if( text ) { endw = textcol + charWidth[16]; } else { endw = hexend; }
+
+    super.removeAll(); super.add( Box.createRigidArea( new Dimension( endw, 0 ) ) ); super.add( ScrollBar );
 
     repaint();
   }
@@ -690,6 +697,17 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
    public void keyReleased( KeyEvent e ) { }
 
+   //IO target change.
+
+   public void setTarget( RandomAccessFileV f )
+   {
+     IOStream = f; IOStream.removeIOEventListener( this ); f.addIOEventListener( this );
+     
+     try { ScrollBar.setMaximum( Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() ); } catch( Exception e ) { }
+     
+     offset = 0; updateData(); repaint();
+   }
+
    //Writes modified byte before moving.
 
    private void checkEdit()
@@ -762,7 +780,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
        {
          //Validate text input.
 
-         if( etext && c > 0x20 )
+         if( etext && c >= 0x20 )
          {
            x = (int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset );
 
