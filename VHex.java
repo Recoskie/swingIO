@@ -244,6 +244,10 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
       font = Font.createFont(Font.TRUETYPE_FONT, VHex.class.getResourceAsStream("Font/DOS.ttf")).deriveFont(16f);
     }
     catch( Exception er ) { }
+
+    //106 DPI.
+
+    font = font.deriveFont( 12.0f * ( Toolkit.getDefaultToolkit().getScreenResolution() ) / 106.0f );
   }
 
   //Get selected byte index.
