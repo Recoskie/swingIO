@@ -269,10 +269,6 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     repaint();
   }
 
-  //Set focus for key input.
-
-  public void addNotify() { super.addNotify(); requestFocus(); }
-
   //Initialize the draw area and component size.
 
   public void init()
@@ -620,7 +616,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         etext = true;
 
-        repaint();
+        requestFocus(); repaint();
       }
     }
     else if( emode && e.getX() > addcol && e.getX() < hexend && e.getY() > lineHeight )
@@ -639,7 +635,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         etext = false;
 
-        repaint();
+        requestFocus(); repaint();
       }
     }
 
@@ -664,7 +660,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         if( !etext ) { checkEdit(); etext = true; }
 
-        repaint();
+        requestFocus(); repaint();
       }
     }
     else if( e.getClickCount() == 2 && e.getX() > addcol && e.getX() < hexend && e.getY() > lineHeight )
@@ -683,7 +679,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
         etext = false;
 
-        repaint();
+        requestFocus(); repaint();
       }
     }
   }
