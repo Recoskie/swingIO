@@ -1,6 +1,8 @@
+package VHex;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import RandomAccessFileV.*;
 
 public class VHex extends JComponent implements IOEventListener, MouseWheelListener, MouseMotionListener, MouseListener, KeyListener, Runnable
 {
@@ -145,7 +147,10 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         IOStream.Events = true;
       }
     }
-    catch ( Exception er ) {}
+    catch ( Exception er )
+    {
+      for( int i = rd; i < data.length; i++ ) { udata[i] = true; }
+    }
 
     t = 0;
   }
@@ -156,39 +161,83 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   private class LongScrollBar extends JScrollBar
   {
     private long End = 0, VisibleEnd = 0;
-    private int RelUp = 0x70000000, RelDown = 0x10000000;
-    private int ov = 0;
+
+    private final int RelUp = 0x70000000, RelDown = 0x10000000;
+    
+    private int ov = 0, rel = 0;
+
+    private boolean exstend = false;
+
     private VHex comp;
     
     public LongScrollBar(int orientation, int value, int visible, int minimum, long maximum, VHex c )
     {
       super( orientation, value, visible, minimum, Long.compareUnsigned( maximum, 0x7FFFFFF0 ) > 0 ? 0x7FFFFFF0 : (int) ( ( maximum + 15 ) & 0x7FFFFFF0 ) );
-      End = maximum; VisibleEnd = End - visible;
+      
+      End = maximum; exstend = Long.compareUnsigned( maximum, 0x7FFFFFF0 ) > 0;
+      
+      if( Long.compareUnsigned( visible, End ) < 0 ) { VisibleEnd = ( End - visible ) & 0x7FFFFFFFFFFFFFF0L; }
+      
       comp = c;
     }
     
     @Override public void setValue( int v )
     {
-      if( Long.compareUnsigned( VisibleEnd, 0x7FFFFFF0 ) > 0 )
+      //Relatively scroll really large files that are too big for scroll bar.
+
+      if( exstend )
       {
-        offset += ( v - ov );
+        rel = v - ov; ov = v; offset += rel;
 
-        if( ov < v && v > RelUp ) {  v = RelUp; }
+        //Limit offset within the disk size, or file size.
+
+        if( !Virtual ) { if( offset < 0 ) { offset = 0; } else if( Long.compareUnsigned( offset, VisibleEnd ) > 0 ) { offset = VisibleEnd; } }
+
+        //Adjust scroll bar.
+
+        if( rel < 0 && ov < RelDown )
+        {
+          //Set Scroll pos fixed until start of data.
+
+          if( offset > RelDown ) { ov = RelDown; }
+
+          //Remaining data to start.
         
-        else if( ov > v && v < RelDown ) { v = RelDown; }
+          else { ov = (int)offset & 0x7FFFFFF0; }
+        }
+
+        if( rel > 0 && ov > RelUp )
+        {
+          //Set Scroll pos fixed until remaining data.
+
+          if( ( VisibleEnd - offset ) > RelDown ){ ov = RelUp; }
+        
+          //Remaining data to end.
+        
+          else { ov = (int)( 0x7FFFFFF0 - ( End - offset ) ); }
+        }
       }
-      else { offset = v; }
+      else
+      {
+        offset = v; ov = v;
+        
+        //Limit offset within the disk size, or file size.
 
-      ov = v & 0x7FFFFFF0;
+        if( offset < 0 ) { offset = 0; } else if( offset > VisibleEnd ) { offset = VisibleEnd; }
+      }
+
+      //Update scroll bar relative positioning.
       
-      super.setValue( v & 0x7FFFFFF0 );
-
-      updateData(); comp.repaint();
+      super.setValue( ov ); updateData(); comp.repaint();
     }
     
     @Override public void setVisibleAmount( int v )
     {
-      super.setVisibleAmount( v ); VisibleEnd = End - v; setValue( offset + super.getValue() );
+      if( Long.compareUnsigned( v, End ) < 0 ) { VisibleEnd = ( ( exstend ? End : End + 15 ) - v ) & 0x7FFFFFFFFFFFFFF0L; } else { VisibleEnd = 0; }
+      
+      super.setVisibleAmount( v );
+      
+      if( Long.compareUnsigned( offset, VisibleEnd ) > 0 ) { setValue( VisibleEnd ); }
     }
     
     public void setValue( long v )
@@ -206,7 +255,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     public void setMaximum( long v )
     {
-      super.setMaximum( Long.compareUnsigned( v, 0x7FFFFFF0 ) > 0 ? 0x7FFFFFF0 : (int) ( ( v + 15 ) & 0x7FFFFFF0 ) );
+      End = v; exstend = Long.compareUnsigned( v, 0x7FFFFFF0 ) > 0;
+      
+      super.setMaximum( exstend ? 0x7FFFFFF0 : (int) ( ( v + 15 ) & 0x7FFFFFF0 ) );
     }
   }
   
@@ -227,8 +278,8 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     IOStream = f;
 
     //Setup Scroll bar system.
-
-    try { ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length(), this ); } catch (java.io.IOException e) {}
+      
+    try{ ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length(), this ); } catch( java.io.IOException e ) { }
     
     ScrollBar.setUnitIncrement( 16 ); ScrollBar.setBlockIncrement( 16 );
 
@@ -244,15 +295,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     super.addKeyListener(this);
 
-    //Load component font in 106 DPI.
-
-    float dpi = 12.0f * ( Toolkit.getDefaultToolkit().getScreenResolution() ) / 106.0f;
-
     try
     {
-      font = Font.createFont( Font.TRUETYPE_FONT, VHex.class.getResourceAsStream("Font/DOS.ttf") ).deriveFont( dpi );
+      font = Font.createFont( Font.TRUETYPE_FONT, VHex.class.getResourceAsStream("Font/DOS.ttf") ).deriveFont( 16f );
     }
-    catch( Exception er ) { font = new Font( "Monospaced", Font.BOLD, (int)( dpi + 0.5f ) ); }
+    catch( Exception er ) { font = new Font( "Monospaced", Font.BOLD, 16 ); }
   }
 
   //Get selected byte index.
@@ -262,6 +309,22 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   //Get last selected byte index.
 
   public long selectEnd() { return( Long.compareUnsigned( sel, sele ) >= 0 ? sel : sele ); }
+
+  //Set selected bytes.
+
+  public void setSelected( long start, long end )
+  {
+    SelectC = new Color( 57, 105, 138, 128 );
+    
+    if( !Virtual || IOStream.isMaped() ) { sel = start; sele = end; repaint(); }
+  }
+
+  public void setSelectedEnd( long end )
+  {
+    SelectC = new Color( 57, 105, 138, 128 );
+    
+    if( !Virtual || IOStream.isMaped() ) { sele = end; repaint(); }
+  }
 
   //Enable, or disable the text editor.
 
@@ -273,7 +336,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     super.removeAll(); super.add( Box.createRigidArea( new Dimension( endw, 0 ) ) ); super.add( ScrollBar );
 
-    repaint();
+    validate();
   }
 
   //Initialize the draw area and component size.
@@ -331,11 +394,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void paintComponent( Graphics g )
   {
-    g.setFont( font );
+    g.setFont( font ); if( charWidth[0] == 0 ) { init(); }
 
     //Adjust byte buffer on larger height.
 
-    if( Rows != ( getHeight() / lineHeight ) ) { Rows = getHeight() / lineHeight; data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); }
+    if( Rows != ( getHeight() / lineHeight ) ) { Rows = getHeight() / lineHeight; ScrollBar.setVisibleAmount( Rows << 4 ); data = java.util.Arrays.copyOf( data, Rows << 4 ); updateData(); }
 
     //Clear the component draw space.
 
@@ -510,10 +573,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   
   //Adjust scroll bar on scroll wheal.
   
-  public void mouseWheelMoved( MouseWheelEvent e )
-  {
-    offset += e.getUnitsToScroll() << 4; if( !Virtual && offset < 0 ) { offset = 0; } updateData(); repaint();
-  }
+  public void mouseWheelMoved( MouseWheelEvent e ) { ScrollBar.setValue( ScrollBar.getValue() + ( e.getUnitsToScroll() << 4 ) ); }
 
   public void mouseMoved( MouseEvent e )
   {
@@ -659,7 +719,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void mouseClicked( MouseEvent e )
   {
-    if( e.getClickCount() == 2 && e.getX() > textcol && e.getX() < endw && e.getY() > lineHeight )
+    if( !IOStream.readOnly && e.getClickCount() == 2 && e.getX() > textcol && e.getX() < endw && e.getY() > lineHeight )
     {
       ecellX = ( ( e.getX() - textcol ) / charWidth[0] ) << 1;
 
@@ -676,7 +736,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
         requestFocus(); repaint();
       }
     }
-    else if( e.getClickCount() == 2 && e.getX() > addcol && e.getX() < hexend && e.getY() > lineHeight )
+    else if( !IOStream.readOnly && e.getClickCount() == 2 && e.getX() > addcol && e.getX() < hexend && e.getY() > lineHeight )
     {
       ecellX = ( e.getX() - addcol ) / cell;
 
@@ -705,9 +765,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
    {
      IOStream = f; IOStream.removeIOEventListener( this ); f.addIOEventListener( this );
      
-     try { ScrollBar.setMaximum( Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() ); } catch( Exception e ) { }
+     try { ScrollBar.setMaximum( Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() ); ScrollBar.setVisibleAmount( Rows << 4 ); ScrollBar.setValue(0); } catch( Exception e ) { }
      
-     offset = 0; updateData(); repaint();
+     offset = 0; sel = 0; sele = 0; SelectC = new Color(57, 105, 138, 128); updateData(); repaint();
    }
 
    //Writes modified byte before moving.
@@ -819,11 +879,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     SelectC = new Color( 57, 105, 138, 128 );
 
-    if( !Virtual ) { sel = e.SPos(); sele = sel; } else { sel = e.SPosV(); sele = sel; }
+    if( !Virtual ) { sel = e.SPos(); sele = sel; } else if( IOStream.isMaped() ) { sel = e.SPosV(); sele = sel; }
 
     if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); }
     
-    repaint();
+    if( !Virtual || IOStream.isMaped() ) { repaint(); }
   }
   
   //On Reading bytes in stream.
@@ -832,11 +892,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     endEdit(); SelectC = new Color( 33, 255, 33, 128 );
 
-    if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
+    if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else if( IOStream.isMaped() ) { sel = e.SPosV(); sele = e.EPosV(); }
 
     if( ( sel - offset ) >= Rows << 4 || ( sel - offset ) < 0 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; updateData(); } 
     
-    repaint();
+    if( !Virtual || IOStream.isMaped() ) { repaint(); }
   }
   
   //On writing bytes in stream.
@@ -845,11 +905,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     SelectC = new Color( 255, 33, 33, 128 );
 
-    if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else { sel = e.SPosV(); sele = e.EPosV(); }
+    if( !Virtual ) { sel = e.SPos(); sele = e.EPos(); } else if( IOStream.isMaped() ) { sel = e.SPosV(); sele = e.EPosV(); }
 
     if( ( sel - offset ) > Rows << 4 ) { offset = sel & 0xFFFFFFFFFFFFFFF0L; }
 
-    updateData(); repaint();
+    if( !Virtual || IOStream.isMaped() ) { updateData(); repaint(); }
   }
 
   //Text cursor line animation.
