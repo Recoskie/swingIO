@@ -84,4 +84,4 @@ public class Window
 }
 ```
 
-![ExampleCode](ExampleCode.bmp)
+![ExampleCode](Figs/ExampleCode.bmp)
