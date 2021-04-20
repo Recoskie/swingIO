@@ -6,7 +6,7 @@ Just two of these components are somewhat documented between two packages
 
 https://github.com/Recoskie/RandomAccessFileV
 
-https://github.com/Recoskie/VHex
+https://github.com/Recoskie/swingIO/blob/master/docs/VHex.md
 
 However these two packages now belong to one package **swingIO**.
 
