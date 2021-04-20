@@ -1,4 +1,4 @@
-package dataTools;
+package swingIO;
 
 import java.awt.*;
 import javax.swing.*;
@@ -8,11 +8,10 @@ import java.awt.event.*;
 import java.util.*;
 
 import RandomAccessFileV.*;
-import VHex.*;
 
-public class dataInspector extends JComponent implements IOEventListener, ActionListener
+public class dataInspector extends JComponent implements IOEventListener, ActionListener, MouseMotionListener, MouseListener
 {
-  private static RandomAccessFileV d;
+  private RandomAccessFileV d;
 
   //integers.
 
@@ -370,7 +369,7 @@ public class dataInspector extends JComponent implements IOEventListener, Action
     }
 
     public Dimension getMinimumSize() { return( new Dimension( super.getPreferredSize() ) ); }
-  };
+  }
 
   //Create controls.
 
@@ -444,13 +443,16 @@ public class dataInspector extends JComponent implements IOEventListener, Action
     super.setLayout( new FlowLayout( FlowLayout.LEFT ) ); super.add( comp );
 
     try { d.seek(d.getFilePointer()); } catch( java.io.IOException e ) { }
+
+    this.addMouseListener(this); this.addMouseMotionListener(this);
   }
 
   //Disable events when component is not visible.
 
   @Override public void setVisible( boolean v )
   {
-    if( v ) { d.addIOEventListener( this ); } else { d.removeIOEventListener(this); }
+    if( v && !isVisible() ) { d.addIOEventListener( this ); } else if ( !v && isVisible() ) { d.removeIOEventListener(this); }
+
     super.setVisible( v );
   }
 
@@ -458,9 +460,7 @@ public class dataInspector extends JComponent implements IOEventListener, Action
 
   public void setTarget( RandomAccessFileV data )
   {
-    d.removeIOEventListener( this );
-    d = data;
-    d.addIOEventListener( this );
+    d = data; if( isVisible() ) { d.addIOEventListener( this ); }
     try { d.seek(d.getFilePointer()); } catch( java.io.IOException e ) { }
   }
 
@@ -643,4 +643,18 @@ public class dataInspector extends JComponent implements IOEventListener, Action
 
     try{ d.seek( d.getFilePointer() ); } catch( java.io.IOException er ) {  }
   }
+
+  public void mouseClicked(MouseEvent e) { }
+
+  public void mousePressed(MouseEvent e) { }
+
+  public void mouseReleased(MouseEvent e) { }
+
+  public void mouseEntered(MouseEvent e) { }
+
+  public void mouseExited(MouseEvent e) { }
+
+  public void mouseDragged(MouseEvent e) { }
+
+  public void mouseMoved(MouseEvent e) { }
 }

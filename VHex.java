@@ -1,4 +1,4 @@
-package VHex;
+package swingIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -55,7 +55,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Font is loaded on Initialize.
 
-  Font font;
+  private Font font;
 
   //Hex editor offset.
 
@@ -301,11 +301,11 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Add data type tool to hex editor.
 
-  public VHex(RandomAccessFileV f, dataTools.dataInspector d, boolean mode) { this(f, mode); d.addEditor( this ); }
+  public VHex(RandomAccessFileV f, swingIO.dataInspector d, boolean mode) { this(f, mode); d.addEditor( this ); }
 
   //Add data type tool to hex editor. If no mode setting then assume offset mode.
 
-  public VHex(RandomAccessFileV f, dataTools.dataInspector d) { this(f, false); d.addEditor( this ); }
+  public VHex(RandomAccessFileV f, swingIO.dataInspector d) { this(f, false); d.addEditor( this ); }
   
   //If no mode setting then assume offset mode.
 
@@ -352,7 +352,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   @Override public void setVisible( boolean v )
   {
-    if( v ) { IOStream.addIOEventListener( this ); } else { IOStream.removeIOEventListener(this); }
+    if( v && !isVisible() ) { IOStream.addIOEventListener(this); } else if ( !v && isVisible() ) { IOStream.removeIOEventListener(this); }
     super.setVisible( v );
   }
 
@@ -410,6 +410,10 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     validate();
   }
 
+  //Check if text is enabled.
+
+  public boolean showText() { return( text ); }
+
   //Check if editing data.
 
   public boolean isEditing() { return( emode ); }
@@ -420,7 +424,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   //Initialize the draw area and component size.
 
-  public void init()
+  private void init()
   {
     scrollBarSize = ((Integer)UIManager.get("ScrollBar.width")).intValue();
 
@@ -855,7 +859,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
    public void setTarget( RandomAccessFileV f )
    {
-     IOStream = f; IOStream.removeIOEventListener( this ); f.addIOEventListener( this );
+     IOStream = f; if( isVisible() ) { IOStream.addIOEventListener( this ); }
      
      try { ScrollBar.setMaximum( Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() ); ScrollBar.setVisibleAmount( Rows << 4 ); ScrollBar.setValue(0); } catch( Exception e ) { }
      
