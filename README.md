@@ -18,21 +18,25 @@ When a read IO operation is done. The bytes that are read are highlighted in gre
 
 When a write IO operation is done. The bytes are highlight in red that changed.
 
+Weather you do the change in the hex editor, or in another component. The hex editor will show anything you do as the IO system commands are always tracked.
+
 ------------------------------------------------------------
 
 Clicking on any spot in the hex editor does a seek to position in file or disk.
 
-Uses IO Seek operation. Which causes the hex editor to receive the seek and to highlight the byte as blue.
+Uses the IO Seek operation. Which causes the hex editor to receive the seek, and to highlight the byte as blue.
 
-This also triggers the seek event to all other IO-GUI components.
+This also triggers the seek event to all other GUI-IO components.
 
-When making changes to binary data using the hex editor. Uses IO write operation.
+When making changes to binary data using the hex editor. Uses the IO write operation.
 
-Which causes the hex editor to receive the write and to highlight the bytes as red that you are changing.
+Which causes the hex editor to receive the write, and to highlight the bytes as red that you are changing.
 
-Weather you do the change in the hex editor, or in another component. The hex editor will show anything you do as the IO system commands are always tracked.
+This also lets other components update that style the binary data when you make a change.
 
-This also lets other components update that style the binary data when you make a change using a IO write operation.
+This way you can manually change things, and all GUI-IO tools will show what changed visually.
+
+Weather it is a data algorithm you built, or change done by some GUI tool.
 
 ------------------------------------------------------------
 
