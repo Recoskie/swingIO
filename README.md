@@ -22,15 +22,17 @@ When a write IO operation is done. The bytes are highlight in red that changed.
 
 Clicking on any spot in the hex editor does a seek to position in file or disk.
 
-Triggers the IO Seek event. Which causes the hex editor to receive the seek and to highlight the byte as blue.
+Uses IO Seek operation. Which causes the hex editor to receive the seek and to highlight the byte as blue.
 
-This also triggers the seek event to all IO GUI components including the hex editor its self.
+This also triggers the seek event to all other IO-GUI components.
 
-When making changes to binary data using the hex editor.
+When making changes to binary data using the hex editor. Uses IO write operation.
 
-Triggers the IO event write. Which causes the hex editor to receive the write and to highlight the byte as red that you are changing.
+Which causes the hex editor to receive the write and to highlight the bytes as red that you are changing.
 
-Weather you do the change in the hex editor, or in another component.
+Weather you do the change in the hex editor, or in another component. The hex editor will show anything you do as the IO system commands are always tracked.
+
+This also lets other components update that style the binary data when you make a change using a IO write operation.
 
 ------------------------------------------------------------
 
