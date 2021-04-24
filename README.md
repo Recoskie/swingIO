@@ -10,31 +10,37 @@ The new IO system can also map virtual addresses to actual positions on a disk, 
 
 Swing IO hex editor documentation: <a href="https://github.com/Recoskie/VHex">VHex</a>.
 
-The hex editor can show mapped virtual addresses space. It can also show the raw binary data of the file, or disk.
+The hex editor can show mapped virtual address space. It can also show the raw binary data of the file, or disk.
 
-Any seek to new position in a file, or disk that happens anywhere. Will cause the hex editor to jump to location.
+Any seek to new position in a file, or disk that happens anywhere. Will cause the hex editor to jump to location, and highlight the byte as blue.
 
-Clicking on any spot in the hex editor will cause a seek which triggers the IO Seek event to all IO GUI components.
+When a read IO operation is done. The bytes that are read are highlighted in green.
 
-Keeping everything in sync.
-
-When a read operation is done. The bytes that are read are highlighted in green.
-
-When a write is done. The bytes are highlight in red that changed.
-
-When making changes to binary data using the hex editor, or any data editor. Triggers the IO event write to all other components.
-
-Keeping everything in sync.
+When a write IO operation is done. The bytes are highlight in red that changed.
 
 ------------------------------------------------------------
 
-There are many other components such as a descriptor data model.
+Clicking on any spot in the hex editor does a seek to position in file or disk.
+
+Triggers the IO Seek event. Which causes the hex editor to receive the seek and to highlight the byte as blue.
+
+This also triggers the seek event to all IO GUI components including the hex editor its self.
+
+When making changes to binary data using the hex editor.
+
+Triggers the IO event write. Which causes the hex editor to receive the write and to highlight the byte as red that you are changing.
+
+Weather you do the change in the hex editor, or in another component.
+
+------------------------------------------------------------
+
+There are many other data components such as a descriptor data model.
 
 The data model is loaded using the data descriptor GUI tool.
 
 IT stylizes binary data, and seeks to binary data position when clicked on a type of data.
 
-Which highlights the data in the hex editor.
+Which highlights the data blue in the hex editor.
 
 The data inspector GUI component shows what type of data it is, and can also let you edit data types.
 
