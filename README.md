@@ -48,9 +48,9 @@ Which causes the hex editor to receive the write, and to highlight the bytes as 
 
 This also lets other components update that style the binary data when you make a change.
 
-This way no matter how you change things all GUI-IO tools will show what changed visually.
+This way no matter how you change things. All GUI-IO tools will show what changed visually.
 
-Weather it is a data algorithm you built, or change done by some GUI tool.
+Even if you make do a write from a algorithm, or code, or change done by some GUI tool.
 
 ------------------------------------------------------------
 Other GUI-IO Components
