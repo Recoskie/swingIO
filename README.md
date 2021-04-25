@@ -6,11 +6,11 @@ The file system <a href="https://github.com/Recoskie/RandomAccessFileV">RandomAc
 
 The new IO system can also map file, or disk positions as virtual addresses, and back to actual positions on a disk, or file.
 
-Which is usefully for mapping binary applications, and ,making changes to binary applications.
+Which is useful, for mapping binary applications, and ,making changes to binary applications.
 
 RandomAccessFileV documentation also shows how to design a GUI-IO component.
 
-Also you can mix swing IO components with java components like text boxes, buttons, check boxes, and layout managers.
+Also you can mix swing IO components with java swing components like text boxes, buttons, check boxes, and default layout managers.
 
 ------------------------------------------------------------
 VHex Component
