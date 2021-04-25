@@ -4,9 +4,9 @@ Swing IO is a new set of GUI components that update on any read, write, or seek 
 
 The file system <a href="https://github.com/Recoskie/RandomAccessFileV">RandomAccessFileV</a> implements the event system.
 
-The new IO system can also map file, or disk positions as virtual addresses, and back to actual positions on a disk, or file.
+The new IO system can also map an file, or disk position as an virtual address position.
 
-Which is useful, for mapping binary applications, and making changes to binary applications.
+Which is useful, for mapping binary applications, and making changes to binary applications, or can be used to make fragmented data easy to read.
 
 The RandomAccessFileV documentation also shows how to design a GUI-IO component.
 
@@ -18,17 +18,19 @@ VHex Component
 
 Swing IO hex editor documentation: <a href="https://github.com/Recoskie/VHex">VHex</a>.
 
-The hex editor can show mapped virtual address space. It can also show the raw binary data of the file, or disk.
+The hex editor can show the mapped virtual address space. It can also show the raw binary data of the file, or disk.
+
+------------------------------------------------------------
 
 Any seek to new position in a file, or disk that happens anywhere using RandomAccessFileV.
 
 Will cause the hex editor to jump to location, and highlight the byte as blue.
 
-When a read IO operation is done. The bytes that are read are highlighted in green.
+When a read operation is done. The bytes that are read are highlighted in green.
 
-When a write IO operation is done. The bytes are highlight in red that changed.
+When a write operation is done. The bytes are highlight in red that changed.
 
-Weather you do the change in the hex editor, or in another component.
+Weather you do the change in the hex editor, or in another component, or algorithm/code.
 
 The hex editor will show anything you do as the IO system commands are always tracked.
 
