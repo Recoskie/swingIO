@@ -175,7 +175,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     private long oldOffset = 0;
 
-    private boolean exstend = false;
+    private boolean extend = false;
 
     private VHex comp;
     
@@ -183,7 +183,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       super( orientation, value, visible, minimum, Long.compareUnsigned( maximum, 0x7FFFFFF0 ) > 0 ? 0x7FFFFFF0 : (int) ( ( maximum + 15 ) & 0x7FFFFFF0 ) );
       
-      End = maximum; exstend = Long.compareUnsigned( maximum, 0x7FFFFFF0 ) > 0;
+      End = maximum; extend = Long.compareUnsigned( maximum, 0x7FFFFFF0 ) > 0;
       
       if( Long.compareUnsigned( visible, End ) < 0 ) { VisibleEnd = ( End - visible ) & 0x7FFFFFFFFFFFFFF0L; }
       
@@ -194,7 +194,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     {
       //Relatively scroll really large files that are too big for scroll bar.
 
-      if( exstend )
+      if( extend )
       {
         rel = v - ov; ov = v; offset += rel; oldOffset = offset;
 
@@ -244,7 +244,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
     
     @Override public void setVisibleAmount( int v )
     {
-      if( Long.compareUnsigned( v, End ) < 0 ) { VisibleEnd = ( ( exstend ? End : End + 15 ) - v ) & 0x7FFFFFFFFFFFFFF0L; } else { VisibleEnd = 0; }
+      if( Long.compareUnsigned( v, End ) < 0 ) { VisibleEnd = ( ( extend ? End : End + 15 ) - v ) & 0x7FFFFFFFFFFFFFF0L; } else { VisibleEnd = 0; }
       
       super.setVisibleAmount( v );
       
@@ -257,7 +257,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       rel = (int)(v - oldOffset); v = ov + rel; ov = (int)v; oldOffset = offset;
 
-      if( exstend )
+      if( extend )
       {
         if( !Virtual ) { if( offset < 0 ) { offset = 0; } else if( Long.compareUnsigned( offset, VisibleEnd ) > 0 ) { offset = VisibleEnd; } }
 
@@ -293,9 +293,9 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     public void setMaximum( long v )
     {
-      End = v; exstend = Long.compareUnsigned( v, 0x7FFFFFF0 ) > 0;
+      End = v; extend = Long.compareUnsigned( v, 0x7FFFFFF0 ) > 0;
       
-      super.setMaximum( exstend ? 0x7FFFFFF0 : (int) ( ( v + 15 ) & 0x7FFFFFF0 ) );
+      super.setMaximum( extend ? 0x7FFFFFF0 : (int) ( ( v + 15 ) & 0x7FFFFFF0 ) );
     }
   }
 
