@@ -208,7 +208,7 @@ public class dataInspector extends JComponent implements IOEventListener, Action
 
         if( mode ) { t = d.getVirtualPointer(); d.writeV( 0, len[type] ); d.Events = false; d.seekV( t ); d.Events = true; } else { t = d.getFilePointer(); d.write( 0, len[type] ); d.Events = false; d.seek( t ); d.Events = true; }
       }
-      catch( java.io.IOException e ) { e.printStackTrace(); }
+      catch( java.io.IOException e ) { }
     }
   };
 
