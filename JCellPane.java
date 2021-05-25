@@ -65,7 +65,7 @@ public class JCellPane extends JComponent implements MouseMotionListener, MouseL
 
     for( int r = 0; r < rows; r++ )
     {
-      if( r <= eRow ) { min += Rows.get( r ).min; } else { max += Rows.get( r ).min; }
+      if( Rows.get( r ).val > 0 ) { if( r <= eRow ) { min += Rows.get( r ).min; } else { max += Rows.get( r ).min; } } else { max -= gap; eRow += 1; }
     }
 
     adjMin = min; adjMax = this.getHeight() - max;
@@ -230,7 +230,7 @@ public class JCellPane extends JComponent implements MouseMotionListener, MouseL
 
   //Set a row to take up rest of space.
 
-  public void rowMaximize( int el ) { eRow = el; rowAdjustableSize(); ny = Integer.MAX_VALUE; setRow(); eRow = -1; }
+  public void rowMaximize( int el ) { SwingUtilities.invokeLater( new Runnable() { public void run() { eRow = el; rowAdjustableSize(); ny = adjMax; setRow(); eRow = -1; } } ); }
 
   //Construct the split layout system.
 
