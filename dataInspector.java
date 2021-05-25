@@ -1,6 +1,8 @@
 package swingIO;
 
 import java.awt.*;
+
+import javax.lang.model.util.ElementScanner14;
 import javax.swing.*;
 import javax.swing.table.*;
 import javax.swing.text.*;
@@ -173,32 +175,40 @@ public class dataInspector extends JComponent implements IOEventListener, Action
 
         else if( littleEndian )
         {
-          if( type <= 4 ) { d.modShort( (short)( v & 0xFFFF ) ); }
-          else if( type <= 6 ) { d.modInt( (int)( v & 0xFFFFFFFF ) ); }
-          else if( type <= 8 ) { d.modLong( v ); }
-          else if( type == 9 ) { d.modFloat( f32 ); } else if( type == 10 ) { d.modDouble( f64 ); }
-          else
-          {
-            //if( type % 2 == 1 ){ d.modChar8( o ); } else { d.modChar16( o ); }
-          }
-        }
-        else
-        {
           if( type <= 4 ) { d.modLShort( (short)( v & 0xFFFF ) ); }
           else if( type <= 6 ) { d.modLInt( (int)( v & 0xFFFFFFFF ) ); }
           else if( type <= 8 ) { d.modLLong( v ); }
           else if( type == 9 ) { d.modLFloat( f32 ); } else if( type == 10 ) { d.modLDouble( f64 ); }
+          else if( type <= 12 )
+          {
+            if( type % 2 == 1 ){ d.modChar8( o.charAt(0) ); } else { d.modLChar16( o.charAt(0) ); }
+          }
           else
           {
-            //if( type % 2 == 1 ){ d.modChar8( o ); } else { d.modLChar16( o ); }
+            if( type % 2 == 1 ){ d.modText8( o ); } else { d.modLText16( o ); }
+          }
+        }
+        else
+        {
+          if( type <= 4 ) { d.modShort( (short)( v & 0xFFFF ) ); }
+          else if( type <= 6 ) { d.modInt( (int)( v & 0xFFFFFFFF ) ); }
+          else if( type <= 8 ) { d.modLong( v ); }
+          else if( type == 9 ) { d.modFloat( f32 ); } else if( type == 10 ) { d.modDouble( f64 ); }
+          else if( type <= 12 )
+          {
+            if( type % 2 == 1 ){ d.modChar8( o.charAt(0) ); } else { d.modChar16( o.charAt(0) ); }
+          }
+          else
+          {
+            if( type % 2 == 1 ){ d.modText8( o ); } else { d.modText16( o ); }
           }
         }
 
         //Write data.
 
-        if( mode ) { t = d.getVirtualPointer(); d.writeV( 0, len[type] ); d.seekV( t ); } else { t = d.getFilePointer(); d.write( 0, len[type] ); d.seek( t ); }
+        if( mode ) { t = d.getVirtualPointer(); d.writeV( 0, len[type] ); d.Events = false; d.seekV( t ); d.Events = true; } else { t = d.getFilePointer(); d.write( 0, len[type] ); d.Events = false; d.seek( t ); d.Events = true; }
       }
-      catch( java.io.IOException e ) { }
+      catch( java.io.IOException e ) { e.printStackTrace(); }
     }
   };
 
@@ -543,11 +553,11 @@ public class dataInspector extends JComponent implements IOEventListener, Action
   {
     try
     {
-      for( int i = h.size() - 1; i > 0; i-- )
+      for( int i = h.size() - 1; i > -1; i-- )
       {
         e = h.get(i); v = e.isVirtual();
       
-        if( len[type] > 0 ) { if( v ) { d.seekV( e.selectEl() ); } else { d.seek( e.selectEl() ); } }
+        if( len[type] > 0 && e.isEditing() ) { if( v ) { d.seekV( e.selectEl() ); } else { d.seek( e.selectEl() ); } }
       }
     } catch( Exception e ) { }
   }
