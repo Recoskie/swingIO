@@ -543,7 +543,7 @@ public class dataInspector extends JComponent implements IOEventListener, Action
   {
     try
     {
-      for( int i = h.size(); i > 0; i++ )
+      for( int i = h.size() - 1; i > 0; i-- )
       {
         e = h.get(i); v = e.isVirtual();
       
