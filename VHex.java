@@ -925,11 +925,15 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
        if (c == e.VK_UP)
        {
-         checkEdit(); ecellY -= 1; if( !Virtual && ecellY < 0 ) { ecellY = 0; } canEdit(); try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
+         checkEdit(); ecellY -= 1; if( !Virtual && ecellY < 0 ) { ecellY = 0; } canEdit();
+         
+         try { if( !Virtual ) { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } else { IOStream.seekV( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } } catch( Exception er ) { }
        }
        else if (c == e.VK_DOWN)
        {
-         checkEdit(); ecellY += 1; canEdit(); try { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } catch( Exception er ) { }
+         checkEdit(); ecellY += 1; canEdit();
+         
+         try { if( !Virtual ) { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } else { IOStream.seekV( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } } catch( Exception er ) { }
        }
 
        else if (c == e.VK_LEFT)
@@ -958,7 +962,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
          try
          {
-           if( etext || ecellX % 2 == 0 ) { canEdit(); IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); }
+           if( etext || ecellX % 2 == 0 ) { canEdit(); if( !Virtual ) { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } else { IOStream.seekV( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } }
 
            else { repaint(); }
 
@@ -994,7 +998,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
          {
            c = c <= 0x39 ? c & 0x0F : c - 0x37;
 
-           try { canEdit(); IOStream.seek( ( ( ecellX >> 1 ) + ( ecellY << 4 ) ) ); } catch( Exception er ) { }
+           try { canEdit(); if( !Virtual ) { IOStream.seek( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } else { IOStream.seekV( ( ecellX >> 1 ) + ( ecellY << 4 ) ); } } catch( Exception er ) { }
 
            x = (int)( ( ecellX >> 1 ) + ( ecellY << 4 ) - offset );
 
