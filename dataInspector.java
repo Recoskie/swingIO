@@ -1,8 +1,6 @@
 package swingIO;
 
 import java.awt.*;
-
-import javax.lang.model.util.ElementScanner14;
 import javax.swing.*;
 import javax.swing.table.*;
 import javax.swing.text.*;
