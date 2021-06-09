@@ -128,6 +128,15 @@ public class Descriptor
     length += 4; type.add( 5 ); rpos.add( length ); apos.add( 0 ); rows += 1;
   }
 
+  public void UINT64( String use ) throws java.io.IOException
+  {
+    IOStream.read(8); value = IOStream.toLong();
+
+    data.add(new String[]{ use, IOStream.toHex(), ((Long)value) + "" } );
+    
+    length += 8; type.add( 7 ); rpos.add( length ); apos.add( 0 ); rows += 1;
+  }
+
   public void LINT16( String use ) throws java.io.IOException
   {
     IOStream.read(2); value = IOStream.toLShort();
