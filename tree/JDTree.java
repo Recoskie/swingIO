@@ -19,17 +19,19 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
     
   public static String FType[] = new String[]
   {
-    ".h", ".disk", ".com", ".exe", ".dll",
-    ".sys", ".drv", ".ocx", ".efi", ".mui"
+    ".h", ".disk",
+    ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
+    ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so"
   };
     
   public static String Load[] = new String[]
   {
-    "Icons/H.gif", "Icons/disk.gif", "Icons/EXE.gif", "Icons/EXE.gif", "Icons/dll.gif",
-    "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif"
+    "Icons/H.gif", "Icons/disk.gif",
+    "Icons/EXE.gif", "Icons/EXE.gif", "Icons/dll.gif", "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif",
+    "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif"
   };
     
-  public static ImageIcon LoadedPic[] = new ImageIcon[10];
+  public static ImageIcon LoadedPic[] = new ImageIcon[19];
     
   public boolean singleClick = false;
   
