@@ -14,8 +14,18 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
 
   //Icon manager.
 
-  public static String Folder = "Icons/f.gif", UnknownFile = "Icons/u.gif";
-  public static ImageIcon FolderPic[] = new ImageIcon[2];
+  private static ImageIcon FolderPic[] = new ImageIcon[]
+  {
+    new ImageIcon( FileIconManager.class.getResource( "Icons/f.gif" ) ), //Folder
+    new ImageIcon( FileIconManager.class.getResource( "Icons/u.gif" ) )  //File
+  };
+
+  private static ImageIcon h_file = new ImageIcon( FileIconManager.class.getResource( "Icons/H.gif" ) );
+  private static ImageIcon disk = new ImageIcon( FileIconManager.class.getResource( "Icons/disk.gif" ) );
+  private static ImageIcon exe_file = new ImageIcon( FileIconManager.class.getResource( "Icons/EXE.gif" ) );
+  private static ImageIcon dll_file = new ImageIcon( FileIconManager.class.getResource( "Icons/dll.gif" ) );
+  private static ImageIcon sys_file = new ImageIcon( FileIconManager.class.getResource( "Icons/sys.gif" ) );
+  private static ImageIcon elf_file = new ImageIcon( FileIconManager.class.getResource( "Icons/ELF.gif" ) );
     
   public static String FType[] = new String[]
   {
@@ -24,18 +34,14 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
     ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so"
   };
     
-  public static String Load[] = new String[]
+  public static ImageIcon LoadedPic[] = new ImageIcon[]
   {
-    "Icons/H.gif", "Icons/disk.gif",
-    "Icons/EXE.gif", "Icons/EXE.gif", "Icons/dll.gif", "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif", "Icons/sys.gif",
-    "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif", "Icons/ELF.gif"
+    h_file, disk,
+    exe_file, exe_file, dll_file, sys_file, sys_file, sys_file, sys_file, sys_file,
+    elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file
   };
     
-  public static ImageIcon LoadedPic[] = new ImageIcon[19];
-    
   public boolean singleClick = false;
-  
-  private static boolean LoadData = true;
 
   protected String getExtension(String f)
   {
@@ -49,24 +55,6 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
 
   class FileIconManager extends DefaultTreeCellRenderer
   {
-    public FileIconManager()
-    {
-      //Load file format Icons.
-    
-      if( LoadData )
-      {
-        LoadData = false;
-    
-        FolderPic[0] = new ImageIcon( FileIconManager.class.getResource( Folder ) );
-        FolderPic[1] = new ImageIcon( FileIconManager.class.getResource( UnknownFile ) );
-        
-        for( int i = 0; i < Load.length; i++ )
-        {
-          LoadedPic[ i ] = new ImageIcon( FileIconManager.class.getResource( Load[i] ) ); 
-        }
-      }
-    }
-    
     //Draw pictures related to file format icon.
     
     public Component getTreeCellRendererComponent(JTree tree,Object value,boolean sel,boolean expanded,boolean leaf,int row,boolean hasFocus)
