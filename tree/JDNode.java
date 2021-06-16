@@ -23,6 +23,10 @@ public class JDNode extends DefaultMutableTreeNode
 
   public JDNode( String name, String ID, long[] Args ){ super( name ); id = ID; args = Args; }
 
+  //Set args
+
+  public void setArgs( long[] a ){ args = a; }
+
   //Get the additional properties.
 
   public String getID() { return( id ); }
