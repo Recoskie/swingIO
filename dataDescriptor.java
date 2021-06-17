@@ -132,7 +132,7 @@ public class dataDescriptor extends JComponent
 
   public void setDescriptor( Descriptor d )
   {
-    data = d; data.loc( 0 ); di.setOther( data.length );
+    data = d; if( data.length > 0 ) { data.loc( 0 ); di.setOther( data.length ); }
     
     if( !set ) { cset = false; set = true; td.setModel( dModel ); }
     
