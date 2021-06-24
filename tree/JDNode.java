@@ -27,6 +27,10 @@ public class JDNode extends DefaultMutableTreeNode
 
   public void setArgs( long[] a ){ args = a; }
 
+  //Set ID
+
+  public void setID( String ID ){ id = ID; }
+
   //Get the additional properties.
 
   public String getID() { return( id ); }
