@@ -5,6 +5,7 @@ import javax.swing.*;
 import javax.swing.table.*;
 import javax.swing.text.*;
 import java.awt.event.*;
+import java.io.IOException;
 import java.util.*;
 
 import RandomAccessFileV.*;
@@ -12,6 +13,10 @@ import RandomAccessFileV.*;
 public class dataInspector extends JComponent implements IOEventListener, ActionListener, MouseMotionListener, MouseListener
 {
   private RandomAccessFileV d;
+
+  //Popup menu for options with data types.
+
+  private static JPopupMenu intType = new JPopupMenu("");
 
   //integers.
 
@@ -104,6 +109,8 @@ public class dataInspector extends JComponent implements IOEventListener, Action
     public boolean isCellEditable( int row, int col )
     {
       type = row;
+
+      if ( type > 0 && type <= 8 ) { intType.show( td, 0, 255 ); }
 
       try { t = mode ? d.getVirtualPointer() : d.getFilePointer(); } catch(Exception e) {}
 
@@ -434,6 +441,18 @@ public class dataInspector extends JComponent implements IOEventListener, Action
     javax.swing.border.TitledBorder str = BorderFactory.createTitledBorder( BorderFactory.createLineBorder( Color.black, 1 ), "String Char Length");
     str.setTitleJustification( str.LEFT ); p3.setBorder( str );
 
+    //Menus for data types.
+
+    JMenuItem pos = new JMenuItem("Use as file offset"), posV = new JMenuItem("Use as Virtual address");
+
+    pos.setPreferredSize(new Dimension(448,pos.getPreferredSize().height));
+
+    pos.setActionCommand("pos"); posV.setActionCommand("posV");
+
+    pos.addActionListener(this); posV.addActionListener(this);
+
+    intType.add(pos); intType.add(posV);
+
     //Component layout.
 
     JPanel comp = new JPanel( new GridBagLayout() );
@@ -644,6 +663,16 @@ public class dataInspector extends JComponent implements IOEventListener, Action
   public void actionPerformed(ActionEvent e)
   {
     String ac = e.getActionCommand();
+
+    if( ac.startsWith("pos") )
+    {
+      long pos = 0;
+
+      if( type == 1 || type == 2 ) { pos = b; } else if( type == 3 || type == 4 ) { pos = s; }
+      else if( type == 5 || type == 6 ) { pos = i; } else if( type == 7 || type == 8 ) { pos = l; }
+
+      try { if( ac.equals("posV") ) { d.seekV( pos ); } else { d.seek( pos ); } } catch ( IOException er ) { }
+    }
 
     if( ac == "b" ) { r = 2; } else if( ac == "o" ) { r = 8; } else if( ac == "d" ) { r = 10; } else if( ac == "h" ) { r = 16; }
 
