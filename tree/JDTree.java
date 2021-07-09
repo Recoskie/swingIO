@@ -161,6 +161,10 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
 
   public JDTree( JDNode n ) { super(n); this.addMouseListener(this); this.setCellRenderer(new FileIconManager()); }
 
+  //manually fire the open command.
+
+  public void fireOpenEvent( JDEvent e ) { Event.open( e ); }
+
   //Settable Event handler.
 
   public void open( JDEvent e ) { }
