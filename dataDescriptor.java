@@ -81,36 +81,58 @@ public class dataDescriptor extends JComponent
   {
     public int getColumnCount() { return( 2 ); }
 
-    public int getRowCount() { return( core.locations.size() + ( core.data_off.size() >> 1 ) ); }
+    public int getRowCount() { return( core.Crawl.size() + ( core.Linear.size() >> 1 ) + ( core.data_off.size() >> 1 ) ); }
 
     public String getColumnName( int col ) { return ( coreCols[ col ] ); }
     
     public Object getValueAt( int row, int col )
     {
-      if( row < core.locations.size() )
+      if( row < ( core.Linear.size() >> 1 ) )
       {
-        return( col == 0 ? "Disassemble" : "0x" + String.format( "%1$016X", core.locations.get( row ) ) );
+        return( col == 0 ? "LDisassemble" : "0x" + String.format( "%1$016X", core.Linear.get( row << 1 ) ) );
       }
-      else
+
+      row -= ( core.Linear.size() >> 1 );
+
+      if( row >= 0 )
       {
-        row -= core.locations.size();
-        return( col == 0 ? "Data Location" : "0x" + String.format( "%1$016X", core.data_off.get( row << 1 ) ) );
+        if( row < core.Crawl.size() )
+        {
+          return( col == 0 ? "Disassemble" : "0x" + String.format( "%1$016X", core.Crawl.get( row ) ) );
+        }
+        else
+        {
+          row -= core.Crawl.size();
+          return( col == 0 ? "Data Location" : "0x" + String.format( "%1$016X", core.data_off.get( row << 1 ) ) );
+        }
       }
+
+      return("");
     }
 
     public boolean isCellEditable( int row, int col )
     {
-      if( row < core.locations.size() )
+      if( row < ( core.Linear.size() >> 1 ) )
       {
-        core.disLoc( row );
+        core.disLoc( row, false );
       }
-      else
+
+      row -= ( core.Linear.size() >> 1 );
+
+      if( row >= 0 )
       {
-        row -= core.locations.size(); row = row << 1;
+        if( row < core.Crawl.size() )
+        {
+          core.disLoc( row, true );
+        }
+        else
+        {
+          row -= core.Crawl.size(); row = row << 1;
 
-        try { core.setLoc( core.data_off.get( row ) ); } catch( Exception e ) { }
+          try { core.setLoc( core.data_off.get( row ) ); } catch( Exception e ) { }
 
-        di.setOther( core.data_off.get( row + 1 ).intValue() );
+          di.setOther( core.data_off.get( row + 1 ).intValue() );
+        }
       }
       
       return ( false );
