@@ -26,19 +26,22 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
   private static ImageIcon dll_file = new ImageIcon( FileIconManager.class.getResource( "Icons/dll.gif" ) );
   private static ImageIcon sys_file = new ImageIcon( FileIconManager.class.getResource( "Icons/sys.gif" ) );
   private static ImageIcon elf_file = new ImageIcon( FileIconManager.class.getResource( "Icons/ELF.gif" ) );
+  private static ImageIcon bmp_file = new ImageIcon( FileIconManager.class.getResource( "Icons/bmp.gif" ) );
     
   public static String FType[] = new String[]
   {
     ".h", ".disk",
     ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
-    ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so"
+    ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
+    ".bmp", ".dib"
   };
     
   public static ImageIcon LoadedPic[] = new ImageIcon[]
   {
     h_file, disk,
     exe_file, exe_file, dll_file, sys_file, sys_file, sys_file, sys_file, sys_file,
-    elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file
+    elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file,
+    bmp_file, bmp_file
   };
     
   public boolean singleClick = false;
