@@ -220,7 +220,7 @@ public class Descriptor
 
     data.add(new String[]{ use, h, value + "" } );
     
-    length += s.length(); rpos.add( length ); apos.add( 0 );
+    length += s.length() + 1; rpos.add( length ); apos.add( 0 );
     
     type.add( 13 ); rows += 1;
   }
