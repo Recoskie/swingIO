@@ -29,6 +29,7 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
   private static ImageIcon bmp_file = new ImageIcon( FileIconManager.class.getResource( "Icons/bmp.gif" ) );
   private static ImageIcon jpg_file = new ImageIcon( FileIconManager.class.getResource( "Icons/jpg.gif" ) );
   private static ImageIcon wav_file = new ImageIcon( FileIconManager.class.getResource( "Icons/wav.gif" ) );
+  private static ImageIcon avi_file = new ImageIcon( FileIconManager.class.getResource( "Icons/avi.gif" ) );
     
   public static String FType[] = new String[]
   {
@@ -37,7 +38,8 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
     ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
     ".bmp", ".dib",
     ".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi",
-    ".wav"
+    ".wav",
+    ".avi"
   };
     
   public static ImageIcon LoadedPic[] = new ImageIcon[]
@@ -47,7 +49,8 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
     elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file,
     bmp_file, bmp_file,
     jpg_file, jpg_file, jpg_file, jpg_file, jpg_file, jpg_file,
-    wav_file
+    wav_file,
+    avi_file
   };
     
   public boolean singleClick = false;
