@@ -28,8 +28,11 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
   private static ImageIcon elf_file = new ImageIcon( FileIconManager.class.getResource( "Icons/ELF.gif" ) );
   private static ImageIcon bmp_file = new ImageIcon( FileIconManager.class.getResource( "Icons/bmp.gif" ) );
   private static ImageIcon jpg_file = new ImageIcon( FileIconManager.class.getResource( "Icons/jpg.gif" ) );
+  private static ImageIcon pal_file = new ImageIcon( FileIconManager.class.getResource( "Icons/pal.gif" ) );
+  private static ImageIcon ani_file = new ImageIcon( FileIconManager.class.getResource( "Icons/ani.gif" ) );
   private static ImageIcon webp_file = new ImageIcon( FileIconManager.class.getResource( "Icons/webp.gif" ) );
   private static ImageIcon wav_file = new ImageIcon( FileIconManager.class.getResource( "Icons/wav.gif" ) );
+  private static ImageIcon midi_file = new ImageIcon( FileIconManager.class.getResource( "Icons/mid.gif" ) );
   private static ImageIcon avi_file = new ImageIcon( FileIconManager.class.getResource( "Icons/avi.gif" ) );
     
   public static String FType[] = new String[]
@@ -39,8 +42,10 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
     ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
     ".bmp", ".dib",
     ".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi",
+    ".pal",
+    ".ani",
     ".webp",
-    ".wav",
+    ".wav", ".rmi",
     ".avi"
   };
     
@@ -51,8 +56,10 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
     elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file, elf_file,
     bmp_file, bmp_file,
     jpg_file, jpg_file, jpg_file, jpg_file, jpg_file, jpg_file,
+    pal_file,
+    ani_file,
     webp_file,
-    wav_file,
+    wav_file, midi_file,
     avi_file
   };
     
