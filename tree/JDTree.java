@@ -88,7 +88,7 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
       if( leaf ) { check = SetImage( value + "" ); }
     
       if( !check&leaf ) { UnknownFileType( value + "" ); } else if( !leaf ) { FolderIcon( value + "" ); }
-        
+
       return( this );
     }
     
@@ -179,7 +179,7 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
     }
   }
 
-  public JDTree() { this.addMouseListener(this); this.setCellRenderer(new FileIconManager()); }
+  public JDTree() { this.addMouseListener(this); this.setCellRenderer(new FileIconManager()); this.setRowHeight( 32 ); }
 
   public JDTree( JDNode n ) { super(n); this.addMouseListener(this); this.setCellRenderer(new FileIconManager()); }
 
