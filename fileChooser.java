@@ -155,7 +155,7 @@ public class fileChooser implements JDEventListener
 
     //Mac OS X. Needs admin permission.
 
-    if( mac ) { d.checkDisk("/dev/disk", "Disk", false ); }
+    if( mac ) { d.checkDisk("/dev/rdisk", "Disk", false ); }
 
     //Update tree.
       
