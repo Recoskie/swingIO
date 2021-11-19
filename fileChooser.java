@@ -43,7 +43,7 @@ public class fileChooser implements JDEventListener
     
     public getDisks( JDNode r ){ root = r; }
       
-    public void checkDisk( String Root, String type, boolean Zero )
+    public void checkDisk( String Root, String type, boolean Zero, boolean err )
     {
       r = 0; end = false; while(!end)
       {
@@ -57,7 +57,10 @@ public class fileChooser implements JDEventListener
         {
           if( check || er.getMessage().indexOf("Access is denied") > 0 )
           {
-            root.add( new JDNode( type + r + ".disk", Root + ( r == 0 && Zero ? "" : r ), -2 ) );
+            if( err )
+            {
+              root.add( new JDNode( type + r + ".disk", Root + ( r == 0 && Zero ? "" : r ), -2 ) );
+            }
             r += 1; disks += 1;
           }
           else
@@ -135,7 +138,7 @@ public class fileChooser implements JDEventListener
 
   //Search system for disks.
 
-  private boolean findDisks()
+  private boolean findDisks(boolean err)
   {
     //Clear the current tree nodes.
 
@@ -147,18 +150,18 @@ public class fileChooser implements JDEventListener
       
     //Windows uses Physical drive. Needs admin permission.
 
-    if( windows ) { d.checkDisk( "\\\\.\\PhysicalDrive", "Disk", false ); }
+    if( windows ) { d.checkDisk( "\\\\.\\PhysicalDrive", "Disk", false, err ); }
 
     //Linux. Needs admin permission.
       
-    if( linux ) { d.checkDisk("/dev/sda", "Disk", true ); d.checkDisk("/dev/sdb", "Removable Disk", true ); }
+    if( linux ) { d.checkDisk("/dev/sda", "Disk", true, err ); d.checkDisk("/dev/sdb", "Removable Disk", true, err ); }
 
     //Mac OS X. Needs admin permission.
 
-    if( mac ) { d.checkDisk("/dev/rdisk", "Disk", false ); }
+    if( mac ) { d.checkDisk("/dev/rdisk", "Disk", false, err ); }
 
     //Update tree.
-      
+    
     if( d.disks != 0 ) { ((javax.swing.tree.DefaultTreeModel)jd.getModel()).setRoot( root ); } else { return(false); }
 
     return( true );
@@ -267,7 +270,7 @@ public class fileChooser implements JDEventListener
 
   //Find system Disks.
 
-  public boolean disks() { return( findDisks() ); }
+  public boolean disks(boolean err) { return( findDisks( err ) ); }
 
   //Set the file that is open.
 
