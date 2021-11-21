@@ -179,7 +179,7 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
     }
   }
 
-  public JDTree() { this.addMouseListener(this); this.setCellRenderer(new FileIconManager()); this.setRowHeight( 29 ); }
+  public JDTree() { this.addMouseListener(this); this.setCellRenderer(new FileIconManager()); this.setRowHeight( 30 ); }
 
   public JDTree( JDNode n ) { super(n); this.addMouseListener(this); this.setCellRenderer(new FileIconManager()); }
 
