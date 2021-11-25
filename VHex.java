@@ -325,7 +325,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     //Setup Scroll bar system.
       
-    try{ ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length(), this ); } catch( java.io.IOException e ) { }
+    try{ ScrollBar = new LongScrollBar(JScrollBar.VERTICAL, 16, 0, 0, Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() + 16, this ); } catch( java.io.IOException e ) { }
     
     ScrollBar.setUnitIncrement( 16 ); ScrollBar.setBlockIncrement( 16 );
 
@@ -861,7 +861,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
    {
      IOStream = f; if( isVisible() ) { IOStream.addIOEventListener( this ); }
      
-     try { ScrollBar.setMaximum( Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() ); ScrollBar.setVisibleAmount( Rows << 4 ); ScrollBar.setValue(0); } catch( Exception e ) { }
+     try { ScrollBar.setMaximum( Virtual ? 0xFFFFFFFFFFFFFFFFL : IOStream.length() + 16 ); ScrollBar.setVisibleAmount( Rows << 4 ); ScrollBar.setValue(0); } catch( Exception e ) { }
      
      offset = 0; sel = 0; sele = 0; SelectC = new Color(57, 105, 138, 128); updateData(); repaint();
    }
