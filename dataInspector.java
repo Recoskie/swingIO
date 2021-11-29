@@ -391,6 +391,8 @@ public class dataInspector extends JComponent implements IOEventListener, Action
   public dataInspector( RandomAccessFileV data )
   {
     td = new JTable( dataModel ); td.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    
+    td.setBorder(new javax.swing.border.MatteBorder( 1, 1, 1, 1, new Color( 0, 0, 0 ) ) ); td.setGridColor( new Color( 0, 0, 0 ) );
 
     DefaultCellEditor dce = (DefaultCellEditor)td.getDefaultEditor(Object.class);
     

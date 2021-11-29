@@ -125,6 +125,8 @@ public class dataDescriptor extends JComponent
     di = d; super.setLayout( new GridLayout(1,1) ); td = new JTable();
     
     td.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+    td.setBorder(new javax.swing.border.MatteBorder( 1, 1, 1, 1, new Color( 0, 0, 0 ) ) ); td.setGridColor( new Color( 0, 0, 0 ) );
     
     super.add( new JScrollPane( td ) );
   }
