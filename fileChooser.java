@@ -268,6 +268,14 @@ public class fileChooser implements JDEventListener
 
   public String getFileName(){ return( fileName ); }
 
+  //Set the file name. Useful when opening nested files like in an zip file.
+
+  public void setFileName(String name){ fileName = name; }
+
+  //Get file path.
+
+  public String getFilePath(){ return( Path ); }
+
   //Find system Disks.
 
   public boolean disks(boolean err) { return( findDisks( err ) ); }
