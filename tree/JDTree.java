@@ -171,7 +171,7 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
   {
     if( singleClick || e.getClickCount() == 2 )
     {
-      this.getRowForLocation( e.getX(), e.getY() );
+      this.setSelectionPath(this.getClosestPathForLocation(e.getX(), e.getY()));
 
       t = (JDNode)this.getLastSelectedPathComponent();
 
