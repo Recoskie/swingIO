@@ -11,6 +11,7 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
   
   protected JDEventListener Event = this;
   protected JDNode t;
+  protected TreePath p;
 
   //Icon manager.
 
@@ -176,6 +177,8 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
       t = (JDNode)this.getLastSelectedPathComponent();
 
       if( t != null ) { Event.open( new JDEvent(this, t.toString(), getExtension(t.toString()), t.getID(), t.getArgs() ) ); }
+
+      if( singleClick ){ this.expandPath( this.getLeadSelectionPath() ); }
     }
   }
 
@@ -186,6 +189,14 @@ public class JDTree extends JTree implements MouseListener, JDEventListener
   //manually fire the open command.
 
   public void fireOpenEvent( JDEvent e ) { Event.open( e ); }
+  public void fireOpenEvent( JDNode e )
+  {
+    p = new TreePath( e.getPath() ); this.setSelectionPath( p );
+
+    Event.open( new JDEvent(this, e.toString(), getExtension(e.toString()), e.getID(), e.getArgs() ) );
+
+    if( singleClick ){ this.expandPath( p ); }
+  }
 
   //Settable Event handler.
 
