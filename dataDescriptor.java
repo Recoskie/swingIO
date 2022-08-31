@@ -55,7 +55,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   //Set the data model.
 
-  public void setDescriptor( Descriptor d ) { data = d; ScrollBar.setMaximum(data.rows + 1); d.Event.accept( -1 ); }
+  public void setDescriptor( Descriptor d ) { data = d; selectedRow = -1; ScrollBar.setMaximum(data.rows + 1); ScrollBar.setValue(0); d.Event.accept( -1 ); }
 
   //Set a core disassembly model. Not sure how I am going to implement the core data model.
 
@@ -122,6 +122,8 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
     for( int i1 = curRow, posY = 32; i1 < endRow; posY += 16, i1++ )
     {
+      if( i1 == selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
+
       drawString( g, data.des[i1], 2, posY - 3, Cols );
 
       drawString( g, Data, Cols + 2, posY - 3, data.relPos[i1] - rn, data.relPos[i1 + 1] - rn , Cols );

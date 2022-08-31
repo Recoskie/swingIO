@@ -374,7 +374,10 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   {
     elSelection = false; SelectC = new Color( 57, 105, 138, 128 );
     
-    if( !Virtual || IOStream.isMaped() ) { sel = start; sele = end; repaint(); }
+    if( !Virtual || IOStream.isMaped() )
+    {
+      sel = start; sele = end; if( ( sel - offset ) >= (Rows << 4) || ( sel - offset ) < 0 ) { ScrollBar.setValue( sel & 0xFFFFFFFFFFFFFFF0L ); updateData(); } repaint();
+    }
   }
 
   public void setSelectedEnd( long end )
@@ -1024,7 +1027,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     if( !Virtual ) { sel = e.SPos(); sele = sel; } else if( IOStream.isMaped() ) { sel = e.SPosV(); sele = sel; }
 
-    if( ( sel - offset ) >= Rows * 16 || ( sel - offset ) < 0 ) { ScrollBar.setValue( sel & 0xFFFFFFFFFFFFFFF0L ); updateData(); }
+    if( ( sel - offset ) >= (Rows << 4) || ( sel - offset ) < 0 ) { ScrollBar.setValue( sel & 0xFFFFFFFFFFFFFFF0L ); updateData(); }
     
     if( !Virtual || IOStream.isMaped() ) { repaint(); }
   }
