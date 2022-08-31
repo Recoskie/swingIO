@@ -5,7 +5,7 @@ import java.awt.event.*;
 import javax.swing.*;
 import RandomAccessFileV.*;
 
-public class dataDescriptor extends JComponent implements AdjustmentListener, MouseWheelListener, MouseMotionListener, MouseListener
+public class dataDescriptor extends JComponent implements AdjustmentListener, MouseWheelListener, MouseListener
 {
   //The file system stream reference that will be used.
 
@@ -36,7 +36,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   //Data type.
 
-  private int type = 0;
+  private int type = 0, selectedRow = -1;
 
   //Create Data descriptor table.
 
@@ -49,16 +49,15 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
     ScrollBar.setUnitIncrement( 1 ); ScrollBar.setBlockIncrement( 1 );
 
     ScrollBar.addAdjustmentListener(this); super.setLayout(new BorderLayout()); super.add( ScrollBar, BorderLayout.EAST );
+
+    super.addMouseListener(this); super.addMouseWheelListener(this);
   }
 
   //Set the data model.
 
-  public void setDescriptor( Descriptor d )
-  {
-    data = d; ScrollBar.setMaximum(data.rows + 1);
-  }
+  public void setDescriptor( Descriptor d ) { data = d; ScrollBar.setMaximum(data.rows + 1); d.Event.accept( -1 ); }
 
-  //Set a core disassembly model.
+  //Set a core disassembly model. Not sure how I am going to implement the core data model.
 
   public void setDescriptor( core.Core d ) { }
 
@@ -182,21 +181,17 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   public void setTarget( RandomAccessFileV f ) { IOStream = f; }
   
-  public void mouseWheelMoved( MouseWheelEvent e ) { }
+  public void mouseWheelMoved( MouseWheelEvent e ) { ScrollBar.setValue( ScrollBar.getValue() + ( e.getUnitsToScroll() ) ); }
 
-  public void mouseMoved( MouseEvent e ) { }
-  
-  public void mouseDragged( MouseEvent e ) { }
+  public void adjustmentValueChanged(AdjustmentEvent e) { repaint(); }
+
+  public void mousePressed( MouseEvent e ) { selectedRow = ScrollBar.getValue() + ( ( e.getY() >> 4 ) - 1 ); data.Event.accept( selectedRow ); repaint(); }
   
   public void mouseExited( MouseEvent e ) { }
   
   public void mouseEntered( MouseEvent e ) { }
   
   public void mouseReleased( MouseEvent e ) { }
-  
-  public void mousePressed( MouseEvent e ) { }
 
   public void mouseClicked( MouseEvent e ) { }
-
-  public void adjustmentValueChanged(AdjustmentEvent e) { repaint(); }
 }
