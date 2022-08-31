@@ -185,7 +185,14 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   public void adjustmentValueChanged(AdjustmentEvent e) { repaint(); }
 
-  public void mousePressed( MouseEvent e ) { selectedRow = ScrollBar.getValue() + ( ( e.getY() >> 4 ) - 1 ); data.Event.accept( selectedRow ); repaint(); }
+  public void mousePressed( MouseEvent e )
+  {
+    selectedRow = ScrollBar.getValue() + ( ( e.getY() >> 4 ) - 1 );
+
+    try { IOStream.seek(data.pos + data.relPos[selectedRow]); } catch( java.io.IOException er ) { }
+    
+    di.setType( data.data[selectedRow] >> 1 ); data.Event.accept( selectedRow ); repaint();
+  }
   
   public void mouseExited( MouseEvent e ) { }
   
