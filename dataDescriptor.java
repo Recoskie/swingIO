@@ -1,168 +1,202 @@
 package swingIO;
 
 import java.awt.*;
+import java.awt.event.*;
 import javax.swing.*;
-import javax.swing.table.*;
+import RandomAccessFileV.*;
 
-public class dataDescriptor extends JComponent
+public class dataDescriptor extends JComponent implements AdjustmentListener, MouseWheelListener, MouseMotionListener, MouseListener
 {
+  //The file system stream reference that will be used.
+
+  private static RandomAccessFileV IOStream;
+
   //The current data descriptor.
 
   private static Descriptor data;
-
-  //The table.
-
-  private JTable td;
 
   //The data type inspector.
 
   private static dataInspector di;
 
+  //Scroll bar position in data.
+
+  private JScrollBar ScrollBar;
+  private int scrollBarSize = 0; //Width of scroll bar.
+
+  //The default system font.
+
+  private FontMetrics ft;
+  private int strSizec1 = 0, strSizec2 = 0, strSizec3 = 0;
+  private int strEnd = 0;
+
   //Allows us to switch, and set data models.
 
   private boolean set = false, cset = false;
-
-  //Cols.
-
-  private String[] cols = new String[]{"Use", "Raw Data", "Value"};
 
   //Data type.
 
   private int type = 0;
 
-  //The data descriptor model is for headers, and data.
-
-  private AbstractTableModel dModel = new AbstractTableModel()
-  {
-    public int getColumnCount() { return( 3 ); }
-
-    public int getRowCount() { return( data.rows ); }
-
-    public String getColumnName( int col ) { return ( cols[col] ); }
-    
-    public Object getValueAt(int row, int col)
-    {
-      return( data.data.get(row)[col] );
-    }
-
-    public boolean isCellEditable( int row, int col )
-    {
-      data.loc( row ); type = data.type.get(row);
-
-      if ( type < 13 ) { di.setType( type ); }
-
-      else if( type == 13 )
-      {
-        di.setStringLen( data.rpos.get(row + 1) - data.rpos.get(row) ); di.setType( type );
-      }
-      
-      else if( type == 14 )
-      {
-        di.setStringLen( ( data.rpos.get(row + 1) - data.rpos.get(row) ) >> 1 ); di.setType( type );
-      }
-
-      else if( type == 15 ) { di.setOther( data.rpos.get(row + 1) - data.rpos.get(row) ); }
-
-      else if( type == 16 ) { di.setOther( data.apos.get(row + 1) - data.rpos.get(row) ); }
-
-      data.Event.accept( row );
-
-      return ( false );
-    }
-  };
-
-  //The core data model is for address mapping.
-
-  private static core.Core core;
-
-  private String[] coreCols = new String[] { "Operation", "Location" };
-
-  private AbstractTableModel coreModel = new AbstractTableModel()
-  {
-    public int getColumnCount() { return( 2 ); }
-
-    public int getRowCount() { return( core.Crawl.size() + ( core.Linear.size() >> 1 ) + ( core.data_off.size() >> 1 ) ); }
-
-    public String getColumnName( int col ) { return ( coreCols[ col ] ); }
-    
-    public Object getValueAt( int row, int col )
-    {
-      if( row < ( core.Linear.size() >> 1 ) )
-      {
-        return( col == 0 ? "LDisassemble" : "0x" + String.format( "%1$016X", core.Linear.get( row << 1 ) ) );
-      }
-      else if( ( row -= ( core.Linear.size() >> 1 ) ) < core.Crawl.size() )
-      {
-        return( col == 0 ? "Disassemble" : "0x" + String.format( "%1$016X", core.Crawl.get( row ) ) );
-      }
-      else
-      {
-        row -= core.Crawl.size(); return( col == 0 ? "Data" : "0x" + String.format( "%1$016X", core.data_off.get( row << 1 ) ) );
-      }
-    }
-
-    public boolean isCellEditable( int row, int col )
-    {
-      if( row < ( core.Linear.size() >> 1 ) ) { core.disLoc( row, false ); }
-      else if( ( row -= ( core.Linear.size() >> 1 ) ) < core.Crawl.size() ) { core.disLoc( row, true ); }
-      else
-      {
-        row -= core.Crawl.size(); row = row << 1;
-
-        try { core.setLoc( core.data_off.get( row ) ); } catch( Exception e ) { }
-
-        di.setOther( core.data_off.get( row + 1 ).intValue() );
-      }
-      
-      return ( false );
-    }
-  };
-
   //Create Data descriptor table.
 
-  public dataDescriptor( dataInspector d )
+  public dataDescriptor( RandomAccessFileV f, dataInspector d )
   {
-    di = d; super.setLayout( new GridLayout(1,1) ); td = new JTable();
-    
-    td.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    di = d;
 
-    td.setBorder(new javax.swing.border.MatteBorder( 1, 1, 1, 1, new Color( 0, 0, 0 ) ) ); td.setGridColor( new Color( 0, 0, 0 ) );
-    
-    super.add( new JScrollPane( td ) );
+    ScrollBar = new JScrollBar(JScrollBar.VERTICAL); scrollBarSize = ((Integer)UIManager.get("ScrollBar.width")).intValue();
+
+    ScrollBar.setUnitIncrement( 1 ); ScrollBar.setBlockIncrement( 1 );
+
+    ScrollBar.addAdjustmentListener(this); super.setLayout(new BorderLayout()); super.add( ScrollBar, BorderLayout.EAST );
   }
 
   //Set the data model.
 
   public void setDescriptor( Descriptor d )
   {
-    data = d; if( data.length > 0 ) { data.loc( 0 ); di.setOther( data.length ); }
-    
-    if( !set ) { cset = false; set = true; td.setModel( dModel ); }
-    
-    dModel.fireTableDataChanged();
-
-    data.Event.accept( -1 ); //Initial description of data structure.
+    data = d; ScrollBar.setMaximum(data.rows + 1);
   }
 
   //Set a core disassembly model.
 
-  public void setDescriptor( core.Core d )
-  {
-    core = d;
-    
-    if( !cset ) { set = false; cset = true; td.setModel( coreModel ); }
-    
-    coreModel.fireTableDataChanged();
-  }
+  public void setDescriptor( core.Core d ) { }
 
   //Main use is for setting a blank data model.
 
-  public void clear()
-  {
-    data = new Descriptor( null );
-    
-    if( !set ) { cset = false; set = true; td.setModel( dModel ); }
+  public void clear() { }
 
-    dModel.fireTableDataChanged();
+  //Decode and draw the binary data stylized at current position in scroll bar and memory.
+
+  public void paintComponent( Graphics g )
+  {
+    //Initialize the system default font and metrics.
+
+    if( ft == null )
+    {
+      ft = g.getFontMetrics(); strEnd = ft.stringWidth("...");
+      
+      strSizec1 = ft.stringWidth("Use") >> 1; strSizec2 = ft.stringWidth("Raw Data") >> 1; strSizec3 = ft.stringWidth("Value") >> 1;
+    }
+
+    int width = super.getWidth() - scrollBarSize, Cols = width / 3, Rows = getHeight() >> 4;
+
+    //The first row explains what each column is.
+
+    g.setColor( new Color( 238, 238, 238 ) ); g.fillRect(0,0,width,16);
+
+    //The Number of rows that will fit on screen.
+
+    int minRows = Math.min( data.data.length, Rows ); ScrollBar.setVisibleAmount(Rows);
+
+    g.setColor(Color.white); g.fillRect( 0, 16, width, minRows << 4 );
+
+    //Draw the column lines.
+
+    g.setColor(Color.black);
+
+    g.drawLine(0, 0, 0, (minRows+1) << 4); g.drawLine(Cols, 0, Cols, (minRows+1) << 4 ); g.drawLine(Cols << 1, 0, Cols << 1, (minRows+1) << 4);
+    
+    g.drawLine(0, 16, width, 16);
+
+    //Column names.
+
+    int HCol = Cols >> 1; g.drawString("Use", HCol - strSizec1, 13); HCol += Cols; g.drawString("Raw Data", HCol - strSizec2, 13); HCol += Cols; g.drawString("Value", HCol - strSizec3, 13);
+
+    //The current start and end row in the data by scroll bar position
+
+    int curRow = ScrollBar.getValue(), endRow = Math.min( curRow + minRows, data.rows );
+
+    //Number of bytes needed to fill in columns by data types.
+
+    byte[] Data = new byte[data.bytes(curRow,endRow)];
+
+    //Data relative position.
+
+    int rn = data.relPos[curRow];
+
+    //Seek to data and read it.
+
+    IOStream.Events = false; try { IOStream.seek(data.pos + rn); IOStream.read(Data); } catch( java.io.IOException e ){} IOStream.Events = true;
+
+    //Fill in the columns based on the current position of the scroll bar.
+
+    for( int i1 = curRow, posY = 32; i1 < endRow; posY += 16, i1++ )
+    {
+      drawString( g, data.des[i1], 2, posY - 3, Cols );
+
+      drawString( g, Data, Cols + 2, posY - 3, data.relPos[i1] - rn, data.relPos[i1 + 1] - rn , Cols );
+
+      g.drawLine(0, posY, width, posY);
+    }
   }
+
+  //For the time being it is easier to separate this from the main rendering function.
+  //It draws as many characters as posable in the given space of a column.
+
+  private void drawString( Graphics g, String str, int x, int y, int width)
+  {
+    //When drawing text we must make sure it fits the col otherwise we put "...".
+
+    int strLen = 4, i2 = 0;
+
+    boolean fits = true; for(int len = str.length(); i2 < len && fits; i2++ )
+    {
+      strLen += ft.charWidth(str.charAt(i2)); if( strLen > width )
+      {
+        fits = false; strLen += strEnd; while( strLen > width ) { strLen -= ft.charWidth(str.charAt(i2--)); }
+      }
+    }
+
+    g.drawString( fits ? str : str.substring(0, i2) + "..." , x, y );
+  }
+
+  //For the time being it is easier to separate this from the main rendering function.
+  //It draws as many characters as posable in the given space of a column.
+  //Note we can combine these methods if we work with strings as char array.
+
+  private void drawString( Graphics g, byte[] d, int x, int y, int b1, int b2, int width)
+  {
+    //When drawing text we must make sure it fits the col otherwise we put "...".
+
+    int strLen = 4, ln = 0, b = 0; b2 = Math.min( b2, d.length );
+
+    char c1 = ' ', c2 = ' '; String str = "";
+
+    boolean fits = true; while( b1 < b2 && fits )
+    {
+      b = ( d[b1] & 0xF0 ) >> 4; c1 = (char)(( b > 9 ) ? b + 0x37 : b + 0x30); b = d[b1] & 0xF; c2 = (char)(( b > 9 ) ? b + 0x37 : b + 0x30);
+
+      str += c1; str += c2; strLen += ft.charWidth(c1) + ft.charWidth(c2); if( strLen > width )
+      {
+        fits = false; strLen += strEnd; ln = str.length() - 1; while( strLen > width ) { strLen -= ft.charWidth(str.charAt(ln--)); }
+      }
+
+      str += ' '; strLen += ft.charWidth(' '); b1 += 1;
+    }
+
+    g.drawString( fits ? str : str.substring(0, ln) + "..." , x, y );
+  }
+
+  //IO target change.
+
+  public void setTarget( RandomAccessFileV f ) { IOStream = f; }
+  
+  public void mouseWheelMoved( MouseWheelEvent e ) { }
+
+  public void mouseMoved( MouseEvent e ) { }
+  
+  public void mouseDragged( MouseEvent e ) { }
+  
+  public void mouseExited( MouseEvent e ) { }
+  
+  public void mouseEntered( MouseEvent e ) { }
+  
+  public void mouseReleased( MouseEvent e ) { }
+  
+  public void mousePressed( MouseEvent e ) { }
+
+  public void mouseClicked( MouseEvent e ) { }
+
+  public void adjustmentValueChanged(AdjustmentEvent e) { repaint(); }
 }

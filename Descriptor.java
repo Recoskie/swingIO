@@ -1,257 +1,107 @@
 package swingIO;
 
-import RandomAccessFileV.*;
-
-import java.util.*;
-
 public class Descriptor
 {
-  //data.
+  //Data type values given name for convince.
+  //Note the first binary digit is used for weather the type is in little endian or big endian.
 
-  public LinkedList<String[]> data = new LinkedList<String[]>();
-  public LinkedList<Integer> type = new LinkedList<Integer>();
-  public LinkedList<Integer> rpos = new LinkedList<Integer>();
-  public LinkedList<Integer> apos = new LinkedList<Integer>();
+  public static final int Bit8 = 0;
+  public static final int Int8 = 2;
+  public static final int UInt8 = 4;
+  public static final int Int16 = 6;
+  public static final int LInt16 = 7;
+  public static final int UInt16 = 8;
+  public static final int LUInt16 = 9;
+  public static final int Int32 = 10;
+  public static final int LInt32 = 11;
+  public static final int UInt32 = 12;
+  public static final int LUInt32 = 13;
+  public static final int Int64 = 14;
+  public static final int LInt64 = 15;
+  public static final int UInt64 = 16;
+  public static final int LUInt64 = 17;
+  public static final int Flost32 = 18;
+  public static final int LFloat32 = 19;
+  public static final int Float64 = 20;
+  public static final int LFloat64 = 21;
+  public static final int Char8 = 22;
+  public static final int Char16 = 24;
+  public static final int LChar16 = 25;
+  public static final int String8 = 26;
+  public static final int String16 = 28;
+  public static final int LString16 = 29;
+  public static final int Other = 30;
+  public static final int Array = 32;
+  public static final int[] bytes = new int[]{1,1,2,2,4,4,8,8,4,8,1,2,-1,-1,-1,-2};
 
-  public int length = 0; //Total length of data.
-  public long pos = 0; //Position of data.
+  //Stores the data types that will be rendered.
+
+  public int[] data = new int[]{};
+  public String[] des = new String[]{};
+
+  //Relative position of individual properties by row.
+
+  public int[] relPos = new int[]{};
+
+  //rows array starts at. This information is used to subtract row to find the individual items in rel pos.
+
+  public int[] arPos = new int[]{};
+
+  //Number of rows that this descriptor will display. Note when I add in set methods this value will change if array sizes change.
   
-  public int rows = 0; //Number of rows added, or types.
+  public int rows = 0;
 
-  public Object value; //Used to restive a value that is added.
+  //Event handler for when data descriptor is set or user clicks on a property or value.
 
-  private boolean Virtual = false; //Is data virtual space.
-  private RandomAccessFileV IOStream;
+  java.util.function.IntConsumer Event;
 
-  //Method that is called when user clicks a element.
+  //The position we wish to style binary data.
 
-  public java.util.function.IntConsumer Event = this::stud;
+  public long pos = 0;
 
-  //Descriptor data model constructor.
+  //Construct the data descriptor.
 
-  public Descriptor( RandomAccessFileV b ) { this( b, false ); }
-
-  public Descriptor( RandomAccessFileV b, boolean V )
+  public Descriptor(dataType[] d)
   {
-    if( b != null )
+    des = new String[d.length]; data = new int[d.length];
+
+    //Number of bytes descriptor stylized and rows.
+
+    java.util.ArrayList<Integer> rPos = new java.util.ArrayList<Integer>();
+    java.util.ArrayList<Integer> array = new java.util.ArrayList<Integer>();
+
+    boolean defArray = false; int arrayEl = 0, arraySize = 0, arrayLen = 0, length = 0;
+
+    for( int i = 0, b = 0; i < data.length; i++ )
     {
-      Virtual = V;
-    
-      try { pos = V ? b.getVirtualPointer() : b.getFilePointer(); } catch(java.io.IOException e) { }
+      des[i] = d[i].des; data[i] = d[i].type; b = bytes[data[i]>>1];
+      
+      if( b == -1 ){ i += 1; data[i] = d[i].type; b = data[i]; } else if( defArray = ( b == -2 ) )
+      {
+        array.add(rows); data[i+1] = d[i+1].type; data[i+2] = d[i+2].type;
 
-      rpos.add( 0 ); apos.add( 0 );
-    
-      IOStream = b;
+        rows += ( (arrayEl = data[i+1]) + 1 ) * (arraySize = data[i+2]); i += 2;
+      }
+      
+      if( !defArray ) { rPos.add(length); length += b; rows += 1; }
+      else
+      {
+        arrayLen += b; if(!(defArray = (arrayEl-- > 0))) { length += arrayLen * arraySize; }
+      }
     }
+    
+    rPos.add(length);
+
+    relPos = new int[rPos.size()]; for( int i = 0; i < relPos.length; relPos[i] = rPos.get(i++) ); rPos.clear();
+    arPos = new int[array.size()]; for( int i = 0; i < arPos.length; arPos[i] = array.get(i++) ); array.clear();
   }
 
-  //Defined data types.
+  /*public Descriptor(java.util.ArrayList<dataType> d) { super.Descriptor( d.toArray( new dataType[ d.size() ] ) ); }*/
 
-  public void UINT8( String use ) throws java.io.IOException
-  {
-    IOStream.read(1); value = IOStream.toByte();
+  //Calc number of bytes that need to be read to display rows.
+  //For now we will not involve array types.
 
-    data.add(new String[]{ use, IOStream.toHex(), ( ( ((Byte)value).shortValue() ) & 0xFF ) + "" } );
-    
-    length += 1; type.add( 2 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void UINT16( String use ) throws java.io.IOException
-  {
-    IOStream.read(2); value = IOStream.toShort();
-
-    data.add(new String[]{ use, IOStream.toHex(), ( ( ((Short)value).intValue() ) & 0xFFFF ) + "" } );
-    
-    length += 2; type.add( 4 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void UINT32( String use ) throws java.io.IOException
-  {
-    IOStream.read(4); value = IOStream.toInt();
-
-    data.add(new String[]{ use, IOStream.toHex(), ( ( ((Integer)value).longValue() ) & 0xFFFFFFFFL ) + "" } );
-    
-    length += 4; type.add( 6 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void UINT64( String use ) throws java.io.IOException
-  {
-    IOStream.read(8); value = IOStream.toLong();
-
-    data.add(new String[]{ use, IOStream.toHex(), ((Long)value) + "" } );
-    
-    length += 8; type.add( 8 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void LUINT16( String use ) throws java.io.IOException
-  {
-    IOStream.read(2); value = IOStream.toLShort();
-
-    data.add(new String[]{ use, IOStream.toHex(), ( ( ((Short)value).intValue() ) & 0xFFFF ) + "" } );
-    
-    length += 2; type.add( 4 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void LUINT32( String use ) throws java.io.IOException
-  {
-    IOStream.read(4); value = IOStream.toLInt();
-
-    data.add(new String[]{ use, IOStream.toHex(), ( ( ((Integer)value).longValue() ) & 0xFFFFFFFFL ) + "" } );
-    
-    length += 4; type.add( 6 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void LUINT64( String use ) throws java.io.IOException
-  {
-    IOStream.read(8); value = IOStream.toLLong();
-
-    data.add(new String[]{ use, IOStream.toHex(), Long.toUnsignedString( ((Long)value).longValue() ) } );
-    
-    length += 8; type.add( 8 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void INT8( String use ) throws java.io.IOException
-  {
-    IOStream.read(1); value = IOStream.toByte();
-
-    data.add(new String[]{ use, IOStream.toHex(), ((Byte)value) + "" } );
-    
-    length += 1; type.add( 1 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void INT16( String use ) throws java.io.IOException
-  {
-    IOStream.read(2); value = IOStream.toShort();
-
-    data.add(new String[]{ use, IOStream.toHex(), ((Short)value) + "" } );
-    
-    length += 2; type.add( 3 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void INT32( String use ) throws java.io.IOException
-  {
-    IOStream.read(4); value = IOStream.toInt();
-
-    data.add(new String[]{ use, IOStream.toHex(), ((Integer)value) + "" } );
-    
-    length += 4; type.add( 5 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void INT64( String use ) throws java.io.IOException
-  {
-    IOStream.read(7); value = IOStream.toLong();
-
-    data.add(new String[]{ use, IOStream.toHex(), ((Integer)value) + "" } );
-    
-    length += 4; type.add( 7 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void LINT16( String use ) throws java.io.IOException
-  {
-    IOStream.read(2); value = IOStream.toLShort();
-
-    data.add(new String[]{ use, IOStream.toHex(), ((Short)value) + "" } );
-    
-    length += 2; type.add( 3 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void LINT32( String use ) throws java.io.IOException
-  {
-    IOStream.read(4); value = IOStream.toLInt();
-
-    data.add(new String[]{ use, IOStream.toHex(), ((Integer)value) + "" } );
-    
-    length += 4; type.add( 5 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  public void LINT64( String use ) throws java.io.IOException
-  {
-    IOStream.read(8); value = IOStream.toLLong();
-
-    data.add(new String[]{ use, IOStream.toHex(), ((Long)value) + "" } );
-    
-    length += 8; type.add( 7 ); rpos.add( length ); apos.add( 0 ); rows += 1;
-  }
-
-  //String data.
-
-  public void String8( String use, int len ) throws java.io.IOException
-  {
-    IOStream.read( len ); value = IOStream.toText8();
-
-    data.add(new String[]{ use, IOStream.toHex(), value + "" } );
-    
-    length += len; rpos.add( length ); apos.add( 0 );
-    
-    type.add( 13 ); rows += 1;
-  }
-
-  public void String16( String use, int len ) throws java.io.IOException
-  {
-    len <<= 1; IOStream.read( len ); value = IOStream.toText16();
-
-    data.add(new String[]{ use, IOStream.toHex(), value + "" } );
-    
-    length += len; rpos.add( length ); apos.add( 0 );
-    
-    type.add( 14 ); rows += 1;
-  }
-
-  public void LString16( String use, int len ) throws java.io.IOException
-  {
-    len <<= 1; IOStream.read( len ); value = IOStream.toLText16();
-
-    data.add(new String[]{ use, IOStream.toHex(), value + "" } );
-    
-    length += len; rpos.add( length ); apos.add( 0 );
-    
-    type.add( 14 ); rows += 1;
-  }
-
-  //Read a string till termination code.
-
-  int code = 0; String s = "", h = "";
-
-  public void String8( String use, byte c ) throws java.io.IOException
-  {
-    code = ~c; s = ""; h = "";
-
-    while ( code != c ) { code = IOStream.read(); if( code != 0 ) { s += (char)code; h += String.format( "%1$02X", code ) + " "; } }; value = s;
-
-    data.add(new String[]{ use, h, value + "" } );
-    
-    length += s.length() + 1; rpos.add( length ); apos.add( 0 );
-    
-    type.add( 13 ); rows += 1;
-  }
-
-  //Array type.
-
-  public void Array( String use, int len ) throws java.io.IOException
-  {
-    data.add(new String[]{ use, "No Data", "No value" } );
-    
-    rpos.add( length ); apos.add( length + len );
-    
-    type.add( 16 ); rows += 1;
-  }
-
-  //Other type.
-
-  public void Other( String use, int len ) throws java.io.IOException
-  {
-    IOStream.read( len ); value = IOStream.toText8();
-
-    data.add(new String[]{ use, IOStream.toHex(), "No value" } );
-    
-    length += len; rpos.add( length ); apos.add( 0 );
-    
-    type.add( 15 ); rows += 1;
-  }
-
-  //goto data by row.
-
-  public void loc( int row ) { try { if( Virtual ) { IOStream.seekV( pos + rpos.get(row) ); } else { IOStream.seek( pos + rpos.get(row) ); } } catch( java.io.IOException e ) { } }
+  public int bytes(int r1, int r2) { return( relPos[r2] - relPos[r1] ); }
 
   //Sets the method that is called when user clicks a data type.
 
@@ -263,8 +113,5 @@ public class Descriptor
 
   //The total length of the data.
 
-  public int length()
-  {
-    return( length );
-  }
+  public int length() { return( relPos[relPos.length - 1] ); }
 }
