@@ -189,7 +189,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   public void mousePressed( MouseEvent e )
   {
-    selectedRow = ScrollBar.getValue() + ( ( e.getY() >> 4 ) - 1 );
+    selectedRow = Math.min( ScrollBar.getValue() + ( ( e.getY() >> 4 ) - 1 ), data.rows - 1 );
 
     try { IOStream.seek(data.pos + data.relPos[selectedRow]); } catch( java.io.IOException er ) { }
     
