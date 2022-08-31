@@ -20,7 +20,7 @@ public class Descriptor
   public static final int LInt64 = 15;
   public static final int UInt64 = 16;
   public static final int LUInt64 = 17;
-  public static final int Flost32 = 18;
+  public static final int Float32 = 18;
   public static final int LFloat32 = 19;
   public static final int Float64 = 20;
   public static final int LFloat64 = 21;

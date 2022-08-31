@@ -38,6 +38,10 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   private int type = 0, selectedRow = -1;
 
+  //Used to display the data type.
+
+  private final static String[] DType = new String[]{ "8Bit", "", "Int8", "", "UInt8", "", "Int16", "LInt16", "UInt16", "LUInt16", "Int32", "LInt32", "UInt32", "LUInt32", "Int64", "LInt64", "UInt64", "LUInt64", "Float32", "LFloat32", "Float64", "LFloat64", "Char8", "", "Char16", "LChar16", "String8", "", "String16", "LString16", "Other", "", "Array" };
+
   //Create Data descriptor table.
 
   public dataDescriptor( RandomAccessFileV f, dataInspector d )
@@ -75,7 +79,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
     {
       ft = g.getFontMetrics(); strEnd = ft.stringWidth("...");
       
-      strSizec1 = ft.stringWidth("Use") >> 1; strSizec2 = ft.stringWidth("Raw Data") >> 1; strSizec3 = ft.stringWidth("Value") >> 1;
+      strSizec1 = ft.stringWidth("Use") >> 1; strSizec2 = ft.stringWidth("Raw Data") >> 1; strSizec3 = ft.stringWidth("Data Type") >> 1;
     }
 
     int width = super.getWidth() - scrollBarSize, Cols = width / 3, Rows = getHeight() >> 4;
@@ -100,7 +104,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
     //Column names.
 
-    int HCol = Cols >> 1; g.drawString("Use", HCol - strSizec1, 13); HCol += Cols; g.drawString("Raw Data", HCol - strSizec2, 13); HCol += Cols; g.drawString("Value", HCol - strSizec3, 13);
+    int HCol = Cols >> 1; g.drawString("Use", HCol - strSizec1, 13); HCol += Cols; g.drawString("Raw Data", HCol - strSizec2, 13); HCol += Cols; g.drawString("Data Type", HCol - strSizec3, 13);
 
     //The current start and end row in the data by scroll bar position
 
@@ -120,13 +124,15 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
     //Fill in the columns based on the current position of the scroll bar.
 
-    for( int i1 = curRow, posY = 32; i1 < endRow; posY += 16, i1++ )
+    for( int i = curRow, posY = 32; i < endRow; posY += 16, i++ )
     {
-      if( i1 == selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
+      if( i == selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
 
-      drawString( g, data.des[i1], 2, posY - 3, Cols );
+      drawString( g, data.des[i], 2, posY - 3, Cols );
 
-      drawString( g, Data, Cols + 2, posY - 3, data.relPos[i1] - rn, data.relPos[i1 + 1] - rn , Cols );
+      drawString( g, Data, Cols + 2, posY - 3, data.relPos[i] - rn, data.relPos[i + 1] - rn , Cols );
+
+      g.drawString( DType[data.data[i]], ( Cols << 1 ) + 2, posY - 3 );
 
       g.drawLine(0, posY, width, posY);
     }
@@ -189,7 +195,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   public void mousePressed( MouseEvent e )
   {
-    selectedRow = Math.min( ScrollBar.getValue() + ( ( e.getY() >> 4 ) - 1 ), data.rows - 1 );
+    selectedRow = Math.min( ScrollBar.getValue() + ( ( e.getY() >> 4 ) ), data.rows ) - 1; if( selectedRow < 0 ) { return; }
 
     try { IOStream.seek(data.pos + data.relPos[selectedRow]); } catch( java.io.IOException er ) { }
     
