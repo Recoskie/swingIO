@@ -502,10 +502,8 @@ public class dataInspector extends JComponent implements IOEventListener, Action
     type = row;
     
     if( littleEndian != lEndian ) { littleEndian = lEndian; Little.setSelected(littleEndian); Big.setSelected(!littleEndian); }
-    else
-    {
-      update();
-    }
+    
+    update();
   }
 
   public void setOther( int l )

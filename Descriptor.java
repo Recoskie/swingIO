@@ -96,7 +96,7 @@ public class Descriptor
     arPos = new int[array.size()]; for( int i = 0; i < arPos.length; arPos[i] = array.get(i++) ); array.clear();
   }
 
-  /*public Descriptor(java.util.ArrayList<dataType> d) { super.Descriptor( d.toArray( new dataType[ d.size() ] ) ); }*/
+  public Descriptor(java.util.ArrayList<dataType> d) { this( d.toArray( new dataType[ d.size() ] ) ); }
 
   //Calc number of bytes that need to be read to display rows.
   //For now we will not involve array types.
