@@ -98,6 +98,8 @@ public class Descriptor
 
   public Descriptor(java.util.ArrayList<dataType> d) { this( d.toArray( new dataType[ d.size() ] ) ); }
 
+  public Descriptor() { rows = 0; relPos = new int[]{0}; }
+
   //Calc number of bytes that need to be read to display rows.
   //For now we will not involve array types.
 

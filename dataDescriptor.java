@@ -5,7 +5,7 @@ import java.awt.event.*;
 import javax.swing.*;
 import RandomAccessFileV.*;
 
-public class dataDescriptor extends JComponent implements AdjustmentListener, MouseWheelListener, MouseListener
+public class dataDescriptor extends JComponent implements IOEventListener, AdjustmentListener, MouseWheelListener, MouseListener
 {
   //The file system stream reference that will be used.
 
@@ -46,7 +46,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   public dataDescriptor( RandomAccessFileV f, dataInspector d )
   {
-    di = d;
+    di = d; IOStream = f;
 
     ScrollBar = new JScrollBar(JScrollBar.VERTICAL); scrollBarSize = ((Integer)UIManager.get("ScrollBar.width")).intValue();
 
@@ -54,12 +54,12 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
     ScrollBar.addAdjustmentListener(this); super.setLayout(new BorderLayout()); super.add( ScrollBar, BorderLayout.EAST );
 
-    super.addMouseListener(this); super.addMouseWheelListener(this);
+    super.addMouseListener(this); super.addMouseWheelListener(this); IOStream.addIOEventListener( this );
   }
 
   //Set the data model.
 
-  public void setDescriptor( Descriptor d ) { data = d; selectedRow = -1; ScrollBar.setMaximum(data.rows + 1); ScrollBar.setValue(0); d.Event.accept( -1 ); }
+  public void setDescriptor( Descriptor d ) { data = d; selectedRow = -1; ScrollBar.setMaximum(data.rows + 1); ScrollBar.setValue(0); d.Event.accept( -1 ); repaint(); }
 
   //Set a core disassembly model. Not sure how I am going to implement the core data model.
 
@@ -67,7 +67,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   //Main use is for setting a blank data model.
 
-  public void clear() { }
+  public void clear() { data = new Descriptor(); repaint(); }
 
   //Decode and draw the binary data stylized at current position in scroll bar and memory.
 
@@ -187,11 +187,19 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
   //IO target change.
 
-  public void setTarget( RandomAccessFileV f ) { IOStream = f; }
-  
-  public void mouseWheelMoved( MouseWheelEvent e ) { ScrollBar.setValue( ScrollBar.getValue() + ( e.getUnitsToScroll() ) ); }
+  public void setTarget( RandomAccessFileV f ) { IOStream = f; if( isVisible() ) { IOStream.addIOEventListener( this ); } }
 
-  public void adjustmentValueChanged(AdjustmentEvent e) { repaint(); }
+  //Disable events when component is not visible.
+
+  @Override public void setVisible( boolean v )
+  {
+    if( v && !isVisible() ) { IOStream.addIOEventListener(this); } else if ( !v && isVisible() ) { IOStream.removeIOEventListener(this); }
+    super.setVisible( v );
+  }
+  
+  public void mouseWheelMoved( MouseWheelEvent e ) { ScrollBar.setValue( ScrollBar.getValue() + ( e.getUnitsToScroll() ) ); repaint(); }
+
+  public void adjustmentValueChanged(AdjustmentEvent e) { if(e.getValueIsAdjusting()){ repaint(); } }
 
   public void mousePressed( MouseEvent e )
   {
@@ -209,4 +217,15 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
   public void mouseReleased( MouseEvent e ) { }
 
   public void mouseClicked( MouseEvent e ) { }
+
+  public void onSeek( IOEvent e ) { }
+
+  public void onRead( IOEvent e ) { }
+
+  //Update the data descriptor if data changed because of an write operation from somewhere else.
+
+  public void onWrite( IOEvent e )
+  {
+    if( e.SPos() < (data.pos + data.length()) && e.EPos() >= data.pos ) { repaint(); }
+  }
 }
