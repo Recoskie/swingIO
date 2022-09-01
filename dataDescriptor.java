@@ -199,7 +199,7 @@ public class dataDescriptor extends JComponent implements AdjustmentListener, Mo
 
     try { IOStream.seek(data.pos + data.relPos[selectedRow]); } catch( java.io.IOException er ) { }
     
-    di.setType( data.data[selectedRow] >> 1 ); data.Event.accept( selectedRow ); repaint();
+    di.setType( data.data[selectedRow] >> 1, (data.data[selectedRow] & 1) == 1 ); data.Event.accept( selectedRow ); repaint();
   }
   
   public void mouseExited( MouseEvent e ) { }

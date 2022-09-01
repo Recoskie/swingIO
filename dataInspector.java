@@ -374,6 +374,10 @@ public class dataInspector extends JComponent implements IOEventListener, Action
 
   private boolean littleEndian = true;
 
+  //The radio buttons for endian byte order control.
+
+  private static JRadioButton Little, Big;
+
   //Fixes table sizing bug.
 
   public class JScrollPaneBug extends JScrollPane
@@ -402,8 +406,8 @@ public class dataInspector extends JComponent implements IOEventListener, Action
 
     //Byte order panel.
 
-    JRadioButton Little = new JRadioButton("Little Endian"); Little.setActionCommand("L"); Little.setSelected(true);
-    JRadioButton Big = new JRadioButton("Big Endian"); Big.setActionCommand("B"); Big.setSelected(false);
+    Little = new JRadioButton("Little Endian"); Little.setActionCommand("L"); Little.setSelected(true);
+    Big = new JRadioButton("Big Endian"); Big.setActionCommand("B"); Big.setSelected(false);
 
     ButtonGroup endian = new ButtonGroup(); endian.add(Little); endian.add(Big);
 
@@ -493,7 +497,16 @@ public class dataInspector extends JComponent implements IOEventListener, Action
     try { d.seek(d.getFilePointer()); } catch( java.io.IOException e ) { }
   }
 
-  public void setType( int row ) { type = row; update(); }
+  public void setType( int row, boolean lEndian )
+  {
+    type = row;
+    
+    if( littleEndian != lEndian ) { littleEndian = lEndian; Little.setSelected(littleEndian); Big.setSelected(!littleEndian); }
+    else
+    {
+      update();
+    }
+  }
 
   public void setOther( int l )
   {
