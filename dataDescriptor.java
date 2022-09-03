@@ -9,34 +9,34 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 {
   //The file system stream reference that will be used.
 
-  private static RandomAccessFileV IOStream;
+  private RandomAccessFileV IOStream;
 
   //The current data descriptor.
 
-  private static Descriptor data;
+  private Descriptor data;
 
   //The data type inspector.
 
-  private static dataInspector di;
+  private dataInspector di;
 
   //Scroll bar position in data.
 
   private JScrollBar ScrollBar;
-  private int scrollBarSize = 0; //Width of scroll bar.
+  private static int scrollBarSize = 0; //Width of scroll bar.
 
   //The default system font.
 
-  private FontMetrics ft;
-  private int strSizec1 = 0, strSizec2 = 0, strSizec3 = 0;
-  private int strEnd = 0;
+  private static FontMetrics ft;
+  private static int strSizec1 = 0, strSizec2 = 0, strSizec3 = 0;
+  private static int strEnd = 0;
 
   //Allows us to switch, and set data models.
 
   private boolean set = false, cset = false;
 
-  //Data type.
+  //Selected row number.
 
-  private int type = 0, selectedRow = -1;
+  private int selectedRow = -1;
 
   //Used to display the data type.
 
@@ -120,7 +120,12 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
     //Seek to data and read it.
 
-    IOStream.Events = false; try { IOStream.seek(data.pos + rn); IOStream.read(Data); } catch( java.io.IOException e ){} IOStream.Events = true;
+    IOStream.Events = false; try
+    {
+      if( !data.virtual ) { IOStream.seek(data.pos + rn); IOStream.read(Data); }
+      else { IOStream.seekV(data.pos + rn); IOStream.readV(Data); }
+    }
+    catch( java.io.IOException e ){} IOStream.Events = true;
 
     //Fill in the columns based on the current position of the scroll bar.
 
@@ -205,7 +210,7 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
   {
     selectedRow = Math.min( ScrollBar.getValue() + ( ( e.getY() >> 4 ) ), data.rows ) - 1; if( selectedRow < 0 ) { return; }
 
-    try { IOStream.seek(data.pos + data.relPos[selectedRow]); } catch( java.io.IOException er ) { }
+    try { if( !data.virtual ) { IOStream.seek(data.pos + data.relPos[selectedRow]); } else { IOStream.seekV(data.pos + data.relPos[selectedRow]); } } catch( java.io.IOException er ) { }
     
     di.setType( data.data[selectedRow] >> 1, (data.data[selectedRow] & 1) == 1 ); data.Event.accept( selectedRow ); repaint();
   }
@@ -226,6 +231,7 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
   public void onWrite( IOEvent e )
   {
-    if( e.SPos() < (data.pos + data.length()) && e.EPos() >= data.pos ) { repaint(); }
+    if( !data.virtual && e.SPos() < (data.pos + data.length()) && e.EPos() >= data.pos ) { repaint(); }
+    else if( e.SPosV() < (data.pos + data.length()) && e.EPosV() >= data.pos ) { repaint(); }
   }
 }

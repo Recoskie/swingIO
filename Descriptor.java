@@ -58,6 +58,7 @@ public class Descriptor
   //The position we wish to style binary data.
 
   public long pos = 0;
+  public boolean virtual = false;
 
   //Construct the data descriptor.
 
