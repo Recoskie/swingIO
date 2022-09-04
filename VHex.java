@@ -34,28 +34,28 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   //Character width varies based on length of string even though it is Monospaced. This is because characters can be spaced apart as a fraction like 9+(1/3).
   //Could divide a 17 in length string by 17 to get the fractional char width as float. However integers are faster, and do not need rounding.
 
-  private int[] charWidth = new int[18];
+  private static int[] charWidth = new int[18];
 
   //Height is always the same. Even if font is not Monospaced.
 
-  private int lineHeight = 0;
+  private static int lineHeight = 0;
 
   //Basic graphics.
 
-  private int scrollBarSize = 0; //Width of scroll bar.
-  private int cell = 0; //Size of each hex cell.
-  private int addcol = 0; //The address column width.
-  private int hexend = 0; //End of hex columns.
-  private int textcol = 0; //Text column start.
-  private int addc = 0; //Center position of Address col string.
-  private int textc = 0; //Center position of text string.
-  private int endw = 0; //End of component.
+  private static int scrollBarSize = 0; //Width of scroll bar.
+  private static int cell = 0; //Size of each hex cell.
+  private static int addcol = 0; //The address column width.
+  private static int hexend = 0; //End of hex columns.
+  private static int textcol = 0; //Text column start.
+  private static int addc = 0; //Center position of Address col string.
+  private static int textc = 0; //Center position of text string.
+  private static int endw = 0; //End of component.
   private int x = 0, y = 0; //X, and Y.
   private long t = 0; //temporary value.
 
   //Font is loaded on Initialize.
 
-  private Font font;
+  private static Font font;
 
   //Hex editor offset.
 
@@ -341,11 +341,46 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
     super.addKeyListener(this);
 
-    try
+    //Check if we need to initialize the font and component metrics.
+
+    if( font == null )
     {
-      font = Font.createFont( Font.TRUETYPE_FONT, VHex.class.getResourceAsStream("Font/DOS.ttf") ).deriveFont( 16f );
+      try
+      {
+        font = Font.createFont( Font.TRUETYPE_FONT, VHex.class.getResourceAsStream("Font/DOS.ttf") ).deriveFont( 16f );
+      }
+      catch( Exception er ) { font = new Font( "Monospaced", Font.BOLD, 16 ); }
+
+      scrollBarSize = ((Integer)UIManager.get("ScrollBar.width")).intValue();
+
+      java.awt.FontMetrics fm = new JPanel().getFontMetrics(font); lineHeight = fm.getHeight();
+
+      //Get width, for different length strings.
+
+      String sLen = ""; for( int i = 0; i < charWidth.length; sLen += " ", charWidth[ i++ ] = fm.stringWidth( sLen ) );
+
+      //Cell size, and address column size.
+
+      cell = charWidth[1] + 4;
+      
+      addcol = charWidth[17] + 4;
+
+      hexend = addcol + ( cell << 4 );
+
+      textcol = hexend + charWidth[0];
+
+      if( text ) { endw = textcol + charWidth[16]; } else { endw = hexend; }
+
+      //Center position of strings.
+
+      addc = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 ); textc = textcol + ( fm.stringWidth("Text") >> 1 ) + ( charWidth[4] );
     }
-    catch( Exception er ) { font = new Font( "Monospaced", Font.BOLD, 16 ); }
+
+    //Scroll bar at end of component.
+
+    super.setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
+
+    super.add( Box.createRigidArea( new Dimension( endw, 0 ) ) ); super.add( ScrollBar );
   }
 
   //Disable events when component is not visible.
@@ -425,54 +460,15 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public boolean isVirtual() { return( Virtual ); }
 
-  //Initialize the draw area and component size.
-
-  private void init()
-  {
-    scrollBarSize = ((Integer)UIManager.get("ScrollBar.width")).intValue();
-
-    java.awt.FontMetrics fm = super.getFontMetrics(font); lineHeight = fm.getHeight();
-
-    //Get width, for different length strings.
-
-    String sLen = ""; for( int i = 0; i < charWidth.length; sLen += " ", charWidth[ i++ ] = fm.stringWidth( sLen ) );
-
-    //Cell size, and address column size.
-
-    cell = charWidth[1] + 4;
-      
-    addcol = charWidth[17] + 4;
-
-    hexend = addcol + ( cell << 4 );
-
-    textcol = hexend + charWidth[0];
-
-    if( text ) { endw = textcol + charWidth[16]; } else { endw = hexend; }
-
-    //Center position of strings.
-
-    addc = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 ); textc = textcol + ( fm.stringWidth("Text") >> 1 ) + ( charWidth[4] );
-
-    //Scroll bar at end of component.
-
-    super.setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
-
-    super.add( Box.createRigidArea( new Dimension( endw, 0 ) ) ); super.add( ScrollBar );
-  }
-
   //The component draw area.
   
   @Override public Dimension getMinimumSize()
   {
-    if( charWidth[0] == 0 ) { init(); }
-
     return( new Dimension( endw + scrollBarSize, lineHeight << 3 ) );
   }
 
   @Override public Dimension getPreferredSize()
   {
-    if( charWidth[0] == 0 ) { init(); }
-
     return( new Dimension( endw + scrollBarSize, Math.max( super.getHeight(), lineHeight << 3 ) ) );
   }
   
@@ -480,7 +476,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
   public void paintComponent( Graphics g )
   {
-    g.setFont( font ); if( charWidth[0] == 0 ) { init(); }
+    g.setFont( font );
 
     //Adjust byte buffer on larger height.
 

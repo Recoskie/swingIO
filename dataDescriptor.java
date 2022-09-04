@@ -114,7 +114,7 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
       {
         if( i == selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
 
-        dataDescriptor.drawString( g, data.des[i], 2, posY - 3, cols );
+        drawString( g, data.des[i], 2, posY - 3, cols );
 
         drawString( g, Data, cols + 2, posY - 3, data.relPos[i] - rn, data.relPos[i + 1] - rn , cols );
 
@@ -122,6 +122,25 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
         g.drawLine(0, posY, width, posY);
       }
+    }
+
+    //Draws as many characters as posable in the given space of a column.
+
+    private void drawString( Graphics g, String str, int x, int y, int width)
+    {
+      //When drawing text we must make sure it fits the col otherwise we put "...".
+
+      int strLen = 4, i2 = 0;
+
+      boolean fits = true; for(int len = str.length(); i2 < len && fits; i2++ )
+      {
+        strLen += ft.charWidth(str.charAt(i2)); if( strLen > width && i2 > 0 )
+        {
+          fits = false; strLen += strEnd; while( strLen > width && i2 > 1 ) { strLen -= ft.charWidth(str.charAt(i2--)); }
+        }
+      }
+
+      g.drawString( fits ? str : str.substring(0, i2) + "..." , x, y );
     }
 
     //For the time being it is easier to separate this from the main rendering function.
@@ -196,43 +215,24 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
         int row = i; if( row < ( core.Linear.size() >> 1 ) )
         {
-          dataDescriptor.drawString( g, "LDisassemble", 2, posY - 3, cols );
-          dataDescriptor.drawString( g, "0x" + String.format( "%1$016X", core.Linear.get( row << 1 ) ), cols + 2, posY - 3, cols );
+          g.drawString( "LDisassemble", 2, posY - 3 );
+          g.drawString( "0x" + String.format( "%1$016X", core.Linear.get( row << 1 ) ), cols + 2, posY - 3 );
         }
         else if( ( row -= ( core.Linear.size() >> 1 ) ) < core.Crawl.size() )
         {
-          dataDescriptor.drawString( g, "Disassemble", 2, posY - 3, cols );
-          dataDescriptor.drawString( g, "0x" + String.format( "%1$016X", core.Crawl.get( row ) ), cols + 2, posY - 3, cols );
+          g.drawString( "Disassemble", 2, posY - 3 );
+          g.drawString( "0x" + String.format( "%1$016X", core.Crawl.get( row ) ), cols + 2, posY - 3 );
         }
         else
         {
           row -= core.Crawl.size();
-          dataDescriptor.drawString( g, "Data", 2, posY - 3, cols );
-          dataDescriptor.drawString( g, "0x" + String.format( "%1$016X", core.data_off.get( row << 1 ) ), cols + 2, posY - 3, cols );
+          g.drawString( "Data", 2, posY - 3 );
+          g.drawString( "0x" + String.format( "%1$016X", core.data_off.get( row << 1 ) ), cols + 2, posY - 3 );
         }
 
         g.drawLine(0, posY, width, posY);
       }
     }
-  }
-
-  //Draws as many characters as posable in the given space of a column.
-
-  public static void drawString( Graphics g, String str, int x, int y, int width)
-  {
-    //When drawing text we must make sure it fits the col otherwise we put "...".
-
-    int strLen = 4, i2 = 0;
-
-    boolean fits = true; for(int len = str.length(); i2 < len && fits; i2++ )
-    {
-      strLen += ft.charWidth(str.charAt(i2)); if( strLen > width && i2 > 0 )
-      {
-        fits = false; strLen += strEnd; while( strLen > width && i2 > 1 ) { strLen -= ft.charWidth(str.charAt(i2--)); }
-      }
-    }
-
-    g.drawString( fits ? str : str.substring(0, i2) + "..." , x, y );
   }
 
   //The main graphics components.
