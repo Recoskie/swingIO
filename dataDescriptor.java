@@ -29,10 +29,17 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
   //The default system font.
 
-  private static FontMetrics ft;
-  private static int mStrSize1 = 0, mStrSize2 = 0, mStrSize3 = 0; //Data model columns names size.
-  private static int cStrSize1 = 0, cStrSize2 = 0; //Core model columns names size.
-  private static int strEnd = 0; //The "..." size for when text does not fit in column.
+  private static final FontMetrics ft = new JPanel().getFontMetrics( new JPanel().getFont() );
+
+  //Data model columns names size.
+
+  private static int mStrSize1 = ft.stringWidth("Use") >> 1, mStrSize2 = ft.stringWidth("Raw Data") >> 1, mStrSize3 = ft.stringWidth("Data Type") >> 1;
+
+  //Core model columns names size.
+
+  private static int cStrSize1 = ft.stringWidth("Operation") >> 1, cStrSize2 = ft.stringWidth("Address") >> 1;
+  private static int strEnd = ft.stringWidth("..."); //The "..." size for when text does not fit in column.
+  private static int minWidth = 0; //minimum width required to display the component properly.
 
   //Allows us to switch, and set data models.
 
@@ -46,17 +53,6 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
   private final static String[] DType = new String[]{ "8Bit", "", "Int8", "", "UInt8", "", "Int16", "LInt16", "UInt16", "LUInt16", "Int32", "LInt32", "UInt32", "LUInt32", "Int64", "LInt64", "UInt64", "LUInt64", "Float32", "LFloat32", "Float64", "LFloat64", "Char8", "", "Char16", "LChar16", "String8", "", "String16", "LString16", "Other", "", "Array" };
 
-  //Initialize component font metrics and size by system default font.
-
-  private void init( Graphics g )
-  {
-    ft = g.getFontMetrics(); strEnd = ft.stringWidth("...");
-      
-    mStrSize1 = ft.stringWidth("Use") >> 1; mStrSize2 = ft.stringWidth("Raw Data") >> 1; mStrSize3 = ft.stringWidth("Data Type") >> 1;
-
-    cStrSize1 = ft.stringWidth("Operation") >> 1; cStrSize2 = ft.stringWidth("Address") >> 1;
-  }
-
   //The data model is for displaying data decoded as we scroll through a binary file.
 
   private class dataModel extends JComponent
@@ -67,10 +63,6 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
     public void paintComponent( Graphics g )
     {
-      //Initialize the system default font and metrics.
-
-      if( ft == null ) { init(g); }
-
       int width = super.getWidth(), cols = width / 3, visibleRows = getHeight() >> 4;
 
       //The first row explains what each column is.
@@ -168,10 +160,6 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
     public void paintComponent( Graphics g )
     {
-      //Initialize the system default font and metrics.
-
-      if( ft == null ) { init(g); }
-
       int width = super.getWidth(), cols = width >> 1, rows = getHeight() >> 4;
 
       //The first row explains what each column is.
@@ -266,6 +254,19 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
     super.addMouseListener(this); super.addMouseWheelListener(this); IOStream.addIOEventListener( this );
 
     coreMode = false;
+
+    //longest char width in hex.
+
+    char[] h = new char[]{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+    int cur = 0; for( int i = 0, t = ft.charWidth(h[0]); i < h.length; t=ft.charWidth(h[i++]) )
+    {
+      if( cur < t ) { cur = t; }
+    }
+  
+    //Component minimum width is the minium column size for an 64 bit address.
+    
+    minWidth = (ft.stringWidth("0x") + (cur << 4) + 2) << 1;
   }
 
   //Set the data model.
@@ -315,6 +316,16 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
     }
 
     super.setVisible( v );
+  }
+
+  @Override public Dimension getMinimumSize()
+  {
+    return( new Dimension( minWidth, 48 ) );
+  }
+
+  @Override public Dimension getPreferredSize()
+  {
+    return( new Dimension( minWidth, Math.max( super.getHeight(), 48 ) ) );
   }
   
   public void mouseWheelMoved( MouseWheelEvent e ) { ScrollBar.setValue( ScrollBar.getValue() + ( e.getUnitsToScroll() ) ); repaint(); }
