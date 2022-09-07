@@ -47,7 +47,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
   private static int addcol = 0; //The address column width.
   private static int hexend = 0; //End of hex columns.
   private static int textcol = 0; //Text column start.
-  private static int addc = 0; //Center position of Address col string.
+  private int addc = 0; //Center position of Address col string.
   private static int textc = 0; //Center position of text string.
   private static int endw = 0; //End of component.
   private int x = 0, y = 0; //X, and Y.
@@ -375,6 +375,7 @@ public class VHex extends JComponent implements IOEventListener, MouseWheelListe
 
       addc = ( addcol >> 1 ) - ( fm.stringWidth(s) >> 1 ); textc = textcol + ( fm.stringWidth("Text") >> 1 ) + ( charWidth[4] );
     }
+    else { addc = ( addcol >> 1 ) - ( (new JPanel().getFontMetrics(font)).stringWidth(s) >> 1 ); }
 
     //Scroll bar at end of component.
 

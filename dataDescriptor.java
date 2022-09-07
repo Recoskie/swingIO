@@ -40,6 +40,11 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
   private static int cStrSize1 = ft.stringWidth("Operation") >> 1, cStrSize2 = ft.stringWidth("Address") >> 1;
   private static int strEnd = ft.stringWidth("..."); //The "..." size for when text does not fit in column.
   private static int minWidth = 0; //minimum width required to display the component properly.
+  
+  //Only update component constants as needed on resize.
+  
+  private int width = 0, height = 0, compX = 0, compY = 0;
+  private int cols2 = 0, cols3 = 0, visibleRows = 0;
 
   //Allows us to switch, and set data models.
 
@@ -63,8 +68,6 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
     public void paintComponent( Graphics g )
     {
-      int width = super.getWidth(), cols = width / 3, visibleRows = getHeight() >> 4;
-
       //The first row explains what each column is.
 
       g.setColor( new Color( 238, 238, 238 ) ); g.fillRect(0,0,width,16);
@@ -79,13 +82,13 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
       g.setColor(Color.black);
 
-      g.drawLine(0, 0, 0, (minRows+1) << 4); g.drawLine(cols, 0, cols, (minRows+1) << 4 ); g.drawLine(cols << 1, 0, cols << 1, (minRows+1) << 4);
+      g.drawLine(0, 0, 0, (minRows+1) << 4); g.drawLine(cols3, 0, cols3, (minRows+1) << 4 ); g.drawLine(cols3 << 1, 0, cols3 << 1, (minRows+1) << 4);
     
       g.drawLine(0, 16, width, 16);
 
       //Column names.
 
-      int HCol = cols >> 1; g.drawString("Use", HCol - mStrSize1, 13); HCol += cols; g.drawString("Raw Data", HCol - mStrSize2, 13); HCol += cols; g.drawString("Data Type", HCol - mStrSize3, 13);
+      int HCol = cols3 >> 1; g.drawString("Use", HCol - mStrSize1, 13); HCol += cols3; g.drawString("Raw Data", HCol - mStrSize2, 13); HCol += cols3; g.drawString("Data Type", HCol - mStrSize3, 13);
 
       //The current start and end row in the data by scroll bar position
 
@@ -114,11 +117,11 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
       {
         if( i == selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
 
-        drawString( g, data.des[i], 2, posY - 3, cols );
+        drawString( g, data.des[i], 2, posY - 3, cols3 );
 
-        drawString( g, Data, cols + 2, posY - 3, data.relPos[i] - rn, data.relPos[i + 1] - rn , cols );
+        drawString( g, Data, cols3 + 2, posY - 3, data.relPos[i] - rn, data.relPos[i + 1] - rn , cols3 );
 
-        g.drawString( DType[data.data[i]], ( cols << 1 ) + 2, posY - 3 );
+        g.drawString( DType[data.data[i]], ( cols3 << 1 ) + 2, posY - 3 );
 
         g.drawLine(0, posY, width, posY);
       }
@@ -179,8 +182,6 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
     public void paintComponent( Graphics g )
     {
-      int width = super.getWidth(), cols = width >> 1, rows = getHeight() >> 4;
-
       //The first row explains what each column is.
 
       int addresses = ScrollBar.getMaximum();
@@ -189,17 +190,17 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
 
       //The Number of rows that will fit on screen.
 
-      int minRows = Math.min( addresses, rows ); ScrollBar.setVisibleAmount(minRows);
+      int minRows = Math.min( addresses, visibleRows ); ScrollBar.setVisibleAmount(minRows);
 
       g.setColor(Color.white); g.fillRect( 0, 16, width, minRows << 4 );
 
       //Draw the column lines.
 
-      g.setColor(Color.black); g.drawLine(cols, 0, cols, (minRows+1) << 4); g.drawLine(0, 16, width, 16);
+      g.setColor(Color.black); g.drawLine(cols2, 0, cols2, (minRows+1) << 4); g.drawLine(0, 16, width, 16);
 
       //Column names.
 
-      int HCol = cols >> 1; g.drawString("Operation", HCol - cStrSize1, 13); HCol += cols; g.drawString("Address", HCol - cStrSize2, 13);
+      int HCol = cols2 >> 1; g.drawString("Operation", HCol - cStrSize1, 13); HCol += cols2; g.drawString("Address", HCol - cStrSize2, 13);
 
       //The current start and end row in the data by scroll bar position
 
@@ -216,18 +217,18 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
         int row = i; if( row < ( core.Linear.size() >> 1 ) )
         {
           g.drawString( "LDisassemble", 2, posY - 3 );
-          g.drawString( "0x" + String.format( "%1$016X", core.Linear.get( row << 1 ) ), cols + 2, posY - 3 );
+          g.drawString( "0x" + String.format( "%1$016X", core.Linear.get( row << 1 ) ), cols2 + 2, posY - 3 );
         }
         else if( ( row -= ( core.Linear.size() >> 1 ) ) < core.Crawl.size() )
         {
           g.drawString( "Disassemble", 2, posY - 3 );
-          g.drawString( "0x" + String.format( "%1$016X", core.Crawl.get( row ) ), cols + 2, posY - 3 );
+          g.drawString( "0x" + String.format( "%1$016X", core.Crawl.get( row ) ), cols2 + 2, posY - 3 );
         }
         else
         {
           row -= core.Crawl.size();
           g.drawString( "Data", 2, posY - 3 );
-          g.drawString( "0x" + String.format( "%1$016X", core.data_off.get( row << 1 ) ), cols + 2, posY - 3 );
+          g.drawString( "0x" + String.format( "%1$016X", core.data_off.get( row << 1 ) ), cols2 + 2, posY - 3 );
         }
 
         g.drawLine(0, posY, width, posY);
@@ -385,5 +386,23 @@ public class dataDescriptor extends JComponent implements IOEventListener, Adjus
   {
     if( !data.virtual && e.SPos() < (data.pos + data.length()) && e.EPos() >= data.pos ) { repaint(); }
     else if( e.SPosV() < (data.pos + data.length()) && e.EPosV() >= data.pos ) { repaint(); }
+  }
+
+  //Only update component as needed.
+
+  @Override public void setBounds( int x, int y, int w, int h )
+  {
+    if( width != w || height != h )
+    {
+      width = w; height = h;
+
+      cols2 = width >> 1; cols3 = width / 3; visibleRows = height >> 4;
+
+      super.setBounds(x, y, w, h);
+    }
+    else if( compX != x || compY != y )
+    {
+      super.setBounds(x, y, w, h);
+    }
   }
 }
