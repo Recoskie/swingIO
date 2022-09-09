@@ -5,8 +5,11 @@ This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
 
-function VHex( el, v, event )
+var VHexRef = [];
+
+function VHex( el, io, v )
 {
+  this.io = io;
   this.el = document.getElementById(el);
   this.win = this.el.contentWindow;
   
@@ -17,9 +20,9 @@ function VHex( el, v, event )
   this.win.stop();
     
   this.size = doc.getElementById("size");
+  this.pos = doc.body;
   this.c = doc.getElementById("data");
   this.g = this.c.getContext("2d");
-  this.pos = doc.body;
   
   //text column output is optional.
   
@@ -30,16 +33,37 @@ function VHex( el, v, event )
   this.s = (this.virtual = v) ? "Virtual Address (h)" : "Offset (h)";
   this.addcol = v ? -1 : 42;
   
-  this.win.addEventListener('scroll', event, false);
+  eval("var t = function(){parent.VHexRef["+VHexRef.length+"].sc();}");
+  
+  this.win.addEventListener('scroll', t, false);
+  
+  this.setSize(io.file.size);
   
   dosFont.load().then(function(font){ doc.fonts.add(font); });
+  
+  //Allows us to referenced the component within frame.
+  
+  VHexRef[VHexRef.length] = this;
+}
+
+VHex.prototype.sc = function()
+{
+  this.io.Events = false;
+  
+  this.io.call = this;
+  
+  this.io.seek(this.getPos() * 16);
+  
+  this.io.read(this.getRows() * 16);
+  
+  this.io.Events = true;
 }
 
 //Render the hex editor.
 
 var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C","0D","0E","0F"];
 
-VHex.prototype.update = function( data )
+VHex.prototype.update = function( d )
 {
   var g = this.g;
   var width = this.win.innerWidth;
@@ -77,7 +101,7 @@ VHex.prototype.update = function( data )
   {
     for( var x = 166, i2 = 0, val = 0; i2 < 16; x += 22, i2++ )
     {
-      val = data[i1+i2]; g.fillText(!isNaN(val) ? val.byte() : "??", x, y+13);
+      val = d.data[i1+i2]; g.fillText(!isNaN(val) ? val.byte() : "??", x, y+13);
       
       if( this.text )
       { 
@@ -98,7 +122,7 @@ VHex.prototype.update = function( data )
   
   g.stroke(); g.fillStyle = "#FFFFFF";
   
-  var pos = this.getPos(); pos = (pos < 0 ? 0 : pos) * 16;
+  var pos = d.offset;
   
   height -= 16; for( var i = 0; i < height; i += 16 )
   {
