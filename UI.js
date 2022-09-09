@@ -23,7 +23,7 @@ function VHex( el, v, event )
   
   //text column output is optional.
   
-  this.textCol = true; this.end = 518;
+  this.text = true; this.end = 518;
   
   //virtual or file offset view.
   
@@ -69,7 +69,7 @@ VHex.prototype.update = function( data )
 
   //text output column.
   
-  if( this.textCol ) { g.fillText("Text", 584, 14); }
+  if( this.text ) { g.fillText("Text", 584, 14); }
   
   //Rows.
   
@@ -79,7 +79,7 @@ VHex.prototype.update = function( data )
     {
       val = data[i1+i2]; g.fillText(!isNaN(val) ? val.byte() : "??", x, y+13);
       
-      if( this.textCol )
+      if( this.text )
       { 
         val = !isNaN(val) ? val : 0x3F; if( val == 9 || val == 10 || val == 13 ) { val = 0x20; }
 
@@ -87,7 +87,7 @@ VHex.prototype.update = function( data )
       }
     }
     
-    if( this.textCol ) { g.fillText( text, 528, y+13); text = ""; }
+    if( this.text ) { g.fillText( text, 528, y+13); text = ""; }
     
     g.moveTo(164, y); g.lineTo(514, y);
   }
@@ -110,7 +110,7 @@ VHex.prototype.update = function( data )
 
 VHex.prototype.setText = function( v )
 {
-  this.end = (this.textCol = v) ? 518 : 352;
+  this.end = (this.text = v) ? 518 : 352;
 }
 
 VHex.prototype.hide = function( v )
