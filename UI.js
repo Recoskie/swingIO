@@ -37,13 +37,17 @@ function VHex( el, io, v )
   
   this.win.addEventListener('scroll', t, false);
   
-  this.setSize(io.file.size);
-  
   dosFont.load().then(function(font){ doc.fonts.add(font); });
   
   //Allows us to referenced the component within frame.
   
   VHexRef[VHexRef.length] = this;
+}
+
+VHex.prototype.adjSize = function()
+{
+  //(x / 16) + ( y - ( y / 16 ) )
+  this.setSize( ( this.io.file.size + (this.win.innerHeight*15) ) / 16 );
 }
 
 VHex.prototype.sc = function()
@@ -67,7 +71,7 @@ VHex.prototype.update = function( d )
 {
   var g = this.g;
   var width = this.win.innerWidth;
-  var height = this.win.innerHeight
+  var height = this.win.innerHeight;
   this.c.width = width; this.c.height = height;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
@@ -105,13 +109,13 @@ VHex.prototype.update = function( d )
       
       if( this.text )
       { 
-        val = !isNaN(val) ? val : 0x3F; if( val == 9 || val == 10 || val == 13 ) { val = 0x20; }
+        val = !isNaN(val) ? val : 0x3F; if( val == 0 || val == 9 || val == 10 || val == 13 ) { val = 0x20; }
 
         text += String.fromCharCode( val );
       }
     }
     
-    if( this.text ) { g.fillText( text, 528, y+13); text = ""; }
+    if( this.text ) { g.fillText( text, 528, y+15); text = ""; }
     
     g.moveTo(164, y); g.lineTo(514, y);
   }
@@ -126,7 +130,7 @@ VHex.prototype.update = function( d )
   
   height -= 16; for( var i = 0; i < height; i += 16 )
   {
-    g.fillText((pos + i).address(), 0, i+32);
+    g.fillText((pos + i).address(), 0, i+29);
   }
   
   g.stroke();
