@@ -36,6 +36,10 @@ function VHex( el, io, v )
   //Allows us to referenced the proper component to update on scroll.
   
   VHexRef[VHexRef.length] = this;
+  
+  //Add the component to the IO Event handler.
+  
+  file.comps[file.comps.length] = this;
 }
 
 //Scrolling event.
@@ -44,7 +48,7 @@ VHex.prototype.sc = function()
 {
   this.io.Events = false;
   
-  this.io.call = this;
+  this.io.call( this, "update" );
 
   this.io.seek(this.getPos() * 16);
   
@@ -59,6 +63,7 @@ var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C",
 
 VHex.prototype.update = function( d )
 {
+  console.log(this);
   var g = this.g, width = this.c.width = this.c.offsetWidth, height = this.c.height = this.c.offsetHeight;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
@@ -134,6 +139,14 @@ VHex.prototype.getPos = function() { return( this.comp.scrollTop ); }
 VHex.prototype.setSize = function( size ) { this.size.style = "height:" + size + "px;"; }
 
 VHex.prototype.adjSize = function() { this.setSize( ( this.io.file.size - this.comp.offsetHeight + 48 ) / 16 ); }
+
+//The on read IO Event.
+
+VHex.prototype.onread = function() { }
+
+//The on seek IO Event.
+
+VHex.prototype.onseek = function() { }
 
 //Address format offsets.
 
