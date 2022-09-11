@@ -9,20 +9,13 @@ var VHexRef = [];
 
 function VHex( el, io, v )
 {
-  this.io = io;
-  this.el = document.getElementById(el);
-  this.win = this.el.contentWindow;
-  
-  const doc = this.win.document;
-    
-  doc.write("<html><body><canvas id='data' style='position: fixed;top:0px;left:0px;width:100%;height:100%;background:#CECECE;z-index: -1;overflow:hidden;'></canvas><div id='size'></div></body></html>");
-    
-  this.win.stop();
-    
-  this.size = doc.getElementById("size");
-  this.pos = doc.body;
-  this.c = doc.getElementById("data");
-  this.g = this.c.getContext("2d");
+  this.io = io; var h = this.comp = document.getElementById(el);
+
+  h.style.position = "relative"; h.style.overflowY = "Scroll";
+
+  h.innerHTML = "<canvas id=\""+el+"g\" style='position: sticky;top:0px;left:0px;width: 100%;height:100%;background:#CECECE;'></canvas><div id=\""+el+"s\"></div>";
+
+  this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
   
   //text column output is optional.
   
@@ -30,32 +23,29 @@ function VHex( el, io, v )
   
   //virtual or file offset view.
   
-  this.s = (this.virtual = v) ? "Virtual Address (h)" : "Offset (h)";
-  this.addcol = v ? -1 : 42;
+  this.s = (this.virtual = v) ? "Virtual Address (h)" : "Offset (h)"; this.addcol = v ? -1 : 42;
+
+  //Scroll.
   
-  eval("var t = function(){parent.VHexRef["+VHexRef.length+"].sc();}");
+  eval("var t = function(){VHexRef["+VHexRef.length+"].sc("+VHexRef.length+");}"); h.addEventListener('scroll', t, false); this.setSize(io.file.size);
+
+  //Load Font.
   
-  this.win.addEventListener('scroll', t, false);
+  dosFont.load().then(function(font){ document.fonts.add(font); });
   
-  dosFont.load().then(function(font){ doc.fonts.add(font); });
-  
-  //Allows us to referenced the component within frame.
+  //Allows us to referenced the proper component to update on scroll.
   
   VHexRef[VHexRef.length] = this;
 }
 
-VHex.prototype.adjSize = function()
-{
-  //(x / 16) + ( y - ( y / 16 ) )
-  this.setSize( ( this.io.file.size + (this.win.innerHeight*15) ) / 16 );
-}
+//Scrolling event.
 
 VHex.prototype.sc = function()
 {
   this.io.Events = false;
   
   this.io.call = this;
-  
+
   this.io.seek(this.getPos() * 16);
   
   this.io.read(this.getRows() * 16);
@@ -69,10 +59,7 @@ var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C",
 
 VHex.prototype.update = function( d )
 {
-  var g = this.g;
-  var width = this.win.innerWidth;
-  var height = this.win.innerHeight;
-  this.c.width = width; this.c.height = height;
+  var g = this.g, width = this.c.width = this.c.offsetWidth, height = this.c.height = this.c.offsetHeight;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
@@ -109,13 +96,13 @@ VHex.prototype.update = function( d )
       
       if( this.text )
       { 
-        val = !isNaN(val) ? val : 0x3F; if( val == 0 || val == 9 || val == 10 || val == 13 ) { val = 0x20; }
+        val = !isNaN(val) ? val : 0x3F; if( val == 9 || val == 10 || val == 13 ) { val = 0x20; }
 
         text += String.fromCharCode( val );
       }
     }
     
-    if( this.text ) { g.fillText( text, 528, y+15); text = ""; }
+    if( this.text ) { g.fillText( text, 528, y+13); text = ""; }
     
     g.moveTo(164, y); g.lineTo(514, y);
   }
@@ -130,30 +117,23 @@ VHex.prototype.update = function( d )
   
   height -= 16; for( var i = 0; i < height; i += 16 )
   {
-    g.fillText((pos + i).address(), 0, i+29);
+    g.fillText((pos + i).address(), 0, i+32);
   }
   
   g.stroke();
 }
 
-VHex.prototype.setText = function( v )
-{
-  this.end = (this.text = v) ? 518 : 352;
-}
+VHex.prototype.setText = function( v ) { this.end = (this.text = v) ? 518 : 352; }
 
-VHex.prototype.hide = function( v )
-{
-  this.el.style.display = v ? "none" : "";
-}
+VHex.prototype.hide = function( v ) { this.comp.style.display = v ? "none" : ""; }
 
-VHex.prototype.getRows = function()
-{
-  return( this.win.innerHeight / 16 );
-}
+VHex.prototype.getRows = function() { return( this.comp.offsetHeight / 16 ); }
 
-VHex.prototype.getPos = function() { return( this.pos.scrollTop ); }
+VHex.prototype.getPos = function() { return( this.comp.scrollTop ); }
 
 VHex.prototype.setSize = function( size ) { this.size.style = "height:" + size + "px;"; }
+
+VHex.prototype.adjSize = function() { this.setSize( ( this.io.file.size - this.comp.offsetHeight + 48 ) / 16 ); }
 
 //Address format offsets.
 
