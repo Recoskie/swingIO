@@ -40,6 +40,8 @@ function VHex( el, io, v )
   //Add the component to the IO Event handler.
   
   file.comps[file.comps.length] = this;
+  
+  this.visible = false;
 }
 
 //Scrolling event.
@@ -129,7 +131,7 @@ VHex.prototype.update = function( d )
 
 VHex.prototype.setText = function( v ) { this.end = (this.text = v) ? 518 : 352; }
 
-VHex.prototype.hide = function( v ) { this.comp.style.display = v ? "none" : ""; }
+VHex.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
 
 VHex.prototype.getRows = function() { return( this.comp.offsetHeight / 16 ); }
 
