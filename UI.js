@@ -63,7 +63,6 @@ var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C",
 
 VHex.prototype.update = function( d )
 {
-  console.log(this);
   var g = this.g, width = this.c.width = this.c.offsetWidth, height = this.c.height = this.c.offsetHeight;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
