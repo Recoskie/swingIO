@@ -13,7 +13,7 @@ function VHex( el, io, v )
 {
   this.io = io; var h = this.comp = document.getElementById(el);
 
-  h.style.position = "relative"; h.style.overflow = "Scroll";
+  h.style.position = "relative"; h.style.overflowY = "Scroll";
 
   h.innerHTML = "<canvas id=\""+el+"g\" style='position: sticky;top:0px;left:0px;width: 100%;height:100%;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
@@ -43,7 +43,9 @@ function VHex( el, io, v )
   
   file.comps[file.comps.length] = this;
   
-  this.visible = false;
+  //Visible by defualt.
+  
+  this.hide( false );
 }
 
 //Scrolling event.
@@ -139,7 +141,11 @@ VHex.prototype.getRows = function() { return( this.comp.offsetHeight / 16 ); }
 
 VHex.prototype.getPos = function() { return( this.comp.scrollTop ); }
 
-VHex.prototype.setSize = function( size ) { this.size.style = "height:" + size + "px;"; }
+VHex.prototype.setPos = function( offset ) { this.comp.scrollTo( 0, offset ); }
+
+VHex.prototype.setSize = function( size ) { this.size.style = "height:" + size + "px;min-height:"+size+"px;"; }
+
+VHex.prototype.checkSize = function() { return( (this.size.clientHeight+"px") == this.size.style.height ); }
 
 VHex.prototype.adjSize = function() { this.setSize( ( this.io.file.size - this.comp.offsetHeight + 48 ) / 16 ); }
 
