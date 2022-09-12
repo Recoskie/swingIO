@@ -13,7 +13,7 @@ function VHex( el, io, v )
 
   h.style.position = "relative"; h.style.overflow = "Scroll";
 
-  h.innerHTML = "<canvas id=\""+el+"g\" style='position: sticky;top:0px;left:0px;width: 100%;height:100%;background:#CECECE;'></canvas><div id=\""+el+"s\"></div>";
+  h.innerHTML = "<canvas id=\""+el+"g\" style='position: sticky;top:0px;left:0px;width: 100%;height:100%;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
   this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
   
