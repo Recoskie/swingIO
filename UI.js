@@ -11,7 +11,7 @@ function VHex( el, io, v )
 {
   this.io = io; var h = this.comp = document.getElementById(el);
 
-  h.style.position = "relative"; h.style.overflowY = "Scroll";
+  h.style.position = "relative"; h.style.overflow = "Scroll";
 
   h.innerHTML = "<canvas id=\""+el+"g\" style='position: sticky;top:0px;left:0px;width: 100%;height:100%;background:#CECECE;'></canvas><div id=\""+el+"s\"></div>";
 
@@ -121,7 +121,7 @@ VHex.prototype.update = function( d )
   
   height -= 16; for( var i = 0; i < height; i += 16 )
   {
-    g.fillText((pos + i).address(), 0, i+32);
+    g.fillText((pos + i).address(), 0, i+29);
   }
   
   g.stroke();
