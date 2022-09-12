@@ -1,4 +1,6 @@
-var dosFont = new FontFace('dos', 'url(swingIO/Font/DOS.ttf)');
+var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/"));
+
+var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'); path = undefined;
 
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
