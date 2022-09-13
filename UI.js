@@ -23,6 +23,10 @@ function VHex( el, io, v )
   
   this.text = true; this.end = 518;
   
+  //Componet min size.
+  
+  h.style.minWidth = "682px"; h.style.minHeight = "256px";
+  
   //virtual or file offset view.
   
   this.s = (this.virtual = v) ? "Virtual Address (h)" : "Offset (h)"; this.addcol = v ? -1 : 42;
@@ -133,7 +137,11 @@ VHex.prototype.update = function( d )
   g.stroke();
 }
 
-VHex.prototype.setText = function( v ) { this.end = (this.text = v) ? 518 : 352; }
+VHex.prototype.setText = function( v )
+{
+  this.comp.style.minWidth = (v ? 682 : 516) + "px";
+  this.end = (this.text = v) ? 518 : 352;
+}
 
 VHex.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
 
