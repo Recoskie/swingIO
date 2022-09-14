@@ -110,7 +110,7 @@ VHex.prototype.update = function( d )
       
       if( this.text )
       { 
-        val = !isNaN(val) ? val : 0x3F; if( val == 10 || val == 173 ) { val = 0x20; }
+        val = !isNaN(val) ? val : 0x3F; if( val == 0 || val == 10 || val == 173 ) { val = 0x20; }
 
         text += String.fromCharCode( val );
       }
