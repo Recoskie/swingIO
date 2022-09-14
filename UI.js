@@ -7,7 +7,7 @@ This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
 
-var VHexRef = [];
+var VHexRef = [], sBarWidth = null;
 
 function VHex( el, io, v )
 {
@@ -19,13 +19,26 @@ function VHex( el, io, v )
 
   this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
   
-  //text column output is optional.
+  //Visible on creation.
   
-  this.text = true; this.end = 518;
+  this.hide( false );
+  
+  //Find the width of the system scroll bar.
+
+  if( sBarWidth == null )
+  {
+    this.setSize(this.comp.offsetHeight + 16);
+    sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
+    this.setSize(0);
+  }
   
   //Component min size.
   
-  h.style.minWidth = "682px"; h.style.minHeight = "256px";
+  h.style.minWidth = (682 + sBarWidth) + "px"; h.style.minHeight = "256px";
+  
+  //text column output is optional.
+  
+  this.text = true; this.end = 518;
   
   //virtual or file offset view.
   
@@ -46,10 +59,6 @@ function VHex( el, io, v )
   //Add the component to the IO Event handler.
   
   file.comps[file.comps.length] = this;
-  
-  //Visible by defualt.
-  
-  this.hide( false );
 }
 
 //Scrolling event.
@@ -139,7 +148,7 @@ VHex.prototype.update = function( d )
 
 VHex.prototype.setText = function( v )
 {
-  this.comp.style.minWidth = (v ? 682 : 516) + "px";
+  this.comp.style.minWidth = ((v ? 682 : 516) + sBarWidth) + "px";
   this.end = (this.text = v) ? 518 : 352;
 }
 
