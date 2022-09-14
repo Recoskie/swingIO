@@ -23,7 +23,7 @@ function VHex( el, io, v )
   
   this.text = true; this.end = 518;
   
-  //Componet min size.
+  //Component min size.
   
   h.style.minWidth = "682px"; h.style.minHeight = "256px";
   
@@ -60,9 +60,9 @@ VHex.prototype.sc = function()
   
   this.io.call( this, "update" );
 
-  this.io.seek(this.getPos() * 16);
+  this.io.seek(Math.floor(this.getPos()) * 16);
   
-  this.io.read(this.getRows() * 16);
+  this.io.read(Math.floor(this.getRows()) * 16);
   
   this.io.Events = true;
 }
@@ -110,7 +110,7 @@ VHex.prototype.update = function( d )
       
       if( this.text )
       { 
-        val = !isNaN(val) ? val : 0x3F; if( val == 0 || val == 9 || val == 10 || val == 13 ) { val = 0x20; }
+        val = !isNaN(val) ? val : 0x3F; if( val == 10 || val == 173 ) { val = 0x20; }
 
         text += String.fromCharCode( val );
       }
