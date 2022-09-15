@@ -7,7 +7,7 @@ This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
 
-var VHexRef = [], sBarWidth = null;
+var VHexRef = [], sBarWidth = null, sBarMax = null;
 
 function VHex( el, io, v )
 {
@@ -15,7 +15,7 @@ function VHex( el, io, v )
 
   h.style.position = "relative"; h.style.overflowY = "Scroll";
 
-  h.innerHTML = "<canvas id=\""+el+"g\" style='position: sticky;top:0px;left:0px;width: 100%;height:100%;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
+  h.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
   this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
   
@@ -29,7 +29,7 @@ function VHex( el, io, v )
   {
     this.setSize(this.comp.offsetHeight + 16);
     sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
-    this.setSize(0);
+    this.setSize(9007199254740992); sBarMax = this.size.clientHeight;
   }
   
   //Component min size.
@@ -82,7 +82,7 @@ var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C",
 
 VHex.prototype.update = function( d )
 {
-  var g = this.g, width = this.c.width = this.c.offsetWidth, height = this.c.height = this.c.offsetHeight;
+  var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
