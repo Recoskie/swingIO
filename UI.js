@@ -69,9 +69,18 @@ VHex.prototype.sc = function()
   
   this.io.call( this, "update" );
 
-  this.io.seek(Math.floor(this.getPos()) * 16);
+  if( !this.virtual )
+  {
+    this.io.seek(Math.floor(this.getPos()) * 16);
   
-  this.io.read(Math.floor(this.getRows()) * 16);
+    this.io.read(Math.floor(this.getRows()) * 16);
+  }
+  else
+  {
+    this.io.seekV(Math.floor(this.getPos()) * 16);
+  
+    this.io.readV(Math.floor(this.getRows()) * 16);
+  }
   
   this.io.Events = true;
 }
@@ -82,7 +91,7 @@ var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C",
 
 VHex.prototype.update = function( d )
 {
-  var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight;
+  var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight, data = !this.virtual ? d.data : d.dataV;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
@@ -115,7 +124,7 @@ VHex.prototype.update = function( d )
   {
     for( var x = 166, i2 = 0, val = 0; i2 < 16; x += 22, i2++ )
     {
-      val = d.data[i1+i2]; g.fillText(!isNaN(val) ? val.byte() : "??", x, y+13);
+      val = data[i1+i2]; g.fillText(!isNaN(val) ? val.byte() : "??", x, y+13);
       
       if( this.text )
       { 
@@ -136,7 +145,7 @@ VHex.prototype.update = function( d )
   
   g.stroke(); g.fillStyle = "#FFFFFF";
   
-  var pos = d.offset;
+  var pos = !this.virtual ? d.offset : d.offset + d.virtual;
   
   height -= 16; for( var i = 0; i < height; i += 16 )
   {
@@ -176,10 +185,13 @@ VHex.prototype.onseek = function() { }
 
 //Address format offsets.
 
-Number.prototype.address = function()
+if( Number.prototype.address == null )
 {
-  for( var s = this.toString(16).toUpperCase(); s.length < 16; s = "0" + s );
-  return("0x"+s);
+  Number.prototype.address = function()
+  {
+    for( var s = this.toString(16).toUpperCase(); s.length < 16; s = "0" + s );
+    return("0x"+s);
+  }
 }
 
 //Byte format
