@@ -34,7 +34,13 @@ function VHex( el, io, v )
 
   //Virtual or offset scroll.
 
-  if( v ) { this.sc = this.virtualSc; } else { this.sc = this.offsetSc; }
+  if( v )
+  {
+    this.relSize = 562949953421312; this.rel = true;
+    this.adjSize = function() { var s = sBarMax - this.getRows(); this.size.style = "height:" + s + "px;min-height:" + s + "px;"; }
+    this.setRows = function(){}; this.sc = this.virtualSc;
+  }
+  else { this.sc = this.offsetSc; }
   
   //Component min size.
   
@@ -191,13 +197,13 @@ VHex.prototype.getRows = function() { return( this.comp.offsetHeight / 16 ); }
 
 VHex.prototype.setRows = function( size )
 {
-  size = !this.virtual ? size : 562949953421312; size -= this.getRows();
+  size -= this.getRows();
 
   //Scroll bar can only go so high before it hit's it's limit.
 
   if( sBarMax != null )
   {
-    if( size > sBarMax ){ this.rel = true; this.relSize = size; this.relDataUp = this.relSize - sBarLowLim; size = sBarMax; } else { this.rel = false; }
+    if( size > sBarMax ){ this.rel = true; this.relSize = size; size = sBarMax; } else { this.rel = false; }
   }
 
   //Set size.
