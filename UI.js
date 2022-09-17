@@ -7,7 +7,7 @@ This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
 
-var VHexRef = [], sBarWidth = null, sBarMax = null;
+var VHexRef = [], sBarWidth = null, sBarMax = null, sBarLowLim = null, sBarUpLim = null;
 
 function VHex( el, io, v )
 {
@@ -24,16 +24,17 @@ function VHex( el, io, v )
   this.hide( false );
   
   //Find the width of the system scroll bar, and max height of scroll bar.
+  //Find the lower and upper limit while scrolling.
 
   if( sBarWidth == null )
   {
     this.setRows(562949953421312); sBarMax = this.size.clientHeight / 2; sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
-    this.relDOWN = sBarMax * 0.05; this.relUP = sBarMax * 0.05;
+    sBarLowLim = sBarMax * 0.05; sBarUpLim = sBarMax - sBarLowLim;
   }
 
-  //The virtual address mode is not size adjustable as it is always 562949953421312 * 16.
+  //Virtual or offset scroll.
 
-  if( v ) { this.setRows(562949953421312); this.setRows = function() {}; this.sc = this.virtualSc; } else { this.sc = this.offsetSc; }
+  if( v ) { this.sc = this.virtualSc; } else { this.sc = this.offsetSc; }
   
   //Component min size.
   
@@ -169,12 +170,11 @@ VHex.prototype.update = function( d )
 //The scroll bar can only be made so big so then we need an way to display very far away addresses.
 //So we add a relative position while scrolling to the end based on the max scroll bar size.
 
-VHex.prototype.rel = false; VHex.prototype.relPos = 0; VHex.prototype.relSize = 0;
-VHex.prototype.oldOff = 0;
+VHex.prototype.rel = false; VHex.prototype.relPos = 0; VHex.prototype.relSize = 0; VHex.prototype.oldOff = 0;
 
-//The upper and lower limit for relative scroll. The scroll bar does not pass these values until we approach remaining data with theses relative values.
+//The upper limit for data while scrolling. The lower limit does not need to be caudated.
 
-VHex.prototype.relUP = 0x1000; VHex.prototype.relDOWN = 0x1000;
+VHex.prototype.relDataUp = 0;
 
 //Basic UI controls.
 
@@ -191,11 +191,14 @@ VHex.prototype.getRows = function() { return( this.comp.offsetHeight / 16 ); }
 
 VHex.prototype.setRows = function( size )
 {
-  size -= this.getRows();
+  size = !this.virtual ? size : 562949953421312; size -= this.getRows();
 
   //Scroll bar can only go so high before it hit's it's limit.
 
-  if( sBarMax != null ) { if( size > sBarMax ){ this.rel = true; this.relSize = size; size = sBarMax; } else { this.rel = false; } }
+  if( sBarMax != null )
+  {
+    if( size > sBarMax ){ this.rel = true; this.relSize = size; this.relDataUp = this.relSize - sBarLowLim; size = sBarMax; } else { this.rel = false; }
+  }
 
   //Set size.
 
@@ -224,11 +227,11 @@ VHex.prototype.setPos = function( offset )
 
     //The scroll bar must not pass the rel down position unless rel position is less than rel down.
 
-    if( offset <= this.relDOWN && this.relPos >= this.relDOWN ) { offset = this.relDOWN; }
+    if( offset <= sBarLowLim && this.relPos >= sBarLowLim ) { offset = sBarLowLim; }
 
     //The scroll bar must not pass the rel Up position unless rel position is grater than rel up.
 
-    if( offset >= ( sBarMax - this.relUP ) && this.relPos <= ( this.relSize - this.relUP ) ) { offset = sBarMax - this.relUP; }
+    if( offset >= sBarUpLim && this.relPos <= this.relDataUP ) { offset = sBarUpLim; }
   }
 
   this.comp.scrollTo( 0, offset );
@@ -238,26 +241,23 @@ VHex.prototype.setPos = function( offset )
 
 VHex.prototype.adjRelPos = function()
 {
-  offset = this.comp.scrollTop;
+  var offset = this.comp.scrollTop;
 
   //Delta difference in scroll bar controls the relative position.
 
   var delta = offset - this.oldOff; this.relPos += delta;
 
-  //The scroll bar must not pass the rel down position unless rel position is less than rel down.
+  //The scroll bar must not pass the rel down position unless rel position is less than rel down data.
 
-  if( offset <= this.relDOWN && this.relPos >= this.relDOWN ) { offset = this.relDOWN; }
-  else if( this.relPos <= this.relDOWN )
+  if( offset <= sBarLowLim && this.relPos >= sBarLowLim ) { offset = sBarLowLim; }
+  else if( this.relPos <= sBarLowLim ) { this.relPos = offset; }
+
+  //The scroll bar must not pass the rel Up position unless rel position is grater than rel up data.
+
+  if( offset >= sBarUpLim && this.relPos <= ( this.relSize - sBarLowLim ) ) { offset = sBarUpLim; }
+  else if(this.relPos >= ( this.relSize - sBarLowLim ))
   {
-    this.relPos = offset;
-  }
-
-  //The scroll bar must not pass the rel Up position unless rel position is grater than rel up.
-
-  if( offset >= ( sBarMax - this.relUP ) && this.relPos <= ( this.relSize - this.relUP ) ) { offset = sBarMax - this.relUP; }
-  else if(this.relPos >= ( this.relSize - this.relUP ))
-  {
-    this.relPos = ( this.relSize - this.relUP ) + ( offset - ( sBarMax - this.relUP ) );
+    this.relPos = ( this.relSize - sBarLowLim ) + ( offset - sBarUpLim );
   }
 
   //The only time the scroll bar passes the Rel UP or down position is when all that remains is that size of data.
