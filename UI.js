@@ -23,14 +23,18 @@ function VHex( el, io, v )
   
   this.hide( false );
   
-  //Find the width of the system scroll bar.
+  //Find the width of the system scroll bar, and max height of scroll bar.
 
   if( sBarWidth == null )
   {
-    this.setSize(this.comp.offsetHeight + 16);
+    this.size.style.height = (this.comp.offsetHeight + 16) + "px";
     sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
     this.setSize(9007199254740992); sBarMax = this.size.clientHeight;
   }
+
+  //The virtual address mode is not size adjustable as it is always 9007199254740992.
+
+  if( v ) { this.setSize(sBarMax); this.relSc = true; this.adjSize = this.setSize = function() {}; this.sc = this.virtualSc; } else { this.sc = this.offsetSc; }
   
   //Component min size.
   
@@ -63,24 +67,28 @@ function VHex( el, io, v )
 
 //Scrolling event.
 
-VHex.prototype.sc = function()
+VHex.prototype.offsetSc = function()
 {
   this.io.Events = false;
   
   this.io.call( this, "update" );
 
-  if( !this.virtual )
-  {
-    this.io.seek(Math.floor(this.getPos()) * 16);
+  this.io.seek(Math.floor(this.getPos()) * 16);
   
-    this.io.read(Math.floor(this.getRows()) * 16);
-  }
-  else
-  {
-    this.io.seekV(Math.floor(this.getPos()) * 16);
+  this.io.read(Math.floor(this.getRows()) * 16);
   
-    this.io.readV(Math.floor(this.getRows()) * 16);
-  }
+  this.io.Events = true;
+}
+
+VHex.prototype.virtualSc = function()
+{
+  this.io.Events = false;
+  
+  this.io.call( this, "update" );
+
+  this.io.seekV(Math.floor(this.getPos()) * 16);
+  
+  this.io.readV(Math.floor(this.getRows()) * 16);
   
   this.io.Events = true;
 }
