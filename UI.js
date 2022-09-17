@@ -25,16 +25,11 @@ function VHex( el, io, v )
   
   //Find the width of the system scroll bar, and max height of scroll bar.
 
-  if( sBarWidth == null )
-  {
-    this.size.style.height = (this.comp.offsetHeight + 16) + "px";
-    sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
-    this.setSize(9007199254740992); sBarMax = this.size.clientHeight;
-  }
+  if( sBarWidth == null ) { this.setRows(562949953421312); sBarMax = this.size.clientHeight; sBarWidth = this.comp.offsetWidth - this.comp.clientWidth; }
 
-  //The virtual address mode is not size adjustable as it is always 9007199254740992.
+  //The virtual address mode is not size adjustable as it is always 562949953421312 * 16.
 
-  if( v ) { this.setSize(sBarMax); this.relSc = true; this.adjSize = this.setSize = function() {}; this.sc = this.virtualSc; } else { this.sc = this.offsetSc; }
+  if( v ) { this.setRows(562949953421312); this.adjSize  = function() {}; this.setRows = function() {}; this.sc = this.virtualSc; } else { this.sc = this.offsetSc; }
   
   //Component min size.
   
@@ -50,7 +45,7 @@ function VHex( el, io, v )
 
   //Scroll.
   
-  eval("var t = function(){VHexRef["+VHexRef.length+"].sc("+VHexRef.length+");}"); h.addEventListener('scroll', t, false); this.setSize(io.file.size);
+  eval("var t = function(){VHexRef["+VHexRef.length+"].sc("+VHexRef.length+");}"); h.addEventListener('scroll', t, false); this.setRows(io.file.size);
 
   //Load Font.
   
@@ -69,6 +64,8 @@ function VHex( el, io, v )
 
 VHex.prototype.offsetSc = function()
 {
+  if( this.rel ){ this.setPos(this.getPos()); }
+
   this.io.Events = false;
   
   this.io.call( this, "update" );
@@ -82,6 +79,8 @@ VHex.prototype.offsetSc = function()
 
 VHex.prototype.virtualSc = function()
 {
+  this.setPos(this.getPos());
+
   this.io.Events = false;
   
   this.io.call( this, "update" );
@@ -163,25 +162,62 @@ VHex.prototype.update = function( d )
   g.stroke();
 }
 
+//The scroll bar can only be made so big so then we need an way to display very far away addresses.
+//So we add a relative position while scrolling to the end based on the max scroll bar size.
+
+VHex.prototype.rel = false; VHex.prototype.relPos = 0; VHex.prototype.relSize = 0;
+
+//The upper and lower limit for relative scroll. The scroll bar does not pass these values until we approach remaining data with theses relative values.
+
+VHex.prototype.relUP = 0x1000; VHex.prototype.relDOWN = 0x1000;
+
+//Basic UI controls.
+
 VHex.prototype.setText = function( v )
 {
-  this.comp.style.minWidth = ((v ? 682 : 516) + sBarWidth) + "px";
-  this.end = (this.text = v) ? 518 : 352;
+  this.comp.style.minWidth = ((v ? 682 : 516) + sBarWidth) + "px"; this.end = (this.text = v) ? 518 : 352;
 }
 
 VHex.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
 
 VHex.prototype.getRows = function() { return( this.comp.offsetHeight / 16 ); }
 
-VHex.prototype.getPos = function() { return( this.comp.scrollTop ); }
+//It is important that we subtract what is visible from the scroll area otherwise we will scroll past the end.
 
-VHex.prototype.setPos = function( offset ) { this.comp.scrollTo( 0, offset ); }
+VHex.prototype.setRows = function( size )
+{
+  size -= this.getRows();
 
-VHex.prototype.setSize = function( size ) { this.size.style = "height:" + size + "px;min-height:"+size+"px;"; }
+  //Scroll bar can only go so high before it hit's it's limit.
 
-VHex.prototype.checkSize = function() { return( (this.size.clientHeight+"px") == this.size.style.height ); }
+  if( sBarMax != null ) { if( size > sBarMax ){ this.rel = true; this.relSize = size; size = sBarMax; } else { this.rel = false; } }
 
-VHex.prototype.adjSize = function() { this.setSize( ( this.io.file.size - this.comp.offsetHeight + 48 ) / 16 ); }
+  //Set size.
+
+  this.size.style = "height:" + size + "px;min-height:" + size + "px;";
+}
+
+//We want to keep three extra rows so the user can see the end of the file.
+
+VHex.prototype.adjSize = function() { this.setRows( ( this.io.file.size / 16 ) + 3 ); }
+
+//Get the real position including relative scrolling if active.
+
+VHex.prototype.getPos = function() { return( ( this.rel ? 0 : this.relPos ) + this.comp.scrollTop ); }
+
+//Adjust relative scrolling or set position directly.
+
+VHex.prototype.setPos = function( offset )
+{
+  //Relative position.
+
+  if( this.rel )
+  {
+    var delta = this.getPos() - offset; console.log("Delta = " + delta + "");
+  }
+
+  this.comp.scrollTo( 0, offset );
+}
 
 //The on read IO Event.
 
