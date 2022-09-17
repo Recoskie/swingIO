@@ -145,7 +145,7 @@ VHex.prototype.update = function( d )
   
   g.stroke(); g.fillStyle = "#FFFFFF";
   
-  var pos = !this.virtual ? d.offset : d.offset + d.virtual;
+  var pos = !this.virtual ? d.offset : d.virtual;
   
   height -= 16; for( var i = 0; i < height; i += 16 )
   {
