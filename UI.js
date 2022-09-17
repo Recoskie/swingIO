@@ -240,7 +240,7 @@ VHex.prototype.setPos = function( offset )
     if( offset >= sBarUpLim && this.relPos <= this.relDataUP ) { offset = sBarUpLim; }
   }
 
-  this.comp.scrollTo( 0, offset );
+  this.comp.scrollTo( 0, offset ); this.oldOff = offset;
 }
 
 //Adjust relative positioned scrolling.
