@@ -2,6 +2,20 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'); path = undefined;
 
+document.body.innerHTML = "<style>\
+.vhex\
+{\
+  -webkit-user-select: none;\
+  -webkit-touch-callout: none;\
+  -moz-user-select: none;\
+  -ms-user-select: none;\
+  user-select: none;\
+  position: relative;\
+  overflow-y: scroll;\
+  overflow-x: hidden;\
+}\
+</style>" + document.body.innerHTML;
+
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
@@ -13,7 +27,7 @@ function VHex( el, io, v )
 {
   this.io = io; var h = this.comp = document.getElementById(el);
 
-  h.style.position = "relative"; h.style.overflowY = "Scroll"; h.style.overflowX = "hidden";
+  h.className="vhex";
 
   h.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
@@ -60,11 +74,11 @@ function VHex( el, io, v )
 
   //Scroll.
   
-  eval("var t = function(){VHexRef["+VHexRef.length+"].sc();}"); h.addEventListener("scroll", t, false);
+  eval("var t = function(){VHexRef["+VHexRef.length+"].sc();}"); h.onscroll=t;
 
   //Seek byte onclick Event
   
-  eval("var t = function(e){VHexRef["+VHexRef.length+"].select(e);}"); this.comp.addEventListener("click", t, false);
+  eval("var t = function(e){VHexRef["+VHexRef.length+"].select(e);}"); this.comp.onmousedown=this.comp.ontouchstart=t;
 
   //Load Font.
   
