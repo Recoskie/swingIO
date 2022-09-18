@@ -145,7 +145,7 @@ VHex.prototype.update = function(d)
   
   g.stroke();
 
-  if( this.sel >= 0 && this.sele >= 0 ) { this.selection(pos); }
+  if( this.sel >= 0 && this.sele >= 0 ) { this.selection(g, pos); }
   
   g.fillStyle = "#000000";
   
@@ -203,9 +203,9 @@ VHex.prototype.update = function(d)
 
 //Draw selected area.
 
-VHex.prototype.selection = function(pos)
+VHex.prototype.selection = function(g, pos)
 {
-  var g = this.g; g.fillStyle = "#9EB0C1";
+  g.fillStyle = "#9EB0C1";
 
   //End and start position must be in order for the coordinates to be translated properly.
 
@@ -244,7 +244,7 @@ VHex.prototype.selection = function(pos)
 
 VHex.prototype.rel = false; VHex.prototype.relPos = 0; VHex.prototype.relSize = 0; VHex.prototype.oldOff = 0;
 
-//The upper limit for data while scrolling. The lower limit does not need to be caudated.
+//The upper limit for data while scrolling. The lower limit does not need to be calculated.
 
 VHex.prototype.relDataUp = 0;
 
@@ -277,13 +277,13 @@ VHex.prototype.setRows = function( size )
   this.size.style = "height:" + size + "px;min-height:" + size + "px;";
 }
 
-//We want to keep three extra rows so the user can see the end of the file.
+//We want to keep an extra rows so the user can see the end of the file.
 
-VHex.prototype.adjSize = function() { this.setRows( ( this.io.file.size / 16 ) + 3 ); }
+VHex.prototype.adjSize = function() { this.setRows( ( this.io.file.size / 16 ) + 1 ); }
 
 //Get the real position including relative scrolling if active.
 
-VHex.prototype.getPos = function() { return( this.rel ? this.relPos : this.comp.scrollTop ); }
+VHex.prototype.getPos = function() { return( Math.max(0, this.rel ? this.relPos : this.comp.scrollTop ) ); }
 
 //Adjust relative scrolling or set position directly.
 
