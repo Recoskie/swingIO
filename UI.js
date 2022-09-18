@@ -89,9 +89,9 @@ VHex.prototype.offsetSc = function()
   
   this.io.call( this, "update" );
 
-  this.io.seek(Math.floor(this.getPos()) * 16);
+  this.io.seek(this.getPos() * 16);
   
-  this.io.read(Math.floor(this.getRows()) * 16);
+  this.io.read(this.getRows() * 16);
   
   this.io.Events = true;
 }
@@ -104,9 +104,9 @@ VHex.prototype.virtualSc = function()
   
   this.io.call( this, "update" );
 
-  this.io.seekV(Math.floor(this.getPos()) * 16);
+  this.io.seekV(this.getPos() * 16);
   
-  this.io.readV(Math.floor(this.getRows()) * 16);
+  this.io.readV(this.getRows() * 16);
   
   this.io.Events = true;
 }
@@ -119,7 +119,7 @@ VHex.prototype.select = function(e, ref)
 
   if( x > 0 && y > 0 )
   {
-    var pos = Math.floor( this.getPos() ) * 16;
+    var pos = this.getPos() * 16;
 
     if( x < 355 ) { x = ( x / 22 ) & -1; } else if( this.text && x < 510 ) { x = ( ( x - 365 ) / 9 ) & -1; } else { return; }
     
@@ -137,7 +137,7 @@ VHex.prototype.update = function(d)
 {
   var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight;
   
-  var data = !this.virtual ? d.data : d.dataV, pos = Math.floor( this.getPos() ) * 16;
+  var data = !this.virtual ? d.data : d.dataV, pos = this.getPos() * 16;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
@@ -257,13 +257,13 @@ VHex.prototype.setText = function( v )
 
 VHex.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
 
-VHex.prototype.getRows = function() { return( this.comp.offsetHeight / 16 ); }
+VHex.prototype.getRows = function() { return( Math.floor( this.comp.offsetHeight / 16 ) ); }
 
 //It is important that we subtract what is visible from the scroll area otherwise we will scroll past the end.
 
 VHex.prototype.setRows = function( size )
 {
-  size -= this.getRows();
+  size = Math.floor( size ); size -= this.getRows();
 
   //Scroll bar can only go so high before it hit's it's limit.
 
