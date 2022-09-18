@@ -47,7 +47,7 @@ function VHex( el, io, v )
   if( sBarWidth == null )
   {
     this.setRows(562949953421312); sBarMax = this.size.clientHeight / 2; sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
-    sBarLowLim = sBarMax * 0.05; sBarUpLim = sBarMax - sBarLowLim;
+    sBarLowLim = Math.floor(sBarMax * 0.05); sBarUpLim = sBarMax - sBarLowLim;
   }
 
   //Virtual or offset scroll.
