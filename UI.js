@@ -22,6 +22,10 @@ function VHex( el, io, v )
   //Visible on creation.
   
   this.hide( false );
+
+  //Selected byte positions.
+
+  this.sel = -1; this.sele = -1;
   
   //Find the width of the system scroll bar, and max height of scroll bar.
   //Find the lower and upper limit while scrolling.
@@ -56,11 +60,15 @@ function VHex( el, io, v )
 
   //Scroll.
   
-  eval("var t = function(){VHexRef["+VHexRef.length+"].sc("+VHexRef.length+");}"); h.addEventListener('scroll', t, false); this.setRows(io.file.size);
+  eval("var t = function(){VHexRef["+VHexRef.length+"].sc();}"); h.addEventListener("scroll", t, false);
+
+  //Seek byte onclick Event
+  
+  eval("var t = function(e){VHexRef["+VHexRef.length+"].select(e);}"); this.comp.addEventListener("click", t, false);
 
   //Load Font.
   
-  dosFont.load().then(function(font){ document.fonts.add(font); });
+  dosFont.load().then(function(font){ document.fonts.add(font); }); this.setRows(io.file.size);
   
   //Allows us to referenced the proper component to update on scroll.
   
@@ -103,19 +111,41 @@ VHex.prototype.virtualSc = function()
   this.io.Events = true;
 }
 
+//Byte selection event.
+
+VHex.prototype.select = function(e, ref)
+{
+  var x = ( e.clientX - this.comp.offsetLeft ) - 164, y = ( e.clientY - this.comp.offsetTop ) - 16;
+
+  if( x > 0 && y > 0 )
+  {
+    var pos = Math.floor( this.getPos() * 16 );
+
+    if( x < 355 ) { x = ( x / 22 ) & -1; } else if( this.text && x < 510 ) { x = ( ( x - 365 ) / 9 ) & -1; } else { return; }
+    
+    y = ( y / 16 ) & -1; pos += y * 16 + x;
+
+    if( !this.virtual ) { this.io.seek( pos ); this.sc(); } else { this.io.seekV( pos ); }
+  }
+}
+
 //Render the hex editor.
 
 var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C","0D","0E","0F"];
 
-VHex.prototype.update = function( d )
+VHex.prototype.update = function(d)
 {
-  var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight, data = !this.virtual ? d.data : d.dataV;
+  var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight;
+  
+  var data = !this.virtual ? d.data : d.dataV, pos = Math.floor( this.getPos() * 16 );
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
   g.fillRect(164, 16, this.end, height);
   
   g.stroke();
+
+  if( this.sel >= 0 && this.sele >= 0 ) { this.selection(pos); }
   
   g.fillStyle = "#000000";
   
@@ -163,13 +193,49 @@ VHex.prototype.update = function( d )
   
   g.stroke(); g.fillStyle = "#FFFFFF";
   
-  var pos = !this.virtual ? d.offset : d.virtual;
-  
   height -= 16; for( var i = 0; i < height; i += 16 )
   {
     g.fillText((pos + i).address(), 0, i+29);
   }
   
+  g.stroke();
+}
+
+//Draw selected area.
+
+VHex.prototype.selection = function(pos)
+{
+  var g = this.g; g.fillStyle = "#9EB0C1";
+
+  //End and start position must be in order for the coordinates to be translated properly.
+
+  if( this.sel < this.sele ) { var t = this.sel; this.sel = this.sele; this.sele = t; }
+
+  //Converts offsets to real 2D coordinates.
+
+  var r1 = this.sel & 0xF, y1 = ( this.sel - pos - r1 ) >> 4;
+  
+  if( y1 < 0 ) { y1 = 0; }
+
+  var r2 = this.sele & 0xF, y2 = ( this.sele - pos - r2 ) >> 4;
+
+  y1 = y1 * 16 + 16; y2 = y2 * 16 + 32;
+  
+  var x1 = 164 + (r1 * 22), x2 = 164 + ((r2+1) * 22);
+
+  //Single line selection.
+
+  if( (y2-y1) == 16 ) { g.fillRect( x1, y1, x2-x1, y2-y1 ); }
+
+  if( this.text )
+  {
+    x1 = 529 + (r1 * 9); x2 = 529 + ((r2+1) * 9);
+
+    if( (y2-y1) == 16 ) { g.fillRect( x1-1, y1, x2-x1, y2-y1 ); }
+  }
+
+  //Draw the selected offsets.
+
   g.stroke();
 }
 
@@ -270,11 +336,17 @@ VHex.prototype.adjRelPos = function()
 
 //The on read IO Event.
 
-VHex.prototype.onread = function() { }
+VHex.prototype.onread = function( f )
+{
+
+}
 
 //The on seek IO Event.
 
-VHex.prototype.onseek = function() { }
+VHex.prototype.onseek = function( f )
+{
+  if( this.virtual && f.curVra.Mapped ) { this.sele = this.sel = f.virtual; this.update(this.io); } else if( !this.virtual ) { this.sele = this.sel = f.offset; this.update(this.io); }
+}
 
 //Address format offsets.
 
