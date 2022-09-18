@@ -2,7 +2,7 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'); path = undefined;
 
-document.body.innerHTML = "<style>\
+document.head.innerHTML += "<style>\
 .vhex\
 {\
   -webkit-user-select: none;\
@@ -14,7 +14,7 @@ document.body.innerHTML = "<style>\
   overflow-y: scroll;\
   overflow-x: hidden;\
 }\
-</style>" + document.body.innerHTML;
+</style>";
 
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
