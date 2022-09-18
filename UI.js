@@ -115,7 +115,7 @@ VHex.prototype.virtualSc = function()
 
 VHex.prototype.select = function(e, ref)
 {
-  var x = ( e.clientX - this.comp.offsetLeft ) - 164, y = ( e.clientY - this.comp.offsetTop ) - 16;
+  var x = ( e.pageX - this.comp.offsetLeft ) - 164, y = ( e.pageY - this.comp.offsetTop ) - 16;
 
   if( x > 0 && y > 0 )
   {
