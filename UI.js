@@ -119,7 +119,7 @@ VHex.prototype.select = function(e, ref)
 
   if( x > 0 && y > 0 )
   {
-    var pos = Math.floor( this.getPos() * 16 );
+    var pos = Math.floor( this.getPos() ) * 16;
 
     if( x < 355 ) { x = ( x / 22 ) & -1; } else if( this.text && x < 510 ) { x = ( ( x - 365 ) / 9 ) & -1; } else { return; }
     
@@ -137,7 +137,7 @@ VHex.prototype.update = function(d)
 {
   var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight;
   
-  var data = !this.virtual ? d.data : d.dataV, pos = Math.floor( this.getPos() * 16 );
+  var data = !this.virtual ? d.data : d.dataV, pos = Math.floor( this.getPos() ) * 16;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
