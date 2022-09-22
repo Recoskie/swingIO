@@ -229,19 +229,19 @@ VHex.prototype.selection = function(g, pos)
 
   //Converts offsets to real 2D coordinates.
 
-  var r1 = this.sel & 0xF, y1 = this.sel - pos - r1;
+  var r1 = this.sel & 0xF, y1 = this.sel - pos - r1 + 16;
 
-  var r2 = (this.sele+1) & 0xF, y2 = (this.sele+1) - pos - r2;
+  var r2 = (this.sele+1) & 0xF, y2 = (this.sele+1) - pos - r2 + 32;
   
   var x1 = r1 * 22, x2 = r2 * 22;
-
-  y1 = y1 + 16; y2 = y2 + 32;
+  
+  var mLine = y2-y1 > 16;
 
   //Multi line selection.
 
   if( y2 > 16 )
   {
-    if( y1 < 16 ) { y1 = 16; x1 = 0; }
+    if( y1 < 16 ) { y1 = 16; r1 = x1 = 0; }
     
     g.moveTo( 164 + x1, y1 );
     
