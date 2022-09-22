@@ -231,55 +231,80 @@ VHex.prototype.selection = function(g, pos)
 
   var r1 = this.sel & 0xF, y1 = this.sel - pos - r1;
 
-  var r2 = this.sele & 0xF, y2 = this.sele - pos - r2;
+  var r2 = (this.sele+1) & 0xF, y2 = (this.sele+1) - pos - r2;
+  
+  var x1 = r1 * 22, x2 = r2 * 22;
 
-  y1 = y1 + 16; y2 = y2 + 32; y2-=y1;
+  y1 = y1 + 16; y2 = y2 + 32;
 
   //Multi line selection.
 
-  if( ( y1 + y2 ) > 16 )
+  if( y2 > 16 )
   {
-    if( y1 < 16 ) { y2 += y1 - 16; y1 = 16; r1 = 0; }
+    if( y1 < 16 ) { y1 = 16; x1 = 0; }
     
-    g.fillRect( 164, y1, 352, y2 );
-
-    if( this.text )
+    g.moveTo( 164 + x1, y1 );
+    
+    g.lineTo( 516, y1 );
+    
+    if( x2 == 0 )
     {
-      g.fillRect( 528, y1, 144, y2 );
+      g.lineTo( 516, y2 );
     }
-  
-    //clip selection area.
-  
-    g.stroke(); g.fillStyle = "#FFFFFF";
-  
-    //Hex column.
-  
-    var x1 = r1 * 22, x2 = 164 + (r2+1) * 22; y2 = y2 + y1 - 16;
-    
-    if( x1 > 0 )
+    else
     {
-      g.fillRect(164,y1,x1,16);
+      g.lineTo( 516, y2 - 16 );
+      g.lineTo( 164 + x2, y2 - 16 );
+      g.lineTo( 164 + x2, y2 );
     }
     
-    g.fillRect(x2,y2,516-x2,16);
-  
-    //Text column.
-  
+    g.lineTo( 164, y2 );
+    
+    if( x1 == 0 )
+    {
+      g.lineTo( 164, y1 );
+    }
+    else
+    {
+      g.lineTo( 164, y1 + 16 );
+      g.lineTo( 164 + x1, y1 + 16 );
+      g.lineTo( 164 + x1, y1 );
+    }
+    
     if( this.text )
     {
-      x1 = r1 * 9; x2 = 529 + (r2+1) * 9;
+      x1 = r1 * 9, x2 = r2 * 9;
+      
+      g.moveTo( 528 + x1, y1 );
     
-      if( x1 > 0 )
+      g.lineTo( 672, y1 );
+    
+      if( x2 == 0 )
       {
-        g.fillRect(529,y1,x1,16);
+        g.lineTo( 672, y2 );
+      }
+      else
+      {
+        g.lineTo( 672, y2 - 16 );
+        g.lineTo( 528 + x2, y2 - 16 );
+        g.lineTo( 528 + x2, y2 );
       }
     
-      g.fillRect(x2,y2,673-x2,16);
+      g.lineTo( 528, y2 );
+    
+      if( x1 == 0 )
+      {
+        g.lineTo( 528, y1 );
+      }
+      else
+      {
+        g.lineTo( 528, y1 + 16 );
+        g.lineTo( 528 + x1, y1 + 16 );
+        g.lineTo( 528 + x1, y1 );
+      }
     }
-
-    //Draw the selected offsets.
-
-    g.stroke();
+    
+    g.fill();
   }
 }
 
