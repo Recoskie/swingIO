@@ -23,6 +23,10 @@ See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 
 var VHexRef = [], sBarWidth = null, sBarMax = null, sBarLowLim = null, sBarUpLim = null;
 
+//The hex editor columns.
+
+var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C","0D","0E","0F"];
+
 function VHex( el, io, v )
 {
   this.io = io; var h = this.comp = document.getElementById(el);
@@ -141,13 +145,9 @@ VHex.prototype.select = function(e, ref)
     
     y = ( y / 16 ) & -1; pos += y * 16 + x;
 
-    if( !this.virtual ) { this.io.seek( pos ); this.sc(); } else { this.io.seekV( pos ); }
+    if( !this.virtual ) { this.io.seek( pos ); } else { this.io.seekV( pos ); }
   }
 }
-
-//Render the hex editor.
-
-var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C","0D","0E","0F"];
 
 VHex.prototype.update = function(d)
 {
@@ -225,34 +225,62 @@ VHex.prototype.selection = function(g, pos)
 
   //End and start position must be in order for the coordinates to be translated properly.
 
-  if( this.sel < this.sele ) { var t = this.sel; this.sel = this.sele; this.sele = t; }
+  if( this.sel > this.sele ) { var t = this.sel; this.sel = this.sele; this.sele = t; }
 
   //Converts offsets to real 2D coordinates.
 
-  var r1 = this.sel & 0xF, y1 = ( this.sel - pos - r1 ) >> 4;
-  
-  if( y1 < 0 ) { y1 = 0; }
+  var r1 = this.sel & 0xF, y1 = this.sel - pos - r1;
 
-  var r2 = this.sele & 0xF, y2 = ( this.sele - pos - r2 ) >> 4;
+  var r2 = this.sele & 0xF, y2 = this.sele - pos - r2;
 
-  y1 = y1 * 16 + 16; y2 = y2 * 16 + 32;
-  
-  var x1 = 164 + (r1 * 22), x2 = 164 + ((r2+1) * 22);
+  y1 = y1 + 16; y2 = y2 + 32; y2-=y1;
 
-  //Single line selection.
+  //Multi line selection.
 
-  if( (y2-y1) == 16 ) { g.fillRect( x1, y1, x2-x1, y2-y1 ); }
-
-  if( this.text )
+  if( ( y1 + y2 ) > 16 )
   {
-    x1 = 529 + (r1 * 9); x2 = 529 + ((r2+1) * 9);
+    if( y1 < 16 ) { y2 += y1 - 16; y1 = 16; r1 = 0; }
+    
+    g.fillRect( 164, y1, 352, y2 );
 
-    if( (y2-y1) == 16 ) { g.fillRect( x1-1, y1, x2-x1, y2-y1 ); }
+    if( this.text )
+    {
+      g.fillRect( 528, y1, 144, y2 );
+    }
+  
+    //clip selection area.
+  
+    g.stroke(); g.fillStyle = "#FFFFFF";
+  
+    //Hex column.
+  
+    var x1 = r1 * 22, x2 = 164 + (r2+1) * 22; y2 = y2 + y1 - 16;
+    
+    if( x1 > 0 )
+    {
+      g.fillRect(164,y1,x1,16);
+    }
+    
+    g.fillRect(x2,y2,516-x2,16);
+  
+    //Text column.
+  
+    if( this.text )
+    {
+      x1 = r1 * 9; x2 = 529 + (r2+1) * 9;
+    
+      if( x1 > 0 )
+      {
+        g.fillRect(529,y1,x1,16);
+      }
+    
+      g.fillRect(x2,y2,673-x2,16);
+    }
+
+    //Draw the selected offsets.
+
+    g.stroke();
   }
-
-  //Draw the selected offsets.
-
-  g.stroke();
 }
 
 //The scroll bar can only be made so big so then we need an way to display very far away addresses.
@@ -361,7 +389,11 @@ VHex.prototype.onread = function( f )
 
 VHex.prototype.onseek = function( f )
 {
-  if( this.virtual && f.curVra.Mapped ) { this.sele = this.sel = f.virtual; this.update(this.io); } else if( !this.virtual ) { this.sele = this.sel = f.offset; this.update(this.io); }
+  if( this.virtual && f.curVra.Mapped ) { this.sele = this.sel = f.virtual; } else if( !this.virtual ) { this.sele = this.sel = f.offset; }
+  
+  this.sele += 0x70;
+  
+  this.update(this.io);
 }
 
 //Address format offsets.
