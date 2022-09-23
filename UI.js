@@ -235,7 +235,7 @@ VHex.prototype.selection = function(g, pos)
   
   var x1 = r1 * 22, x2 = r2 * 22;
   
-  if( r2 == 0 ){ y2 -= 16; }
+  if( r2 == 0 ){ y2 -= 16; r2 = 16; }
   
   var mLine = y2 - y1 > 16;
 
