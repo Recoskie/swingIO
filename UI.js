@@ -235,7 +235,9 @@ VHex.prototype.selection = function(g, pos)
   
   var x1 = r1 * 22, x2 = r2 * 22;
   
-  var mLine = y2-y1 > 16;
+  if( r2 == 0 ){ y2 -= 16; }
+  
+  var mLine = y2 - y1 > 16;
 
   //Multi line selection.
 
@@ -274,10 +276,11 @@ VHex.prototype.selection = function(g, pos)
     if( this.text )
     {
       x1 = r1 * 9, x2 = r2 * 9;
-      
+    
       g.moveTo( 528 + x1, y1 );
     
-      g.lineTo( 672, y1 );
+      if(mLine) { g.lineTo( 672, y1 ); }
+      else { g.lineTo( 528 + x2, y1 ); }
     
       if( x2 == 0 )
       {
@@ -285,12 +288,16 @@ VHex.prototype.selection = function(g, pos)
       }
       else
       {
-        g.lineTo( 672, y2 - 16 );
-        g.lineTo( 528 + x2, y2 - 16 );
+        if(mLine)
+        {
+          g.lineTo( 672, y2 - 16 );
+          g.lineTo( 528 + x2, y2 - 16 );
+        }
         g.lineTo( 528 + x2, y2 );
       }
     
-      g.lineTo( 528, y2 );
+      if(mLine) { g.lineTo( 528, y2 ); }
+      else { g.lineTo( 528 + x1, y2 ); }
     
       if( x1 == 0 )
       {
@@ -298,8 +305,11 @@ VHex.prototype.selection = function(g, pos)
       }
       else
       {
-        g.lineTo( 528, y1 + 16 );
-        g.lineTo( 528 + x1, y1 + 16 );
+        if(mLine)
+        {
+          g.lineTo( 528, y1 + 16 );
+          g.lineTo( 528 + x1, y1 + 16 );
+        }
         g.lineTo( 528 + x1, y1 );
       }
     }
@@ -415,8 +425,6 @@ VHex.prototype.onread = function( f )
 VHex.prototype.onseek = function( f )
 {
   if( this.virtual && f.curVra.Mapped ) { this.sele = this.sel = f.virtual; } else if( !this.virtual ) { this.sele = this.sel = f.offset; }
-  
-  this.sele += 0x70;
   
   this.update(this.io);
 }
