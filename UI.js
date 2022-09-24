@@ -241,9 +241,10 @@ VHex.prototype.selection = function(g, pos)
 
   //Multi line selection.
 
-  if( y2 > 16 )
+  if( y2 > 16 && y1 < this.comp.offsetHeight )
   {
     if( y1 < 16 ) { y1 = 16; r1 = x1 = 0; }
+    if( y2 > this.comp.offsetHeight ) { y2 = this.comp.offsetHeight; r2 = 0; x2 = 352; }
     
     g.moveTo( 164 + x1, y1 );
     
