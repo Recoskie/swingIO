@@ -82,7 +82,20 @@ function VHex( el, io, v )
 
   //Seek byte onclick Event
   
-  eval("var t = function(e){VHexRef["+VHexRef.length+"].select(e);}"); this.comp.onmousedown=this.comp.ontouchstart=t;
+  eval("var t = function(e){VHexRef["+VHexRef.length+"].select(e);}");
+  
+  //If touch screen.
+ 
+  if(('ontouchstart' in window) ||
+     (navigator.maxTouchPoints > 0) ||
+     (navigator.msMaxTouchPoints > 0))
+  {
+    this.comp.ontouchstart = t;
+  }
+  else
+  {
+    this.comp.onmousedown = t;
+  }
 
   //Load Font.
   
@@ -426,6 +439,8 @@ VHex.prototype.onread = function( f )
 VHex.prototype.onseek = function( f )
 {
   if( this.virtual && f.curVra.Mapped ) { this.sele = this.sel = f.virtual; } else if( !this.virtual ) { this.sele = this.sel = f.offset; }
+  
+  //console.log("offset = " + this.io.data.offset + ", virtual = " + this.io.dataV.offset + "");
   
   this.update(this.io);
 }
