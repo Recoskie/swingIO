@@ -400,6 +400,8 @@ VHex.prototype.setPos = function( offset )
   }
 
   this.comp.scrollTo( 0, offset ); this.oldOff = offset;
+  
+  this.sc();
 }
 
 //Adjust relative positioned scrolling.
@@ -440,9 +442,29 @@ VHex.prototype.onseek = function( f )
 {
   if( this.virtual && f.curVra.Mapped ) { this.sele = this.sel = f.virtual; } else if( !this.virtual ) { this.sele = this.sel = f.offset; }
   
-  //console.log("offset = " + this.io.data.offset + ", virtual = " + this.io.dataV.offset + "");
+  var ds = !this.virtual ? this.io.offset : this.io.virtual;
   
-  this.update(this.io);
+  var ve = 0, vs = 0;
+  
+  if( !this.virtual )
+  {
+    vs = this.io.data.offset;
+    ve = vs + (this.getRows() * 16);
+  }
+  else
+  {
+    vs = this.io.dataV.offset;
+    ve = vs + (this.getRows() * 16);
+  }
+  
+  if( ds > ve || ds < vs )
+  {
+    this.setPos(Math.floor(ds/16));
+  }
+  else
+  {
+    this.update(this.io);
+  }
 }
 
 //Address format offsets.
