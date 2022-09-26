@@ -43,7 +43,7 @@ function VHex( el, io, v )
 
   //Selected byte positions.
 
-  this.sel = -1; this.sele = -1;
+  this.sel = -1; this.sele = -1; this.slen = -1;
   
   //Find the width of the system scroll bar, and max height of scroll bar.
   //Find the lower and upper limit while scrolling.
@@ -246,9 +246,9 @@ VHex.prototype.selection = function(g, pos)
 
   var r2 = (this.sele+1) & 0xF, y2 = (this.sele+1) - pos - r2 + 32;
   
-  var x1 = r1 * 22, x2 = r2 * 22;
-  
   if( r2 == 0 ){ y2 -= 16; r2 = 16; }
+  
+  var x1 = r1 * 22, x2 = r2 * 22;
   
   var mLine = y2 - y1 > 16;
 
@@ -261,7 +261,8 @@ VHex.prototype.selection = function(g, pos)
     
     g.moveTo( 164 + x1, y1 );
     
-    g.lineTo( 516, y1 );
+    if( mLine ) { g.lineTo( 516, y1 ); }
+    else { g.lineTo( 164 + x2, y1 ); }
     
     if( x2 == 0 )
     {
@@ -269,12 +270,16 @@ VHex.prototype.selection = function(g, pos)
     }
     else
     {
-      g.lineTo( 516, y2 - 16 );
-      g.lineTo( 164 + x2, y2 - 16 );
+      if( mLine )
+      {
+        g.lineTo( 516, y2 - 16 );
+        g.lineTo( 164 + x2, y2 - 16 );
+      }
       g.lineTo( 164 + x2, y2 );
     }
     
-    g.lineTo( 164, y2 );
+    if( mLine ) { g.lineTo( 164, y2 ); }
+    else { g.lineTo( 164 + x1, y2 ); }
     
     if( x1 == 0 )
     {
@@ -282,8 +287,11 @@ VHex.prototype.selection = function(g, pos)
     }
     else
     {
-      g.lineTo( 164, y1 + 16 );
-      g.lineTo( 164 + x1, y1 + 16 );
+      if( mLine )
+      {
+        g.lineTo( 164, y1 + 16 );
+        g.lineTo( 164 + x1, y1 + 16 );
+      }
       g.lineTo( 164 + x1, y1 );
     }
     
@@ -328,7 +336,7 @@ VHex.prototype.selection = function(g, pos)
       }
     }
     
-    g.fill();
+    g.closePath(); g.fill(); g.beginPath();
   }
 }
 
@@ -440,7 +448,7 @@ VHex.prototype.onread = function( f )
 
 VHex.prototype.onseek = function( f )
 {
-  if( this.virtual && f.curVra.Mapped ) { this.sele = this.sel = f.virtual; } else if( !this.virtual ) { this.sele = this.sel = f.offset; }
+  if( this.virtual && f.curVra.Mapped ) { this.sele = ( this.sel = f.virtual ) + (this.slen > 0 ? this.slen - 1 : 0); } else if( !this.virtual ) { this.sele = ( this.sel = f.offset ) + (this.slen > 0 ? this.slen - 1 : 0); }
   
   var ds = !this.virtual ? this.io.offset : this.io.virtual;
   
