@@ -22,6 +22,10 @@ document.head.innerHTML += "<style>\
 {\
   width:50%;\
 }\
+.dataInspec table tr td\
+{\
+  font-size:16px;\
+}\
 .dataInspec table tr:nth-child(n+0):nth-child(-n+1)\
 {\
   background:#8E8E8E;\
@@ -509,9 +513,7 @@ function dataInspector(el, io)
   
   //If touch screen.
   
-  var event = (('ontouchstart' in window) ||
-     (navigator.maxTouchPoints > 0) ||
-     (navigator.msMaxTouchPoints > 0)) ? "ontouchstart" : "onmousedown";
+  var event = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) ? "ontouchstart" : "onmousedown";
   
   this.out = [];
   
@@ -519,6 +521,12 @@ function dataInspector(el, io)
   {
     out += "<tr "+event+"='Ref["+Ref.length+"].setType("+i+");'><td>" + dType[i] + "</td><td>?</td></tr>";
   }
+  
+  out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend></fieldset></td><tr>";
+  
+  out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend></fieldset></td><tr>";
+  
+  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend></fieldset></td><tr>";
   
   d.innerHTML = out;
   
