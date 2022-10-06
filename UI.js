@@ -522,11 +522,11 @@ function dataInspector(el, io)
     out += "<tr "+event+"='Ref["+Ref.length+"].setType("+i+");'><td>" + dType[i] + "</td><td>?</td></tr>";
   }
   
-  out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><input type='radio' name='order' />Little Endian <input type='radio' name='order' checked='checked' />Big Endian</fieldset></td><tr>";
   
-  out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><input type='radio' name='base' />Native Binary <input type='radio' name='base' />Octal <input type='radio' name='base'  checked='checked' />Decimal <input type='radio' name='base' />Hexadecimal</fieldset></fieldset></td><tr>";
   
-  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='text' style='width:100%;' value='0' /></fieldset></td><tr>";
   
   d.innerHTML = out;
   
