@@ -14,6 +14,22 @@ document.head.innerHTML += "<style>\
   overflow-y: scroll;\
   overflow-x: hidden;\
 }\
+.dataInspec\
+{\
+  background:#CECECE;\
+}\
+.dataInspec table tr td\
+{\
+  width:50%;\
+}\
+.dataInspec table tr:nth-child(n+0):nth-child(-n+1)\
+{\
+  background:#8E8E8E;\
+}\
+.dataInspec table tr:nth-child(n+2):nth-child(-n+17)\
+{\
+  background:#FFFFFF;\
+}\
 </style>";
 
 /*------------------------------------------------------------
@@ -21,7 +37,7 @@ This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
 
-var VHexRef = [], sBarWidth = null, sBarMax = null, sBarLowLim = null, sBarUpLim = null;
+var Ref = [], sBarWidth = null, sBarMax = null, sBarLowLim = null, sBarUpLim = null;
 
 //The hex editor columns.
 
@@ -43,7 +59,7 @@ function VHex( el, io, v )
 
   //Selected byte positions.
 
-  this.sel = -1; this.sele = -1; this.slen = -1;
+  this.sel = 0; this.sele = 0; this.slen = -1;
   
   //Find the width of the system scroll bar, and max height of scroll bar.
   //Find the lower and upper limit while scrolling.
@@ -78,11 +94,11 @@ function VHex( el, io, v )
 
   //Scroll.
   
-  eval("var t = function(){VHexRef["+VHexRef.length+"].sc();}"); h.onscroll=t;
+  eval("var t = function(){Ref["+Ref.length+"].sc();}"); h.onscroll=t;
 
   //Seek byte onclick Event
   
-  eval("var t = function(e){VHexRef["+VHexRef.length+"].select(e);}");
+  eval("var t = function(e){Ref["+Ref.length+"].select(e);}");
   
   //If touch screen.
  
@@ -103,11 +119,11 @@ function VHex( el, io, v )
   
   //Allows us to referenced the proper component to update on scroll.
   
-  VHexRef[VHexRef.length] = this;
+  Ref[Ref.length] = this;
   
   //Add the component to the IO Event handler.
   
-  file.comps[file.comps.length] = this;
+  io.comps[io.comps.length] = this;
 }
 
 //Scrolling event.
@@ -473,6 +489,106 @@ VHex.prototype.onseek = function( f )
   {
     this.update(this.io);
   }
+}
+
+/*------------------------------------------------------------
+This is a web based version of the Data type inspector originally designed to run in Java.
+See https://github.com/Recoskie/swingIO/blob/master/dataInspector.java
+------------------------------------------------------------*/
+
+var dType = ["Binary (8 bit)","Int8","UInt8","Int16","UInt16","Int32","UInt32","Int64","UInt64","Float32","Float64","Char8","Char16","String8","String16","Use No Data type"], dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1];
+
+function dataInspector(el, io)
+{
+  this.io = io; var d = this.comp = document.getElementById(el);
+  this.editors = [];
+  
+  d.className = "dataInspec";
+  
+  var out = "<table style='width:100%;'><tr><td>Data Type</td><td>Value</td></tr>";
+  
+  //If touch screen.
+  
+  var event = (('ontouchstart' in window) ||
+     (navigator.maxTouchPoints > 0) ||
+     (navigator.msMaxTouchPoints > 0)) ? "ontouchstart" : "onmousedown";
+  
+  this.out = [];
+  
+  for(var i = 0; i < dType.length; i++)
+  {
+    out += "<tr "+event+"='Ref["+Ref.length+"].setType("+i+");'><td>" + dType[i] + "</td><td>?</td></tr>";
+  }
+  
+  d.innerHTML = out;
+  
+  //Setup data type outputs.
+  
+  this.td = d.getElementsByTagName("table")[0];
+  
+  for(var i = 1; i <= dType.length; i++)
+  {
+    this.out[this.out.length] = this.td.rows[i].cells[1];
+  }
+  
+  this.out[15].innerHTML = ""; this.setType(15);
+  
+  //Visible on creation.
+  
+  this.hide( false );
+  
+  //Component min size.
+  
+  d.style.minWidth = d.clientWidth + "px"; d.style.minHeight = d.clientHeight + "px";
+  
+  //Allows us to referenced the proper component to update on scroll.
+  
+  Ref[Ref.length] = this;
+  
+  //Add the component to the IO Event handler.
+  
+  io.comps[io.comps.length] = this;
+}
+
+dataInspector.prototype.setType = function(t)
+{
+  if(this.sel)
+  {
+    this.td.rows[this.sel].style.background = "#FFFFFF";
+  }
+  this.td.rows[this.sel=t+1].style.background = "#9EB0C1";
+  
+  //Update hex editor data length.
+  
+  for( var i = 0; i < this.editors.length; i++ )
+  {
+    this.editors[i].slen = dLen[t];
+    if(this.editors[i].visible){this.editors[i].onseek(this.io);}
+  }
+}
+
+dataInspector.prototype.onread = function( f )
+{
+  
+}
+
+//Update data type outputs at new offset in data.
+
+dataInspector.prototype.onseek = function( f )
+{
+  this.out[0].innerHTML = f.data[f.offset - f.data.offset].toString(2).pad(8);
+}
+
+dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
+
+dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
+
+//Zero pad left side of number.
+
+String.prototype.pad = function(len)
+{
+  for( var s = this.toUpperCase(); s.length < len; s = "0" + s );
+  return(s);
 }
 
 //Address format offsets.
