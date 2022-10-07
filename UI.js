@@ -689,10 +689,15 @@ dataInspector.prototype.onseek = function( f )
   //Nan.
 
   if (!isFinite(float) && mantissa > 0) { float = NaN; }
-
+  
+  //Float32 range.
+  
+  float = float.toPrecision(9);
+  float = float.indexOf("e",9) != -1 ? float : float * 1;
+  
   //Float value with proper sing.
   
-  this.out[9].innerHTML = (sing >= 1 ? -float : float).toPrecision(9);
+  this.out[9].innerHTML = sing >= 1 ? "-" + float : float;
   
   //float64 number.
   
