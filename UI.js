@@ -533,7 +533,7 @@ function dataInspector(el, io)
   
   event = "onclick='Ref["+Ref.length+"].base = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
   
-  out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='10' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
   
   out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='text' style='width:100%;' value='0' /></fieldset></td><tr>";
   
@@ -595,9 +595,74 @@ dataInspector.prototype.onread = function( f )
 
 dataInspector.prototype.onseek = function( f )
 {
-  if(f.data.length > 0)
+  var rel = f.offset - f.data.offset;
+  
+  if((rel+7) < f.data.length)
   {
-    this.out[0].innerHTML = f.data[f.offset - f.data.offset].toString(2).pad(8);
+    var v8=0, v16=0, v64=0, v32=0;
+    
+    //Byte padding relative to number base.
+    
+    var pad = 8 / (Math.log(this.base) / 0.6931471805599453);
+    
+    //Little endian, and big endian byte order.
+    
+    if( this.order == 0 )
+    {
+      v32 = v8=f.data[rel];
+      v32 |= (v16=f.data[rel+1]) << 8;
+      v32 |= f.data[rel+2] << 16;
+      v32 += f.data[rel+3] * 16777216;
+      v64 = f.data[rel+4];
+      v64 |= f.data[rel+5] << 8;
+      v64 |= f.data[rel+6] << 16;
+      v64 += f.data[rel+7] * 16777216;
+      v16 = (v16 << 8) | v8;
+    }
+    else
+    {
+      v64 = f.data[rel+7];
+      v64 |= f.data[rel+6] << 8;
+      v64 |= f.data[rel+5] << 16;
+      v64 += f.data[rel+4] * 16777216;
+      v32 = f.data[rel+3];
+      v32 |= f.data[rel+2] << 8;
+      v32 |= (v16=f.data[rel+1]) << 16;
+      v32 += (v8=f.data[rel]) * 16777216;
+      v16 = (v8 << 8) | v16;
+    }
+    
+    this.out[0].innerHTML = v8.toString(2).pad(8);
+    
+    this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base).pad(pad);
+    
+    this.out[2].innerHTML = v8.toString(this.base).pad(pad);
+    
+    this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base).pad(pad*2);
+    
+    this.out[4].innerHTML = v16.toString(this.base).pad(pad*2);
+    
+    this.out[5].innerHTML = (v32&-1).toString(this.base).pad(pad*4);
+    
+    this.out[6].innerHTML = v32.toString(this.base).pad(pad*4);
+    
+    //Note I have to desing a base converter here for v32-v64.
+    
+    if( this.base == 16 || this.base == 2 )
+    {
+      if( this.order == 0 )
+      {
+        this.out[8].innerHTML = v64.toString(this.base).pad(pad*4)+v32.toString(this.base).pad(pad*4);
+      }
+      else
+      {
+        this.out[8].innerHTML = v32.toString(this.base).pad(pad*4)+v64.toString(this.base).pad(pad*4);
+      }
+    }
+    else
+    {
+      this.out[8].innerHTML = "?";
+    }
   }
 }
 
@@ -609,8 +674,11 @@ dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors
 
 String.prototype.pad = function(len)
 {
-  for( var s = this.toUpperCase(); s.length < len; s = "0" + s );
-  return(s);
+  var s = this.toUpperCase(), sg = s.charAt(0)=="-";
+  if(sg){ s = s.substring(1, s.length); }
+  len = Math.ceil(len);
+  while( s.length < len ){ s = "0" + s; }
+  return((sg ? "-" : "") + s);
 }
 
 //Address format offsets.
