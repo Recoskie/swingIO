@@ -717,7 +717,7 @@ dataInspector.prototype.onseek = function( f )
 
   //Adjust "0.Mantissa" to exponent.
 
-  float = (float * exp).toPrecision(9);
+  float = float * exp;
 
   //Nan.
 
@@ -725,7 +725,7 @@ dataInspector.prototype.onseek = function( f )
 
   //Float value with proper sing.
   
-  this.out[9].innerHTML = sing >= 1 ? -float : float;
+  this.out[9].innerHTML = (sing >= 1 ? -float : float).toPrecision(9);
 }
 
 dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
