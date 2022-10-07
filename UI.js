@@ -600,6 +600,7 @@ dataInspector.prototype.onseek = function( f )
   if((rel+7) < f.data.length)
   {
     var v8=0, v16=0, v64=0, v32=0;
+    var float = sing = exp = mantissa = 0;
     
     //Byte padding relative to number base.
     
@@ -664,6 +665,41 @@ dataInspector.prototype.onseek = function( f )
       this.out[8].innerHTML = "?";
     }
   }
+  
+  //float64 number.
+  
+  if( this.order == 0 )
+  {
+    sing = (v64 >> 31) & 1;
+    exp = (v64 >> 20) & 0x7FF;
+    mantissa = ((v64 & 0xFFFFF) * 0x100000000) + v32;
+  }
+  else
+  {
+    sing = (v32 >> 31) & 1;
+    exp = (v32 >> 20) & 0x7FF;
+    mantissa = ((v32 & 0xFFFFF) * 0x100000000) + v64;
+  }
+  
+  //Compute "0.Mantissa".
+  
+  float = ((exp !== 0 ? Math.pow(2, 52) : 0) + mantissa) / Math.pow(2, 52);
+
+  //Compute exponent value as positive value 1e?.
+
+  exp = Math.pow(2, (exp !== 0 ? exp : exp + 1) - 0x3FF);
+
+  //Adjust "0.Mantissa" to exponent.
+
+  float = float * exp;
+
+  //Nan.
+
+  if (!isFinite(float) && this.mantissa > 0) { float = NaN; }
+
+  //Float value with proper sing.
+  
+  this.out[10].innerHTML = sing >= 1 ? -float : float;
 }
 
 dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
