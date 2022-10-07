@@ -34,6 +34,11 @@ document.head.innerHTML += "<style>\
 {\
   background:#FFFFFF;\
 }\
+.dataInspec fieldset\
+{\
+  display: flex;\
+  justify-content: space-between;\
+}\
 </style>";
 
 /*------------------------------------------------------------
@@ -522,9 +527,13 @@ function dataInspector(el, io)
     out += "<tr "+event+"='Ref["+Ref.length+"].setType("+i+");'><td>" + dType[i] + "</td><td>?</td></tr>";
   }
   
-  out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><input type='radio' name='order' />Little Endian <input type='radio' name='order' checked='checked' />Big Endian</fieldset></td><tr>";
+  event = "onclick='Ref["+Ref.length+"].order = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
   
-  out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><input type='radio' name='base' />Native Binary <input type='radio' name='base' />Octal <input type='radio' name='base'  checked='checked' />Decimal <input type='radio' name='base' />Hexadecimal</fieldset></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
+  
+  event = "onclick='Ref["+Ref.length+"].base = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
+  
+  out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='10' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
   
   out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='text' style='width:100%;' value='0' /></fieldset></td><tr>";
   
@@ -539,6 +548,8 @@ function dataInspector(el, io)
     this.out[this.out.length] = this.td.rows[i].cells[1];
   }
   
+  this.order = 0; this.base = 10; this.strLen = 0;
+  
   this.out[15].innerHTML = ""; this.setType(15);
   
   //Visible on creation.
@@ -547,9 +558,9 @@ function dataInspector(el, io)
   
   //Component min size.
   
-  d.style.minWidth = d.clientWidth + "px"; d.style.minHeight = d.clientHeight + "px";
+  d.style.minHeight = d.clientHeight + "px";
   
-  //Allows us to referenced the proper component to update on scroll.
+  //Allows us to referenced the proper component on update.
   
   Ref[Ref.length] = this;
   
@@ -584,7 +595,10 @@ dataInspector.prototype.onread = function( f )
 
 dataInspector.prototype.onseek = function( f )
 {
-  this.out[0].innerHTML = f.data[f.offset - f.data.offset].toString(2).pad(8);
+  if(f.data.length > 0)
+  {
+    this.out[0].innerHTML = f.data[f.offset - f.data.offset].toString(2).pad(8);
+  }
 }
 
 dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
