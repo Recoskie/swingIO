@@ -685,7 +685,7 @@ dataInspector.prototype.onseek = function( f )
   
   float = ((exp !== 0 ? Math.pow(2, 52) : 0) + mantissa) / Math.pow(2, 52);
 
-  //Compute exponent value as positive value 1e?.
+  //Compute exponent value.
 
   exp = Math.pow(2, (exp !== 0 ? exp : exp + 1) - 0x3FF);
 
@@ -700,6 +700,32 @@ dataInspector.prototype.onseek = function( f )
   //Float value with proper sing.
   
   this.out[10].innerHTML = sing >= 1 ? -float : float;
+  
+  //float32 number.
+  
+  sing = (v32 >> 31) & 1;
+  exp = (v32 >> 23) & 0xFF;
+  mantissa = (v32 & 0x7FFFFF);
+  
+  //Compute "0.Mantissa".
+  
+  float = ((exp !== 0 ? Math.pow(2, 23) : 0) + mantissa) / Math.pow(2, 23);
+
+  //Compute exponent value.
+
+  exp = Math.pow(2, (exp !== 0 ? exp : exp + 1) - 0x7F);
+
+  //Adjust "0.Mantissa" to exponent.
+
+  float = (float * exp).toPrecision(9);
+
+  //Nan.
+
+  if (!isFinite(float) && this.mantissa > 0) { float = NaN; }
+
+  //Float value with proper sing.
+  
+  this.out[9].innerHTML = sing >= 1 ? -float : float;
 }
 
 dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
