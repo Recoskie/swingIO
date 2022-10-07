@@ -666,6 +666,34 @@ dataInspector.prototype.onseek = function( f )
     }
   }
   
+  //float32 number.
+  
+  sing = (v32 >> 31) & 1; exp = (v32 >> 23) & 0xFF; mantissa = (v32 & 0x7FFFFF);
+  
+  //Compute "0.Mantissa".
+  
+  if(exp != 0xFF)
+  {
+    float = ((exp !== 0 ? Math.pow(2, 23) : 0) + mantissa) / Math.pow(2, 23);
+
+    //Compute exponent value.
+
+    exp = Math.pow(2, (exp !== 0 ? exp : exp + 1) - 0x7F);
+
+    //Adjust "0.Mantissa" to exponent.
+
+    float = float * exp;
+  }
+  else{ float = Infinity; }
+
+  //Nan.
+
+  if (!isFinite(float) && mantissa > 0) { float = NaN; }
+
+  //Float value with proper sing.
+  
+  this.out[9].innerHTML = (sing >= 1 ? -float : float).toPrecision(9);
+  
   //float64 number.
   
   if( this.order == 0 )
@@ -695,37 +723,19 @@ dataInspector.prototype.onseek = function( f )
 
   //Nan.
 
-  if (!isFinite(float) && this.mantissa > 0) { float = NaN; }
+  if (!isFinite(float) && mantissa > 0) { float = NaN; }
 
   //Float value with proper sing.
   
   this.out[10].innerHTML = sing >= 1 ? -float : float;
   
-  //float32 number.
+  //8bit char code.
   
-  sing = (v32 >> 31) & 1;
-  exp = (v32 >> 23) & 0xFF;
-  mantissa = (v32 & 0x7FFFFF);
+  this.out[11].innerHTML = String.fromCharCode(v8);
   
-  //Compute "0.Mantissa".
+  //16bit char code.
   
-  float = ((exp !== 0 ? Math.pow(2, 23) : 0) + mantissa) / Math.pow(2, 23);
-
-  //Compute exponent value.
-
-  exp = Math.pow(2, (exp !== 0 ? exp : exp + 1) - 0x7F);
-
-  //Adjust "0.Mantissa" to exponent.
-
-  float = float * exp;
-
-  //Nan.
-
-  if (!isFinite(float) && this.mantissa > 0) { float = NaN; }
-
-  //Float value with proper sing.
-  
-  this.out[9].innerHTML = (sing >= 1 ? -float : float).toPrecision(9);
+  this.out[12].innerHTML = String.fromCharCode(v16);
 }
 
 dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
