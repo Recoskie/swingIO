@@ -599,7 +599,7 @@ dataInspector.prototype.onseek = function( f )
   
   if((rel+7) < f.data.length)
   {
-    var v8=0, v16=0, v64=0, v32=0;
+    var v8 = 0, v16 = 0, v32 = 0, v64 = 0;
     var float = sing = exp = mantissa = 0;
     
     //Byte padding relative to number base.
@@ -647,22 +647,13 @@ dataInspector.prototype.onseek = function( f )
     
     this.out[6].innerHTML = v32.toString(this.base).pad(pad*4);
     
-    //Note I have to desing a base converter here for v32-v64.
-    
-    if( this.base == 16 || this.base == 2 )
+    if( this.order == 0 )
     {
-      if( this.order == 0 )
-      {
-        this.out[8].innerHTML = v64.toString(this.base).pad(pad*4)+v32.toString(this.base).pad(pad*4);
-      }
-      else
-      {
-        this.out[8].innerHTML = v32.toString(this.base).pad(pad*4)+v64.toString(this.base).pad(pad*4);
-      }
+      this.out[8].innerHTML = v64.toString64(v32,this.base).pad(pad*8);
     }
     else
     {
-      this.out[8].innerHTML = "?";
+      this.out[8].innerHTML = v32.toString64(v64,this.base).pad(pad*8);
     }
   }
   
@@ -743,9 +734,29 @@ dataInspector.prototype.onseek = function( f )
   this.out[12].innerHTML = String.fromCharCode(v16);
 }
 
-dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
+dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible) { this.onseek(this.io); } }
 
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
+
+//64bit lossless base conversion.
+
+Number.prototype.toString64 = function(v32,b)
+{
+  var o = "";
+  
+  var f = this * 4294967296, sec = b**((Math.log(f) / Math.log(b)) & -1), r = 0, r32 = false;
+  
+  while( sec > 1 )
+  {
+    o+=r=(f/sec)&-1; f=(f-(r*sec));
+    
+    if( !r32 && sec < 4294967296*b ) { f += v32; r32 = true; }
+  
+    sec /= b;
+  }
+  
+  return( o + f );
+}
 
 //Zero pad left side of number.
 
