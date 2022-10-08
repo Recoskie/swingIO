@@ -647,7 +647,7 @@ dataInspector.prototype.onseek = function( f )
     {
       if( v64 > 2147483648 )
       {
-        this.out[7].innerHTML = "-" + ((~v64)+1).toString64(((~v32)+1),this.base);
+        this.out[7].innerHTML = "-" + (~v64+(v32 > 2147483648 ? 0 : 1)).toString64(((~v32)+1),this.base);
       }
       else
       {
@@ -660,7 +660,7 @@ dataInspector.prototype.onseek = function( f )
     {
       if( v32 > 2147483648 )
       {
-        this.out[7].innerHTML = "-" + ((~v32)+1).toString64(((~v64)+1),this.base);
+        this.out[7].innerHTML = "-" + (~v32+(v64 > 2147483648 ? 0 : 1)).toString64(((~v64)+1),this.base);
       }
       else
       {
