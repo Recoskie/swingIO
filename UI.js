@@ -602,10 +602,6 @@ dataInspector.prototype.onseek = function( f )
     var v8 = 0, v16 = 0, v32 = 0, v64 = 0;
     var float = sing = exp = mantissa = 0;
     
-    //Byte padding relative to number base.
-    
-    var pad = 8 / (Math.log(this.base) / 0.6931471805599453);
-    
     //Little endian, and big endian byte order.
     
     if( this.order == 0 )
@@ -635,43 +631,43 @@ dataInspector.prototype.onseek = function( f )
     
     this.out[0].innerHTML = v8.toString(2).pad(8);
     
-    this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base).pad(pad);
+    this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base);
     
-    this.out[2].innerHTML = v8.toString(this.base).pad(pad);
+    this.out[2].innerHTML = v8.toString(this.base);
     
-    this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base).pad(pad*2);
+    this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base);
     
-    this.out[4].innerHTML = v16.toString(this.base).pad(pad*2);
+    this.out[4].innerHTML = v16.toString(this.base);
     
-    this.out[5].innerHTML = (v32&-1).toString(this.base).pad(pad*4);
+    this.out[5].innerHTML = (v32&-1).toString(this.base);
     
-    this.out[6].innerHTML = v32.toString(this.base).pad(pad*4);
+    this.out[6].innerHTML = v32.toString(this.base);
     
     if( this.order == 0 )
     {
       if( v64 > 2147483648 )
       {
-        this.out[7].innerHTML = "-" + ((~v64)+1).toString64(((~v32)+1),this.base).pad(pad*8);
+        this.out[7].innerHTML = "-" + ((~v64)+1).toString64(((~v32)+1),this.base);
       }
       else
       {
-        this.out[7].innerHTML = v64.toString64(v32,this.base).pad(pad*8);
+        this.out[7].innerHTML = v64.toString64(v32,this.base);
       }
       
-      this.out[8].innerHTML = v64.toString64(v32,this.base).pad(pad*8);
+      this.out[8].innerHTML = v64.toString64(v32,this.base);
     }
     else
     {
-      if( v32 & 2147483648 > 0 )
+      if( v32 > 2147483648 )
       {
-        this.out[7].innerHTML = "-" + ((~v32)+1).toString64(((~v64)+1),this.base).pad(pad*8);
+        this.out[7].innerHTML = "-" + ((~v32)+1).toString64(((~v64)+1),this.base);
       }
       else
       {
-        this.out[7].innerHTML = v32.toString64(v64,this.base).pad(pad*8);
+        this.out[7].innerHTML = v32.toString64(v64,this.base);
       }
       
-      this.out[8].innerHTML = v32.toString64(v64,this.base).pad(pad*8);
+      this.out[8].innerHTML = v32.toString64(v64,this.base);
     }
   }
   
