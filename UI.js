@@ -649,10 +649,28 @@ dataInspector.prototype.onseek = function( f )
     
     if( this.order == 0 )
     {
+      if( v64 > 2147483648 )
+      {
+        this.out[7].innerHTML = "-" + ((~v64)+1).toString64(((~v32)+1),this.base).pad(pad*8);
+      }
+      else
+      {
+        this.out[7].innerHTML = v64.toString64(v32,this.base).pad(pad*8);
+      }
+      
       this.out[8].innerHTML = v64.toString64(v32,this.base).pad(pad*8);
     }
     else
     {
+      if( v32 & 2147483648 > 0 )
+      {
+        this.out[7].innerHTML = "-" + ((~v32)+1).toString64(((~v64)+1),this.base).pad(pad*8);
+      }
+      else
+      {
+        this.out[7].innerHTML = v32.toString64(v64,this.base).pad(pad*8);
+      }
+      
       this.out[8].innerHTML = v32.toString64(v64,this.base).pad(pad*8);
     }
   }
@@ -748,14 +766,16 @@ Number.prototype.toString64 = function(v32,b)
   
   while( sec > 1 )
   {
-    o+=r=(f/sec)&-1; f=(f-(r*sec));
+    r=(f/sec)&-1; f=(f-(r*sec)); r=Math.abs(r);
+    
+    o += ( r < 10 ) ? r : String.fromCharCode(55 + r);
     
     if( !r32 && sec < 4294967296*b ) { f += v32; r32 = true; }
   
     sec /= b;
   }
   
-  return( o + f );
+  f=Math.abs(f); return( o + (( f < 10 ) ? f : String.fromCharCode(55 + f)) );
 }
 
 //Zero pad left side of number.
