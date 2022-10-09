@@ -409,7 +409,7 @@ VHex.prototype.adjSize = function() { this.setRows( ( this.io.file.size / 16 ) +
 
 //Get the real position including relative scrolling if active.
 
-VHex.prototype.getPos = function() { return( Math.max(0, this.rel ? this.relPos : this.comp.scrollTop ) ); }
+VHex.prototype.getPos = function() { return( Math.max(0, this.rel ? this.relPos : Math.floor( this.comp.scrollTop ) ) ); }
 
 //Adjust relative scrolling or set position directly.
 
