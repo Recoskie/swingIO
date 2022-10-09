@@ -617,12 +617,9 @@ dataInspector.prototype.onseek = function( f )
 
     //The integer types. Limit the number of base conversions when sing and unsigned match.
     
-    this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base);
-    this.out[2].innerHTML = v8 < 128 ? this.out[1].innerHTML : v8.toString(this.base);
-    this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base);
-    this.out[4].innerHTML = v16 < 32768 ? this.out[3].innerHTML : v16.toString(this.base);
-    this.out[5].innerHTML = (v32&-1).toString(this.base);
-    this.out[6].innerHTML = v32 < 2147483648 ? this.out[5].innerHTML : v32.toString(this.base);
+    this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base); this.out[2].innerHTML = v8 < 128 ? this.out[1].innerHTML : v8.toString(this.base);
+    this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base); this.out[4].innerHTML = v16 < 32768 ? this.out[3].innerHTML : v16.toString(this.base);
+    this.out[5].innerHTML = (v32&-1).toString(this.base); this.out[6].innerHTML = v32 < 2147483648 ? this.out[5].innerHTML : v32.toString(this.base);
     
     if( this.order == 0 )
     {
@@ -708,16 +705,12 @@ dataInspector.prototype.onseek = function( f )
   //String 8 and 16. Char width, and length count.
 
   this.out[13].innerHTML = "<span></span>"; this.out[14].innerHTML = "<span></span>";
-  
-  var width = this.out[0].offsetWidth;
-  var text = this.out[13].getElementsByTagName("span")[0];
+  var width = this.out[0].offsetWidth, text = this.out[13].getElementsByTagName("span")[0];
   
   for( var i = 0; i < this.strLen && text.offsetWidth < width; i++ )
   {
     text.innerHTML += String.fromCharCode(f.data[rel+i]);
   }
-  
-  console.log("i="+i+"");
   
   text = this.out[14].getElementsByTagName("span")[0];
   
@@ -725,21 +718,19 @@ dataInspector.prototype.onseek = function( f )
   {
     for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 )
     {
-      text.innerHTML += String.fromCharCode((f.data[rel+i]<<8)+f.data[rel+i+1]);
+      text.innerHTML += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]);
     }
   }
   else
   {
     for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 )
     {
-      text.innerHTML += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]);
+      text.innerHTML += String.fromCharCode((f.data[rel+i]<<8)+f.data[rel+i+1]);
     }
   }
-  
-  console.log("i="+(i/2)+"");
 }
 
-dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible) { this.onseek(this.io); } }
+dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
 
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
 
