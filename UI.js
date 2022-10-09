@@ -705,10 +705,38 @@ dataInspector.prototype.onseek = function( f )
   
   this.out[12].innerHTML = String.fromCharCode(v16);
 
-  //Need to convert to string 8 and 16, but also it must stop if the output goes past the table cell. This is to limit the amount of memory used and processing.
-  //maximum width = this.out[0].offsetWidth;
+  //String 8 and 16. Char width, and length count.
 
-  this.out[13].innerHTML = this.out[14].innerHTML = "";
+  this.out[13].innerHTML = "<span></span>"; this.out[14].innerHTML = "<span></span>";
+  
+  var width = this.out[0].offsetWidth;
+  var text = this.out[13].getElementsByTagName("span")[0];
+  
+  for( var i = 0; i < this.strLen && text.offsetWidth < width; i++ )
+  {
+    text.innerHTML += String.fromCharCode(f.data[rel+i]);
+  }
+  
+  console.log("i="+i+"");
+  
+  text = this.out[14].getElementsByTagName("span")[0];
+  
+  if(this.order == 0)
+  {
+    for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 )
+    {
+      text.innerHTML += String.fromCharCode((f.data[rel+i]<<8)+f.data[rel+i+1]);
+    }
+  }
+  else
+  {
+    for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 )
+    {
+      text.innerHTML += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]);
+    }
+  }
+  
+  console.log("i="+(i/2)+"");
 }
 
 dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible) { this.onseek(this.io); } }
