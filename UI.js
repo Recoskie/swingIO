@@ -595,11 +595,9 @@ dataInspector.prototype.onread = function( f )
 
 dataInspector.prototype.onseek = function( f )
 {
-  var rel = f.offset - f.data.offset;
-  
-  if((rel+7) < f.data.length)
+  if(((rel = f.offset - f.data.offset)+7) < f.data.length)
   {
-    var v8 = 0, v16 = 0, v32 = 0, v64 = 0; var float = sing = exp = mantissa = 0;
+    var v8 = 0, v16 = 0, v32 = 0, v64 = 0, float = 0, sing = 0, exp = 0, mantissa = 0;
     
     //Little endian, and big endian byte order.
     
@@ -656,19 +654,11 @@ dataInspector.prototype.onseek = function( f )
   
   sing = (v32 >> 31) & 1; exp = (v32 >> 23) & 0xFF; mantissa = (v32 & 0x7FFFFF);
   
-  //Compute "0.Mantissa".
+  //Compute "0.Mantissa" to exponent.
   
   if(exp != 0xFF)
   {
-    float = ((exp !== 0 ? 8388608 : 0 ) + mantissa) / 8388608;
-
-    //Compute exponent value.
-
-    exp = Math.pow(2, exp - 0x7F);
-
-    //Adjust "0.Mantissa" to exponent.
-
-    float = float * exp;
+    float = (((exp !== 0 ? 8388608 : 0 ) + mantissa) / 8388608) * Math.pow(2, exp - 0x7F);
   }
   else{ float = Infinity; }
 
@@ -695,17 +685,9 @@ dataInspector.prototype.onseek = function( f )
     sing = (v32 >> 31) & 1; exp = (v32 >> 20) & 0x7FF; mantissa = ((v32 & 0xFFFFF) * 0x100000000) + v64;
   }
   
-  //Compute "0.Mantissa".
+  //Compute "0.Mantissa" to exponent.
   
-  float = ((exp !== 0 ? 4503599627370496 : 0) + mantissa) / 4503599627370496;
-
-  //Compute exponent value.
-
-  exp = Math.pow(2, exp - 0x3FF);
-
-  //Adjust "0.Mantissa" to exponent.
-
-  float = float * exp;
+  float = (((exp !== 0 ? 4503599627370496 : 0) + mantissa) / 4503599627370496) * Math.pow(2, exp - 0x3FF);
 
   //Nan.
 
