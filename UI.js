@@ -705,8 +705,8 @@ dataInspector.prototype.onseek = function( f )
   
   this.out[12].innerHTML = String.fromCharCode(v16);
 
-  //Need to convert to string 8 and 16, but also it must stop if the output goes past the table cell.
-  //maximum width = this.out[13].offsetWidth;
+  //Need to convert to string 8 and 16, but also it must stop if the output goes past the table cell. This is to limit the amount of memory used and processing.
+  //maximum width = this.out[0].offsetWidth;
 
   this.out[13].innerHTML = this.out[14].innerHTML = "";
 }
