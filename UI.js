@@ -20,11 +20,11 @@ document.head.innerHTML += "<style>\
 }\
 .dataInspec table tr td\
 {\
-  width:50%;\
-}\
-.dataInspec table tr td\
-{\
   font-size:16px;\
+  overflow: hidden;\
+  text-overflow: ellipsis;\
+  white-space: nowrap;\
+  width:50%;\
 }\
 .dataInspec table tr:nth-child(n+0):nth-child(-n+1)\
 {\
@@ -514,7 +514,7 @@ function dataInspector(el, io)
   
   d.className = "dataInspec";
   
-  var out = "<table style='width:100%;'><tr><td>Data Type</td><td>Value</td></tr>";
+  var out = "<table style='table-layout:fixed;width:100%;'><tr><td>Data Type</td><td>Value</td></tr>";
   
   //If touch screen.
   
@@ -599,55 +599,38 @@ dataInspector.prototype.onseek = function( f )
   
   if((rel+7) < f.data.length)
   {
-    var v8 = 0, v16 = 0, v32 = 0, v64 = 0;
-    var float = sing = exp = mantissa = 0;
+    var v8 = 0, v16 = 0, v32 = 0, v64 = 0; var float = sing = exp = mantissa = 0;
     
     //Little endian, and big endian byte order.
     
     if( this.order == 0 )
     {
-      v32 = v8=f.data[rel];
-      v32 |= (v16=f.data[rel+1]) << 8;
-      v32 |= f.data[rel+2] << 16;
-      v32 += f.data[rel+3] * 16777216;
-      v64 = f.data[rel+4];
-      v64 |= f.data[rel+5] << 8;
-      v64 |= f.data[rel+6] << 16;
-      v64 += f.data[rel+7] * 16777216;
+      v32 = v8=f.data[rel]; v32 |= (v16=f.data[rel+1]) << 8; v32 |= f.data[rel+2] << 16; v32 += f.data[rel+3] * 16777216;
+      v64 = f.data[rel+4]; v64 |= f.data[rel+5] << 8; v64 |= f.data[rel+6] << 16; v64 += f.data[rel+7] * 16777216;
       v16 = (v16 << 8) | v8;
     }
     else
     {
-      v64 = f.data[rel+7];
-      v64 |= f.data[rel+6] << 8;
-      v64 |= f.data[rel+5] << 16;
-      v64 += f.data[rel+4] * 16777216;
-      v32 = f.data[rel+3];
-      v32 |= f.data[rel+2] << 8;
-      v32 |= (v16=f.data[rel+1]) << 16;
-      v32 += (v8=f.data[rel]) * 16777216;
+      v64 = f.data[rel+7]; v64 |= f.data[rel+6] << 8; v64 |= f.data[rel+5] << 16; v64 += f.data[rel+4] * 16777216;
+      v32 = f.data[rel+3]; v32 |= f.data[rel+2] << 8; v32 |= (v16=f.data[rel+1]) << 16; v32 += (v8=f.data[rel]) * 16777216;
       v16 = (v8 << 8) | v16;
     }
+
+    //The integer types.
     
     this.out[0].innerHTML = v8.toString(2).pad(8);
-    
     this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base);
-    
     this.out[2].innerHTML = v8.toString(this.base);
-    
     this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base);
-    
     this.out[4].innerHTML = v16.toString(this.base);
-    
     this.out[5].innerHTML = (v32&-1).toString(this.base);
-    
     this.out[6].innerHTML = v32.toString(this.base);
     
     if( this.order == 0 )
     {
-      if( v64 > 2147483648 )
+      if( v64 >= 2147483648 )
       {
-        this.out[7].innerHTML = "-" + (~v64+(v32 > 2147483648 ? 0 : 1)).toString64(((~v32)+1),this.base);
+        this.out[7].innerHTML = "-" + (~v64+(v32 >= 2147483648 ? 0 : 1)).toString64(((~v32)+1),this.base);
         this.out[8].innerHTML = v64.toString64(v32,this.base);
       }
       else
@@ -659,7 +642,7 @@ dataInspector.prototype.onseek = function( f )
     {
       if( v32 > 2147483648 )
       {
-        this.out[7].innerHTML = "-" + (~v32+(v64 > 2147483648 ? 0 : 1)).toString64(((~v64)+1),this.base);
+        this.out[7].innerHTML = "-" + (~v32+(v64 >= 2147483648 ? 0 : 1)).toString64(((~v64)+1),this.base);
         this.out[8].innerHTML = v32.toString64(v64,this.base);
       }
       else
@@ -677,11 +660,11 @@ dataInspector.prototype.onseek = function( f )
   
   if(exp != 0xFF)
   {
-    float = ((exp !== 0 ? Math.pow(2, 23) : 0) + mantissa) / Math.pow(2, 23);
+    float = ((exp !== 0 ? 8388608 : 0 ) + mantissa) / 8388608;
 
     //Compute exponent value.
 
-    exp = Math.pow(2, (exp !== 0 ? exp : exp + 1) - 0x7F);
+    exp = Math.pow(2, exp - 0x7F);
 
     //Adjust "0.Mantissa" to exponent.
 
@@ -695,8 +678,7 @@ dataInspector.prototype.onseek = function( f )
   
   //Float32 range.
   
-  float = float.toPrecision(9);
-  float = float.indexOf("e",9) != -1 ? float : float * 1;
+  float = float.toPrecision(9); float = float.indexOf("e",9) != -1 ? float : float * 1;
   
   //Float value with proper sing.
   
@@ -706,24 +688,20 @@ dataInspector.prototype.onseek = function( f )
   
   if( this.order == 0 )
   {
-    sing = (v64 >> 31) & 1;
-    exp = (v64 >> 20) & 0x7FF;
-    mantissa = ((v64 & 0xFFFFF) * 0x100000000) + v32;
+    sing = (v64 >> 31) & 1; exp = (v64 >> 20) & 0x7FF; mantissa = ((v64 & 0xFFFFF) * 0x100000000) + v32;
   }
   else
   {
-    sing = (v32 >> 31) & 1;
-    exp = (v32 >> 20) & 0x7FF;
-    mantissa = ((v32 & 0xFFFFF) * 0x100000000) + v64;
+    sing = (v32 >> 31) & 1; exp = (v32 >> 20) & 0x7FF; mantissa = ((v32 & 0xFFFFF) * 0x100000000) + v64;
   }
   
   //Compute "0.Mantissa".
   
-  float = ((exp !== 0 ? Math.pow(2, 52) : 0) + mantissa) / Math.pow(2, 52);
+  float = ((exp !== 0 ? 4503599627370496 : 0) + mantissa) / 4503599627370496;
 
   //Compute exponent value.
 
-  exp = Math.pow(2, (exp !== 0 ? exp : exp + 1) - 0x3FF);
+  exp = Math.pow(2, exp - 0x3FF);
 
   //Adjust "0.Mantissa" to exponent.
 
