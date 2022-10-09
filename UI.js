@@ -615,14 +615,14 @@ dataInspector.prototype.onseek = function( f )
 
     this.out[0].innerHTML = v8.toString(2).pad(8);
 
-    //The integer types.
+    //The integer types. Limit the number of base conversions when sing and unsigned match.
     
     this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base);
-    this.out[2].innerHTML = v8.toString(this.base);
+    this.out[2].innerHTML = v8 < 128 ? this.out[1].innerHTML : v8.toString(this.base);
     this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base);
-    this.out[4].innerHTML = v16.toString(this.base);
+    this.out[4].innerHTML = v16 < 32768 ? this.out[3].innerHTML : v16.toString(this.base);
     this.out[5].innerHTML = (v32&-1).toString(this.base);
-    this.out[6].innerHTML = v32.toString(this.base);
+    this.out[6].innerHTML = v32 < 2147483648 ? this.out[5].innerHTML : v32.toString(this.base);
     
     if( this.order == 0 )
     {
