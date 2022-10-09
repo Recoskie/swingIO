@@ -535,7 +535,7 @@ function dataInspector(el, io)
   
   out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
   
-  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='text' style='width:100%;' value='0' /></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='dLen[14] = (dLen[13] = this.value = Ref["+Ref.length+"].strLen = Math.min( this.value, 65536)) << 1;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);' value='0' /></fieldset></td><tr>";
   
   d.innerHTML = out;
   
@@ -586,10 +586,7 @@ dataInspector.prototype.setType = function(t)
   }
 }
 
-dataInspector.prototype.onread = function( f )
-{
-  
-}
+dataInspector.prototype.onread = function( f ) { }
 
 //Update data type outputs at new offset in data.
 
@@ -614,9 +611,12 @@ dataInspector.prototype.onseek = function( f )
       v16 = (v8 << 8) | v16;
     }
 
+    //Byte.
+
+    this.out[0].innerHTML = v8.toString(2).pad(8);
+
     //The integer types.
     
-    this.out[0].innerHTML = v8.toString(2).pad(8);
     this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base);
     this.out[2].innerHTML = v8.toString(this.base);
     this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base);
@@ -704,6 +704,11 @@ dataInspector.prototype.onseek = function( f )
   //16bit char code.
   
   this.out[12].innerHTML = String.fromCharCode(v16);
+
+  //Need to convert to string 8 and 16, but also it must stop if the output goes past the table cell.
+  //maximum width = this.out[13].offsetWidth;
+
+  this.out[13].innerHTML = this.out[14].innerHTML = "";
 }
 
 dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible) { this.onseek(this.io); } }
@@ -749,7 +754,7 @@ if( Number.prototype.address == null )
 {
   Number.prototype.address = function()
   {
-    for( var s = this.toString(16).toUpperCase(); s.length < 16; s = "0" + s );
+    for( var s = this.toString(16); s.length < 16; s = "0" + s );
     return("0x"+s);
   }
 }
@@ -758,7 +763,7 @@ if( Number.prototype.address == null )
 
 Number.prototype.byte = function()
 {
-  for( var s = this.toString(16).toUpperCase(); s.length < 2; s = "0" + s );
+  for( var s = this.toString(16); s.length < 2; s = "0" + s );
   return(s);
 }
 
