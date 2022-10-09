@@ -648,26 +648,24 @@ dataInspector.prototype.onseek = function( f )
       if( v64 > 2147483648 )
       {
         this.out[7].innerHTML = "-" + (~v64+(v32 > 2147483648 ? 0 : 1)).toString64(((~v32)+1),this.base);
+        this.out[8].innerHTML = v64.toString64(v32,this.base);
       }
       else
       {
-        this.out[7].innerHTML = v64.toString64(v32,this.base);
+        this.out[7].innerHTML = this.out[8].innerHTML = v64.toString64(v32,this.base);
       }
-      
-      this.out[8].innerHTML = v64.toString64(v32,this.base);
     }
     else
     {
       if( v32 > 2147483648 )
       {
         this.out[7].innerHTML = "-" + (~v32+(v64 > 2147483648 ? 0 : 1)).toString64(((~v64)+1),this.base);
+        this.out[8].innerHTML = v32.toString64(v64,this.base);
       }
       else
       {
-        this.out[7].innerHTML = v32.toString64(v64,this.base);
+        this.out[7].innerHTML = this.out[8].innerHTML = v32.toString64(v64,this.base);
       }
-      
-      this.out[8].innerHTML = v32.toString64(v64,this.base);
     }
   }
   
