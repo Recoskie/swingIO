@@ -766,7 +766,7 @@ Number.prototype.toString64 = function(v32,b)
     
     o += ( r < 10 ) ? r : String.fromCharCode(55 + r);
     
-    if( !r32 && sec < 4294967296*b ) { f += v32; r32 = true; }
+    if( !r32 && sec <= 4294967296*b ) { f += v32; r32 = true; }
   
     sec /= b;
   }
@@ -802,4 +802,11 @@ Number.prototype.byte = function()
 {
   for( var s = this.toString(16).toUpperCase(); s.length < 2; s = "0" + s );
   return(s);
+}
+
+//Always uppercase.
+
+Number.prototype.toStringB = Number.prototype.toString; Number.prototype.toString = function(b)
+{
+  return(this.toStringB(b).toUpperCase());
 }
