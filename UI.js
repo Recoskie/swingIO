@@ -514,7 +514,7 @@ function dataInspector(el, io)
   
   d.className = "dataInspec";
   
-  var out = "<table style='table-layout:fixed;width:100%;'><tr><td>Data Type</td><td>Value</td></tr>";
+  var out = "<table style='table-layout:fixed;width:0px;'><tr><td>Data Type</td><td>Value</td></tr>";
   
   //If touch screen.
   
@@ -557,6 +557,10 @@ function dataInspector(el, io)
   this.hide( false );
   
   //Component min size.
+  
+  d.getElementsByTagName("table")[0].style.minWidth=d.style.minWidth=d.getElementsByTagName("fieldset")[1].offsetWidth + 16;
+  
+  d.getElementsByTagName("table")[0].style.width = "100%";
   
   d.style.minHeight = d.clientHeight + "px";
   
@@ -704,7 +708,7 @@ dataInspector.prototype.onseek = function( f )
 
   //String 8 and 16. Char width, and length count.
 
-  this.out[13].innerHTML = "<span></span>"; this.out[14].innerHTML = "<span></span>";
+  this.out[13].innerHTML = this.out[14].innerHTML = "<span></span>";
   var width = this.out[0].offsetWidth, text = this.out[13].getElementsByTagName("span")[0];
   
   for( var i = 0; i < this.strLen && text.offsetWidth < width; i++ )
