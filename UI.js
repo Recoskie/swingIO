@@ -140,31 +140,23 @@ function VHex( el, io, v )
 VHex.prototype.offsetSc = function()
 {
   if( this.rel ){ this.adjRelPos(); }
-
-  this.io.Events = false;
   
   this.io.call( this, "update" );
 
   this.io.seek(this.getPos() * 16);
   
   this.io.read(this.getRows() * 16);
-  
-  this.io.Events = true;
 }
 
 VHex.prototype.virtualSc = function()
 {
   this.adjRelPos();
-
-  this.io.Events = false;
   
   this.io.call( this, "update" );
 
   this.io.seekV(this.getPos() * 16);
   
   this.io.readV(this.getRows() * 16);
-  
-  this.io.Events = true;
 }
 
 //Byte selection event.
@@ -734,7 +726,7 @@ dataInspector.prototype.onseek = function( f )
   }
 }
 
-dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
+dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible){ this.onseek(this.io); } }
 
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
 
