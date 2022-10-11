@@ -756,11 +756,8 @@ Number.prototype.toString64 = function(v32,b)
 
 String.prototype.pad = function(len)
 {
-  var s = this.toUpperCase(), sg = s.charAt(0)=="-";
-  if(sg){ s = s.substring(1, s.length); }
-  len = Math.ceil(len);
-  while( s.length < len ){ s = "0" + s; }
-  return((sg ? "-" : "") + s);
+  for( var s = this; s.length < len; s = "0" + s );
+  return(s);
 }
 
 //Address format offsets.
@@ -778,8 +775,7 @@ if( Number.prototype.address == null )
 
 Number.prototype.byte = function()
 {
-  for( var s = this.toString(16); s.length < 2; s = "0" + s );
-  return(s);
+  return((s = this.toString(16)).length < 2 ? s = "0" + s : s);
 }
 
 //Always uppercase.
