@@ -183,7 +183,7 @@ VHex.prototype.update = function(d)
 {
   var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight;
   
-  var data = !this.virtual ? d.data : d.dataV, pos = this.getPos() * 16;
+  var data = !this.virtual ? d.data : d.dataV, pos = !this.virtual ? this.io.data.offset : this.io.dataV.offset;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
