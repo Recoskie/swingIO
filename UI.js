@@ -506,7 +506,7 @@ function dataInspector(el, io)
   
   d.className = "dataInspec";
   
-  var out = "<table style='table-layout:fixed;width:0px;'><tr><td>Data Type</td><td>Value</td></tr>";
+  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>";
   
   //If touch screen.
   
@@ -550,11 +550,11 @@ function dataInspector(el, io)
   
   //Component min size.
   
-  d.getElementsByTagName("table")[0].style.minWidth=d.style.minWidth=d.getElementsByTagName("fieldset")[1].offsetWidth + 16;
+  var t = d.getElementsByTagName("table")[0];
   
-  d.getElementsByTagName("table")[0].style.width = "100%";
+  d.style.minHeight=t.offsetHeight; t.style.minWidth=d.style.minWidth=d.getElementsByTagName("fieldset")[1].offsetWidth+16;
   
-  d.style.minHeight = d.clientHeight + "px";
+  t.style.width = "100%"; t.style.height = "100%"; t = undefined;
   
   //Allows us to referenced the proper component on update.
   
@@ -703,9 +703,12 @@ dataInspector.prototype.onseek = function( f )
   this.out[13].innerHTML = this.out[14].innerHTML = "<span></span>";
   var width = this.out[0].offsetWidth, text = this.out[13].getElementsByTagName("span")[0];
   
-  for( var i = 0; i < this.strLen && text.offsetWidth < width; i++ )
+  for( var i = 0, c = ""; i < this.strLen && text.offsetWidth < width; i++ )
   {
-    text.innerHTML += String.fromCharCode(f.data[rel+i]);
+    c = String.fromCharCode(f.data[rel+i]);
+    
+    if( c == "\n" || c == "\r" || c == " " ){ c="&ndsp;"; }
+    text.innerHTML += c;
   }
   
   text = this.out[14].getElementsByTagName("span")[0];
