@@ -88,7 +88,7 @@ function VHex( el, io, v )
   if( v )
   {
     this.relSize = 562949953421312; this.relDataUp = this.relSize - this.sBarLowLim; this.rel = true;
-    this.adjSize = function() { var s = this.sBarMax - this.getRows(); this.size.style = "height:" + s + "px;min-height:" + s + "px;"; }
+    this.adjSize = function() { var s = this.sBarMax - this.getRows(); this.size.style = "height:" + s + "px;min-height:" + s + "px;border:0;"; }
     this.setRows = function(){}; this.sc = this.virtualSc;
   }
   else { this.sc = this.offsetSc; }
