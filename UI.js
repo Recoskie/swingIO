@@ -60,7 +60,7 @@ function VHex( el, io, v )
 
   h.className="vhex";
 
-  h.innerHTML = "<canvas id=\""+el+"g\" style='border-style: none;position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
+  h.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
   this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
   
@@ -586,7 +586,7 @@ dataInspector.prototype.setType = function(t)
   
   for( var i = 0; i < this.editors.length; i++ )
   {
-    this.editors[i].slen = dLen[t];
+    this.editors[i].slen = this.dLen[t];
     if(this.editors[i].visible){this.editors[i].onseek(this.io);}
   }
 }
