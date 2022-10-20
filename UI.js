@@ -1,6 +1,6 @@
 var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/"));
 
-var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'); path = undefined;
+var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)');
 
 document.head.innerHTML += "<style>\
 .vhex\
@@ -32,13 +32,47 @@ document.head.innerHTML += "<style>\
 }\
 .dataInspec table tr:nth-child(n+2):nth-child(-n+17)\
 {\
-  background:#FFFFFF;\
+  cursor: pointer; background:#FFFFFF;\
 }\
 .dataInspec fieldset\
 {\
   display: flex;\
   justify-content: space-between;\
 }\
+#myUL{ margin: 0; padding: 0;\ }\
+#myUL, ul { list-style-type: none; }\
+.node\
+{\
+  cursor: pointer;\
+  -webkit-user-select: none;\
+  -moz-user-select: none;\
+  -ms-user-select: none;\
+  user-select: none;\
+}\
+.node::before\
+{\
+  content: url("+path+"/Icons/f.gif);\
+  color: black;\
+  display: inline-block;\
+  margin-right: 6px;\
+}\
+.nodeH\
+{\
+  cursor: pointer;\
+  -webkit-user-select: none;\
+  -moz-user-select: none;\
+  -ms-user-select: none;\
+  user-select: none;\
+}\
+.nodeH::before\
+{\
+  content: url("+path+"/Icons/h.gif);\
+  color: black;\
+  display: inline-block;\
+  margin-right: 6px;\
+}\
+.nested { display: none; }\
+.active { display: block; }\
 </style>";
 
 /*------------------------------------------------------------
@@ -537,7 +571,7 @@ function dataInspector(el, io)
   
   out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
   
-  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='dLen[14] = (dLen[13] = this.value = Ref["+Ref.length+"].strLen = Math.min( this.value, 65536)) << 1;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);' value='0' /></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='Ref["+Ref.length+"].dLen[14] = (Ref["+Ref.length+"].dLen[13] = this.value = Ref["+Ref.length+"].strLen = Math.min( this.value, 65536)) << 1;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);' value='0' /></fieldset></td><tr>";
   
   d.innerHTML = out;
   
@@ -751,6 +785,64 @@ dataInspector.prototype.width = function( v ) { return(this.comp.style.width = v
 dataInspector.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
 
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
+
+/*------------------------------------------------------------
+This is a web based version of the Data type inspector originally designed to run in Java.
+See https://github.com/Recoskie/swingIO/blob/master/tree/JDTree.java
+------------------------------------------------------------*/
+
+//tree.prototype.
+
+function dTree(el)
+{
+  var d = this.comp = document.getElementById(el);
+
+  d.style.overflow = "auto";
+
+  d.innerHTML = "<ul id=\"myUL\">\
+    <li><span class=\"node\">test</span>\
+      <ul class=\"nested\">\
+        <li class=\"nodeH\">Header1</li>\
+        <li class=\"nodeH\">Header2</li>\
+        <li><span class=\"node\">Import</span>\
+          <ul class=\"nested\">\
+            <li class=\"nodeH\">Func1</li>\
+            <li class=\"nodeH\">Func2</li>\
+            <li><span class=\"node\">SubFunc</span>\
+              <ul class=\"nested\">\
+                <li class=\"nodeH\">SubFunc1</li>\
+                <li class=\"nodeH\">SubFunc2</li>\
+                <li class=\"nodeH\">SubFunc3</li>\
+                <li class=\"nodeH\">SubFunc4</li>\
+              </ul>\
+            </li>\
+          </ul>\
+        </li>\
+      </ul>\
+    </li>\
+  </ul>";
+
+  //Toggle between display none, and block for each node when clicked.
+
+  var toggler = document.getElementsByClassName("node");
+
+  for (var i = 0; i < toggler.length; i++)
+  {
+    toggler[i].onclick = function() { this.parentElement.querySelector(".nested").classList.toggle("active"); }
+  }
+}
+
+//It can be scrolled at any size.
+
+dTree.prototype.resetDims = function() { this.comp.style.minWidth = this.comp.style.minHeight = "0px"; }
+
+dTree.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
+
+dTree.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
+
+dTree.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
+
+dTree.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
 
 //64bit lossless base conversion.
 
