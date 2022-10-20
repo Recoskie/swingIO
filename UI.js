@@ -60,7 +60,7 @@ function VHex( el, io, v )
 
   h.className="vhex";
 
-  h.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
+  h.innerHTML = "<canvas id=\""+el+"g\" style='border-style: none;position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
   this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
   
@@ -401,7 +401,7 @@ VHex.prototype.setRows = function( size )
 
   //Set size.
 
-  this.size.style = "height:" + size + "px;min-height:" + size + "px;";
+  this.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;";
 }
 
 //We want to keep an extra rows so the user can see the end of the file.
