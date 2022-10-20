@@ -66,7 +66,7 @@ document.head.innerHTML += "<style>\
 }\
 .nodeH::before\
 {\
-  content: url("+path+"/Icons/h.gif);\
+  content: url("+path+"/Icons/H.gif);\
   color: black;\
   display: inline-block;\
   margin-right: 6px;\
