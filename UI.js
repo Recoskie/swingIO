@@ -46,11 +46,13 @@ This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
 
-var Ref = [], sBarWidth = null, sBarMax = null, sBarLowLim = null, sBarUpLim = null;
+var Ref = [];
+
+VHex.prototype.sBarWidth = null, VHex.prototype.sBarMax = null, VHex.prototype.sBarLowLim = null, VHex.prototype.sBarUpLim = null;
 
 //The hex editor columns.
 
-var hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C","0D","0E","0F"];
+VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A","0B","0C","0D","0E","0F"];
 
 function VHex( el, io, v )
 {
@@ -73,25 +75,27 @@ function VHex( el, io, v )
   //Find the width of the system scroll bar, and max height of scroll bar.
   //Find the lower and upper limit while scrolling.
 
-  if( sBarWidth == null )
+  if( this.sBarWidth == null )
   {
-    this.setRows(562949953421312); sBarMax = this.size.clientHeight / 2; sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
-    sBarLowLim = Math.floor(sBarMax * 0.05); sBarUpLim = sBarMax - sBarLowLim;
+    this.setRows(562949953421312); VHex.prototype.sBarMax = this.size.clientHeight / 2;
+    VHex.prototype.sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
+    VHex.prototype.sBarLowLim = Math.floor(this.sBarMax * 0.05);
+    VHex.prototype.sBarUpLim = this.sBarMax - this.sBarLowLim;
   }
 
   //Virtual or offset scroll.
 
   if( v )
   {
-    this.relSize = 562949953421312; this.relDataUp = this.relSize - sBarLowLim; this.rel = true;
-    this.adjSize = function() { var s = sBarMax - this.getRows(); this.size.style = "height:" + s + "px;min-height:" + s + "px;"; }
+    this.relSize = 562949953421312; this.relDataUp = this.relSize - this.sBarLowLim; this.rel = true;
+    this.adjSize = function() { var s = this.sBarMax - this.getRows(); this.size.style = "height:" + s + "px;min-height:" + s + "px;"; }
     this.setRows = function(){}; this.sc = this.virtualSc;
   }
   else { this.sc = this.offsetSc; }
   
   //Component min size.
   
-  h.style.minWidth = (682 + sBarWidth) + "px"; h.style.minHeight = "256px";
+  h.style.minWidth = (682 + this.sBarWidth) + "px"; h.style.minHeight = "256px";
   
   //text column output is optional.
   
@@ -111,16 +115,7 @@ function VHex( el, io, v )
   
   //If touch screen.
  
-  if(('ontouchstart' in window) ||
-     (navigator.maxTouchPoints > 0) ||
-     (navigator.msMaxTouchPoints > 0))
-  {
-    this.comp.ontouchstart = t;
-  }
-  else
-  {
-    this.comp.onmousedown = t;
-  }
+  if(('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) { this.comp.ontouchstart = t; } else { this.comp.onmousedown = t; }
 
   //Load Font.
   
@@ -201,7 +196,7 @@ VHex.prototype.update = function(d)
   
   for( var x = 166, i = 0; i < 16; x += 22, i++ )
   {
-    g.fillText(hexCols[i], x, 14);
+    g.fillText(this.hexCols[i], x, 14);
     
     g.moveTo(x+19, 16);
 
@@ -370,10 +365,24 @@ VHex.prototype.relDataUp = 0;
 
 VHex.prototype.setText = function( v )
 {
-  this.comp.style.minWidth = ((v ? 682 : 516) + sBarWidth) + "px"; this.end = (this.text = v) ? 518 : 352;
+  this.comp.style.minWidth = ((v ? 682 : 516) + this.sBarWidth) + "px"; this.end = (this.text = v) ? 518 : 352;
 }
 
-VHex.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
+VHex.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible){ this.onseek(this.io); } }
+
+VHex.prototype.resetDims = function()
+{
+  this.comp.style.minWidth = ((this.text ? 682 : 516) + this.sBarWidth) + "px";
+  this.comp.style.minHeight = "256px"
+}
+
+VHex.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
+
+VHex.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
+
+VHex.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
+
+VHex.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
 
 VHex.prototype.getRows = function() { return( Math.floor( this.comp.offsetHeight / 16 ) ); }
 
@@ -385,9 +394,9 @@ VHex.prototype.setRows = function( size )
 
   //Scroll bar can only go so high before it hit's it's limit.
 
-  if( sBarMax != null )
+  if( this.sBarMax != null )
   {
-    if( size > sBarMax ) { this.rel = true; this.relSize = size; this.relDataUp = this.relSize - sBarLowLim; size = sBarMax; } else { this.rel = false; }
+    if( size > this.sBarMax ) { this.rel = true; this.relSize = size; this.relDataUp = this.relSize - this.sBarLowLim; size = this.sBarMax; } else { this.rel = false; }
   }
 
   //Set size.
@@ -417,11 +426,11 @@ VHex.prototype.setPos = function( offset )
 
     //The scroll bar must not pass the rel down position unless rel position is less than rel down.
 
-    if( offset <= sBarLowLim && this.relPos >= sBarLowLim ) { offset = sBarLowLim; }
+    if( offset <= this.sBarLowLim && this.relPos >= this.sBarLowLim ) { offset = this.sBarLowLim; }
 
     //The scroll bar must not pass the rel Up position unless rel position is grater than rel up.
 
-    if( offset >= sBarUpLim && this.relPos <= this.relDataUP ) { offset = sBarUpLim; }
+    if( offset >= this.sBarUpLim && this.relPos <= this.relDataUP ) { offset = this.sBarUpLim; }
   }
 
   this.comp.scrollTo( 0, offset ); this.oldOff = offset;
@@ -441,13 +450,13 @@ VHex.prototype.adjRelPos = function()
 
   //The scroll bar must not pass the rel down position unless rel position is less than rel down data.
 
-  if( offset <= sBarLowLim && this.relPos >= sBarLowLim ) { offset = sBarLowLim; }
-  else if( this.relPos <= sBarLowLim ) { this.relPos = offset; }
+  if( offset <= this.sBarLowLim && this.relPos >= this.sBarLowLim ) { offset = this.sBarLowLim; }
+  else if( this.relPos <= this.sBarLowLim ) { this.relPos = offset; }
 
   //The scroll bar must not pass the rel Up position unless rel position is grater than rel up data.
 
-  if( offset >= sBarUpLim && this.relPos <= this.relDataUp ) { offset = sBarUpLim; }
-  else if(this.relPos >= this.relDataUp ) { this.relPos = this.relDataUp + ( offset - sBarUpLim ); }
+  if( offset >= this.sBarUpLim && this.relPos <= this.relDataUp ) { offset = this.sBarUpLim; }
+  else if(this.relPos >= this.relDataUp ) { this.relPos = this.relDataUp + ( this.offset - this.sBarUpLim ); }
 
   //The only time the scroll bar passes the Rel UP or down position is when all that remains is that size of data.
 
@@ -497,7 +506,8 @@ This is a web based version of the Data type inspector originally designed to ru
 See https://github.com/Recoskie/swingIO/blob/master/dataInspector.java
 ------------------------------------------------------------*/
 
-var dType = ["Binary (8 bit)","Int8","UInt8","Int16","UInt16","Int32","UInt32","Int64","UInt64","Float32","Float64","Char8","Char16","String8","String16","Use No Data type"], dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1];
+dataInspector.prototype.dType = ["Binary (8 bit)","Int8","UInt8","Int16","UInt16","Int32","UInt32","Int64","UInt64","Float32","Float64","Char8","Char16","String8","String16","Use No Data type"];
+dataInspector.prototype.dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1], dataInspector.prototype.dMinDims = null;
 
 function dataInspector(el, io)
 {
@@ -514,9 +524,9 @@ function dataInspector(el, io)
   
   this.out = [];
   
-  for(var i = 0; i < dType.length; i++)
+  for(var i = 0; i < this.dType.length; i++)
   {
-    out += "<tr "+event+"='Ref["+Ref.length+"].setType("+i+");'><td>" + dType[i] + "</td><td>?</td></tr>";
+    out += "<tr "+event+"='Ref["+Ref.length+"].setType("+i+");'><td>" + this.dType[i] + "</td><td>?</td></tr>";
   }
   
   event = "onclick='Ref["+Ref.length+"].order = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
@@ -535,10 +545,7 @@ function dataInspector(el, io)
   
   this.td = d.getElementsByTagName("table")[0];
   
-  for(var i = 1; i <= dType.length; i++)
-  {
-    this.out[this.out.length] = this.td.rows[i].cells[1];
-  }
+  for(var i = 1; i <= this.dType.length; i++) { this.out[this.out.length] = this.td.rows[i].cells[1]; }
   
   this.order = 0; this.base = 10; this.strLen = 0;
   
@@ -552,7 +559,9 @@ function dataInspector(el, io)
   
   var t = d.getElementsByTagName("table")[0];
   
-  d.style.minHeight=t.offsetHeight; t.style.minWidth=d.style.minWidth=d.getElementsByTagName("fieldset")[1].offsetWidth+16;
+  if(this.dMinDims == null) { dataInspector.prototype.dMinDims = [d.getElementsByTagName("fieldset")[1].offsetWidth+16, t.offsetHeight]; }
+  
+  t.style.minWidth=d.style.minWidth=this.dMinDims[0]; d.style.minHeight=this.dMinDims[1];
   
   t.style.width = "100%"; t.style.height = "100%"; t = undefined;
   
@@ -731,6 +740,16 @@ dataInspector.prototype.onseek = function( f )
 
 dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible){ this.onseek(this.io); } }
 
+dataInspector.prototype.resetDims = function() { this.comp.style.minWidth = this.dMinDims[0] + "px"; this.comp.style.minHeight = this.dMinDims[1] + "px"; }
+
+dataInspector.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
+
+dataInspector.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
+
+dataInspector.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
+
+dataInspector.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
+
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
 
 //64bit lossless base conversion.
@@ -757,11 +776,7 @@ Number.prototype.toString64 = function(v32,b)
 
 //Zero pad left side of number.
 
-String.prototype.pad = function(len)
-{
-  for( var s = this; s.length < len; s = "0" + s );
-  return(s);
-}
+String.prototype.pad = function(len) { for( var s = this; s.length < len; s = "0" + s ); return(s); }
 
 //Address format offsets.
 
