@@ -750,11 +750,11 @@ dataInspector.prototype.height = function( v ) { return(this.comp.style.height =
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
 
 /*------------------------------------------------------------
-This is a web based version of the Data type inspector originally designed to run in Java.
+This is a web based version of the binary tree tool originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/tree/JDTree.java
 ------------------------------------------------------------*/
 
-function dTree(el)
+function tree(el)
 {
   var d = this.comp = document.getElementById(el); d.style.overflow = "auto";
 }
@@ -824,7 +824,7 @@ treeNode.prototype.toString = function()
 
 //Set the tree.
 
-dTree.prototype.set = function(v)
+tree.prototype.set = function(v)
 {
   this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>";
   
@@ -840,15 +840,15 @@ dTree.prototype.set = function(v)
 
 //It can be scrolled at any size.
 
-dTree.prototype.resetDims = function() { this.comp.style.minWidth = this.comp.style.minHeight = "0px"; }
+tree.prototype.resetDims = function() { this.comp.style.minWidth = this.comp.style.minHeight = "0px"; }
 
-dTree.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
+tree.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
 
-dTree.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
+tree.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
 
-dTree.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
+tree.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
 
-dTree.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
+tree.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
 
 //64bit lossless base conversion.
 
