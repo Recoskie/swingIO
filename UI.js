@@ -3,6 +3,28 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)');
 
 var treeNodes = ["u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
+var fileType = [ ".h", ".disk",
+  ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
+  ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
+  ".bmp", ".dib",
+  ".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi",
+  ".pal",
+  ".ani",
+  ".webp",
+  ".wav", ".rmi",
+  ".avi"
+];
+var node = [ 1, 2,
+  3, 3, 4, 5, 5, 5, 5, 5,
+  6, 6, 6, 6, 6, 6, 6, 6, 6,
+  7, 7,
+  8, 8, 8, 8, 8, 8,
+  9,
+  10,
+  11,
+  12, 13,
+  14
+];
 
 document.head.innerHTML += "<style>\
 .vhex\
