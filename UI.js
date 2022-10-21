@@ -2,7 +2,7 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)');
 
-var treeNodes = ["f.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
+var treeNodes = ["u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
 document.head.innerHTML += "<style>\
 .vhex\
@@ -33,6 +33,8 @@ document.head.innerHTML += "<style>\
 .dataInspec fieldset { display: flex; justify-content: space-between; }\
 #myUL{ margin: 0; padding: 0; }\
 #myUL ul { list-style-type: none; }\
+#myUL span { cursor: pointer; display:flex; align-items:center; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+#myUL span::before { content: url("+path+"/Icons/f.gif); }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes; o+=".node"+(i++)+", ");return(o+".node"+i+" { cursor: pointer; display:flex; align-items:center; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }");})(treeNodes.length-1)+"\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 .nested { display: none; }.active { display: block; }\
@@ -761,23 +763,23 @@ function dTree(el)
   d.style.overflow = "auto";
 
   d.innerHTML = "<ul id=\"myUL\">\
-    <li><span class=\"node0\">test</span><ul class=\"nested\">\
+    <li><span>test</span><ul class=\"nested\">\
       <li class=\"node1\">Header1</li>\
       <li class=\"node1\">Header2</li>\
-      <li><span class=\"node0\">Import</span><ul class=\"nested\">\
+      <li><span>Import</span><ul class=\"nested\">\
         <li class=\"node1\">Func1</li>\
         <li class=\"node1\">Func2</li>\
-        <li><span class=\"node0\">SubFunc</span><ul class=\"nested\">\
+        <li><span>SubFunc</span><ul class=\"nested\">\
           <li class=\"node1\">SubFunc1</li>\
           <li class=\"node1\">SubFunc2</li>\
           <li class=\"node1\">SubFunc3</li>\
           <li class=\"node1\">SubFunc4</li>\
         </ul></li>\
       </ul></li>\
-      <li><span class=\"node0\">Resource</span><ul class=\"nested\">\
+      <li><span>Resource</span><ul class=\"nested\">\
         <li class=\"node1\">File1</li>\
         <li class=\"node1\">File2</li>\
-        <li><span class=\"node0\">Folder</span><ul class=\"nested\">\
+        <li><span>Folder</span><ul class=\"nested\">\
           <li class=\"node1\">File1</li>\
           <li class=\"node1\">File2</li>\
           <li class=\"node1\">File3</li>\
@@ -789,7 +791,7 @@ function dTree(el)
 
   //Toggle between display none, and block for each node when clicked.
 
-  var toggler = document.getElementsByClassName("node0");
+  var toggler = document.getElementsByTagName("span");
 
   for (var i = 0; i < toggler.length; i++)
   {
