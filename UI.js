@@ -2,29 +2,7 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)');
 
-var treeNodes = ["u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
-var fileType = [ ".h", ".disk",
-  ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
-  ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
-  ".bmp", ".dib",
-  ".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi",
-  ".pal",
-  ".ani",
-  ".webp",
-  ".wav", ".rmi",
-  ".avi"
-];
-var node = [ 1, 2,
-  3, 3, 4, 5, 5, 5, 5, 5,
-  6, 6, 6, 6, 6, 6, 6, 6, 6,
-  7, 7,
-  8, 8, 8, 8, 8, 8,
-  9,
-  10,
-  11,
-  12, 13,
-  14
-];
+var treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
 document.head.innerHTML += "<style>\
 .vhex\
@@ -55,12 +33,10 @@ document.head.innerHTML += "<style>\
 .dataInspec fieldset { display: flex; justify-content: space-between; }\
 #treeUL{ margin: 0; padding: 0; }\
 #treeUL ul { list-style-type: none; }\
-#treeUL span { cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
-#treeUL span::before { content: url("+path+"/Icons/f.gif); }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes; o+=".node"+(i++)+", ");return(o+".node"+i+" { cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }");})(treeNodes.length-1)+"\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 .nested { display: none; }.active { display: block; }\
-</style>"; path = undefined;
+</style>"; treeNodes = path = undefined;
 
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
@@ -783,9 +759,42 @@ function dTree(el)
   var d = this.comp = document.getElementById(el); d.style.overflow = "auto";
 }
 
+treeNode.prototype.fileType = [ ".h", ".disk",
+  ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
+  ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
+  ".bmp", ".dib",
+  ".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi",
+  ".pal",
+  ".ani",
+  ".webp",
+  ".wav", ".rmi",
+  ".avi"
+];
+treeNode.prototype.node = [ 2, 3,
+  4, 4, 5, 6, 6, 6, 6, 6,
+  7, 7, 7, 7, 7, 7, 7, 7, 7,
+  8, 8,
+  9, 9, 9, 9, 9, 9,
+  10,
+  11,
+  12,
+  13, 14,
+  15
+];
+
 function treeNode(n)
 {
-  this.data = "<li><span>"+n+"</span><ul class=\"nested\">";
+  var t = 0;
+  
+  for(var i = 0; i < this.fileType.length; i++)
+  {
+    if( n.substring(n.length-this.fileType[i].length, n.length) == this.fileType[i] )
+    {
+      t = this.node[i]; n = n.substring(0, n.length-this.fileType[i].length);
+    }
+  }
+  
+  this.data = "<li><span class=\"node"+t+"\">"+n+"</span><ul class=\"nested\">";
 }
 
 treeNode.prototype.add = function(n)
@@ -794,7 +803,18 @@ treeNode.prototype.add = function(n)
   {
     this.data += n + ""; return;
   }
-  this.data += "<li class=\"node1\">"+n+"</li>";
+  
+  var t = 1;
+  
+  for(var i = 0; i < this.fileType.length; i++)
+  {
+    if( n.substring(n.length-this.fileType[i].length, n.length) == this.fileType[i] )
+    {
+      t = this.node[i]; n = n.substring(0, n.length-this.fileType[i].length);
+    }
+  }
+  
+  this.data += "<li class=\"node"+t+"\">"+n+"</li>";
 }
 
 treeNode.prototype.toString = function()
