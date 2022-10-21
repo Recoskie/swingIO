@@ -39,35 +39,26 @@ document.head.innerHTML += "<style>\
   display: flex;\
   justify-content: space-between;\
 }\
-#myUL{ margin: 0; padding: 0;\ }\
+#myUL{ margin: 0; padding: 0; }\
 #myUL, ul { list-style-type: none; }\
-.node\
+.node, .nodeH\
 {\
   cursor: pointer;\
   -webkit-user-select: none;\
   -moz-user-select: none;\
   -ms-user-select: none;\
   user-select: none;\
+  display:flex; align-items:center;\
 }\
 .node::before\
 {\
   content: url("+path+"/Icons/f.gif);\
-  color: black;\
-  display: inline-block;\
+  display:inline-block;\
   margin-right: 6px;\
-}\
-.nodeH\
-{\
-  cursor: pointer;\
-  -webkit-user-select: none;\
-  -moz-user-select: none;\
-  -ms-user-select: none;\
-  user-select: none;\
 }\
 .nodeH::before\
 {\
   content: url("+path+"/Icons/H.gif);\
-  color: black;\
   display: inline-block;\
   margin-right: 6px;\
 }\
@@ -791,8 +782,6 @@ This is a web based version of the Data type inspector originally designed to ru
 See https://github.com/Recoskie/swingIO/blob/master/tree/JDTree.java
 ------------------------------------------------------------*/
 
-//tree.prototype.
-
 function dTree(el)
 {
   var d = this.comp = document.getElementById(el);
@@ -800,27 +789,20 @@ function dTree(el)
   d.style.overflow = "auto";
 
   d.innerHTML = "<ul id=\"myUL\">\
-    <li><span class=\"node\">test</span>\
-      <ul class=\"nested\">\
-        <li class=\"nodeH\">Header1</li>\
-        <li class=\"nodeH\">Header2</li>\
-        <li><span class=\"node\">Import</span>\
-          <ul class=\"nested\">\
-            <li class=\"nodeH\">Func1</li>\
-            <li class=\"nodeH\">Func2</li>\
-            <li><span class=\"node\">SubFunc</span>\
-              <ul class=\"nested\">\
-                <li class=\"nodeH\">SubFunc1</li>\
-                <li class=\"nodeH\">SubFunc2</li>\
-                <li class=\"nodeH\">SubFunc3</li>\
-                <li class=\"nodeH\">SubFunc4</li>\
-              </ul>\
-            </li>\
-          </ul>\
-        </li>\
-      </ul>\
-    </li>\
-  </ul>";
+    <li><span class=\"node\">test</span><ul class=\"nested\">\
+      <li class=\"nodeH\">Header1</li>\
+      <li class=\"nodeH\">Header2</li>\
+      <li><span class=\"node\">Import</span><ul class=\"nested\">\
+        <li class=\"nodeH\">Func1</li>\
+        <li class=\"nodeH\">Func2</li>\
+        <li><span class=\"node\">SubFunc</span><ul class=\"nested\">\
+          <li class=\"nodeH\">SubFunc1</li>\
+          <li class=\"nodeH\">SubFunc2</li>\
+          <li class=\"nodeH\">SubFunc3</li>\
+          <li class=\"nodeH\">SubFunc4</li></ul>\
+        </li></ul>\
+      </li></ul>\
+    </li></ul>";
 
   //Toggle between display none, and block for each node when clicked.
 
