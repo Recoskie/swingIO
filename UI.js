@@ -40,31 +40,12 @@ document.head.innerHTML += "<style>\
   justify-content: space-between;\
 }\
 #myUL{ margin: 0; padding: 0; }\
-#myUL, ul { list-style-type: none; }\
-.node, .nodeH\
-{\
-  cursor: pointer;\
-  -webkit-user-select: none;\
-  -moz-user-select: none;\
-  -ms-user-select: none;\
-  user-select: none;\
-  display:flex; align-items:center;\
-}\
-.node::before\
-{\
-  content: url("+path+"/Icons/f.gif);\
-  display:inline-block;\
-  margin-right: 6px;\
-}\
-.nodeH::before\
-{\
-  content: url("+path+"/Icons/H.gif);\
-  display: inline-block;\
-  margin-right: 6px;\
-}\
-.nested { display: none; }\
-.active { display: block; }\
-</style>";
+#myUL ul { list-style-type: none; }\
+.node0, .node1 { cursor: pointer; display:flex; align-items:center; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+"+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }"); return(o); })
+(["f.gif","H.gif"]) + "\
+.nested { display: none; }.active { display: block; }\
+</style>"; path = undefined;
 
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
@@ -789,27 +770,27 @@ function dTree(el)
   d.style.overflow = "auto";
 
   d.innerHTML = "<ul id=\"myUL\">\
-    <li><span class=\"node\">test</span><ul class=\"nested\">\
-      <li class=\"nodeH\">Header1</li>\
-      <li class=\"nodeH\">Header2</li>\
-      <li><span class=\"node\">Import</span><ul class=\"nested\">\
-        <li class=\"nodeH\">Func1</li>\
-        <li class=\"nodeH\">Func2</li>\
-        <li><span class=\"node\">SubFunc</span><ul class=\"nested\">\
-          <li class=\"nodeH\">SubFunc1</li>\
-          <li class=\"nodeH\">SubFunc2</li>\
-          <li class=\"nodeH\">SubFunc3</li>\
-          <li class=\"nodeH\">SubFunc4</li>\
+    <li><span class=\"node0\">test</span><ul class=\"nested\">\
+      <li class=\"node1\">Header1</li>\
+      <li class=\"node1\">Header2</li>\
+      <li><span class=\"node0\">Import</span><ul class=\"nested\">\
+        <li class=\"node1\">Func1</li>\
+        <li class=\"node1\">Func2</li>\
+        <li><span class=\"node0\">SubFunc</span><ul class=\"nested\">\
+          <li class=\"node1\">SubFunc1</li>\
+          <li class=\"node1\">SubFunc2</li>\
+          <li class=\"node1\">SubFunc3</li>\
+          <li class=\"node1\">SubFunc4</li>\
         </ul></li>\
       </ul></li>\
-      <li><span class=\"node\">Resource</span><ul class=\"nested\">\
-        <li class=\"nodeH\">File1</li>\
-        <li class=\"nodeH\">File2</li>\
-        <li><span class=\"node\">Folder</span><ul class=\"nested\">\
-          <li class=\"nodeH\">File1</li>\
-          <li class=\"nodeH\">File2</li>\
-          <li class=\"nodeH\">File3</li>\
-          <li class=\"nodeH\">File4</li>\
+      <li><span class=\"node0\">Resource</span><ul class=\"nested\">\
+        <li class=\"node1\">File1</li>\
+        <li class=\"node1\">File2</li>\
+        <li><span class=\"node0\">Folder</span><ul class=\"nested\">\
+          <li class=\"node1\">File1</li>\
+          <li class=\"node1\">File2</li>\
+          <li class=\"node1\">File3</li>\
+          <li class=\"node1\">File4</li>\
         </ul></li>\
       </ul></li>\
     </ul></li>\
@@ -817,7 +798,7 @@ function dTree(el)
 
   //Toggle between display none, and block for each node when clicked.
 
-  var toggler = document.getElementsByClassName("node");
+  var toggler = document.getElementsByClassName("node0");
 
   for (var i = 0; i < toggler.length; i++)
   {
