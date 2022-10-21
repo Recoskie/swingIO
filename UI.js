@@ -53,11 +53,11 @@ document.head.innerHTML += "<style>\
 .dataInspec table tr:nth-child(n+0):nth-child(-n+1) { background:#8E8E8E; }\
 .dataInspec table tr:nth-child(n+2):nth-child(-n+17) { cursor: pointer; background:#FFFFFF; }\
 .dataInspec fieldset { display: flex; justify-content: space-between; }\
-#myUL{ margin: 0; padding: 0; }\
-#myUL ul { list-style-type: none; }\
-#myUL span { cursor: pointer; display:flex; align-items:center; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
-#myUL span::before { content: url("+path+"/Icons/f.gif); }\
-"+(function(nodes){for(var i = 0, o = ""; i < nodes; o+=".node"+(i++)+", ");return(o+".node"+i+" { cursor: pointer; display:flex; align-items:center; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }");})(treeNodes.length-1)+"\
+#treeUL{ margin: 0; padding: 0; }\
+#treeUL ul { list-style-type: none; }\
+#treeUL span { cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+#treeUL span::before { content: url("+path+"/Icons/f.gif); }\
+"+(function(nodes){for(var i = 0, o = ""; i < nodes; o+=".node"+(i++)+", ");return(o+".node"+i+" { cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }");})(treeNodes.length-1)+"\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 .nested { display: none; }.active { display: block; }\
 </style>"; path = undefined;
@@ -780,40 +780,37 @@ See https://github.com/Recoskie/swingIO/blob/master/tree/JDTree.java
 
 function dTree(el)
 {
-  var d = this.comp = document.getElementById(el);
+  var d = this.comp = document.getElementById(el); d.style.overflow = "auto";
+}
 
-  d.style.overflow = "auto";
+function treeNode(n)
+{
+  this.data = "<li><span>"+n+"</span><ul class=\"nested\">";
+}
 
-  d.innerHTML = "<ul id=\"myUL\">\
-    <li><span>test</span><ul class=\"nested\">\
-      <li class=\"node1\">Header1</li>\
-      <li class=\"node1\">Header2</li>\
-      <li><span>Import</span><ul class=\"nested\">\
-        <li class=\"node1\">Func1</li>\
-        <li class=\"node1\">Func2</li>\
-        <li><span>SubFunc</span><ul class=\"nested\">\
-          <li class=\"node1\">SubFunc1</li>\
-          <li class=\"node1\">SubFunc2</li>\
-          <li class=\"node1\">SubFunc3</li>\
-          <li class=\"node1\">SubFunc4</li>\
-        </ul></li>\
-      </ul></li>\
-      <li><span>Resource</span><ul class=\"nested\">\
-        <li class=\"node1\">File1</li>\
-        <li class=\"node1\">File2</li>\
-        <li><span>Folder</span><ul class=\"nested\">\
-          <li class=\"node1\">File1</li>\
-          <li class=\"node1\">File2</li>\
-          <li class=\"node1\">File3</li>\
-          <li class=\"node1\">File4</li>\
-        </ul></li>\
-      </ul></li>\
-    </ul></li>\
-  </ul>";
+treeNode.prototype.add = function(n)
+{
+  if(n instanceof treeNode)
+  {
+    this.data += n + ""; return;
+  }
+  this.data += "<li class=\"node1\">"+n+"</li>";
+}
 
+treeNode.prototype.toString = function()
+{
+  return( this.data + "</ul></li>" );
+}
+
+//Set the tree.
+
+dTree.prototype.set = function(v)
+{
+  this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>";
+  
   //Toggle between display none, and block for each node when clicked.
 
-  var toggler = document.getElementsByTagName("span");
+  var toggler = this.comp.getElementsByTagName("span");
 
   for (var i = 0; i < toggler.length; i++)
   {
