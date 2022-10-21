@@ -788,7 +788,8 @@ function dTree(el)
 
   d.style.overflow = "auto";
 
-  d.innerHTML = "<ul id=\"myUL\"><li><span class=\"node\">test</span><ul class=\"nested\">\
+  d.innerHTML = "<ul id=\"myUL\">\
+    <li><span class=\"node\">test</span><ul class=\"nested\">\
       <li class=\"nodeH\">Header1</li>\
       <li class=\"nodeH\">Header2</li>\
       <li><span class=\"node\">Import</span><ul class=\"nested\">\
@@ -798,19 +799,21 @@ function dTree(el)
           <li class=\"nodeH\">SubFunc1</li>\
           <li class=\"nodeH\">SubFunc2</li>\
           <li class=\"nodeH\">SubFunc3</li>\
-          <li class=\"nodeH\">SubFunc4</li></ul>\
-        </li></ul>\
-        <li><span class=\"node\">Resource</span><ul class=\"nested\">\
+          <li class=\"nodeH\">SubFunc4</li>\
+        </ul></li>\
+      </ul></li>\
+      <li><span class=\"node\">Resource</span><ul class=\"nested\">\
         <li class=\"nodeH\">File1</li>\
         <li class=\"nodeH\">File2</li>\
         <li><span class=\"node\">Folder</span><ul class=\"nested\">\
           <li class=\"nodeH\">File1</li>\
           <li class=\"nodeH\">File2</li>\
           <li class=\"nodeH\">File3</li>\
-          <li class=\"nodeH\">File4</li></ul>\
-        </li></ul>\
-      </li></ul>\
-    </li></ul>";
+          <li class=\"nodeH\">File4</li>\
+        </ul></li>\
+      </ul></li>\
+    </ul></li>\
+  </ul>";
 
   //Toggle between display none, and block for each node when clicked.
 
