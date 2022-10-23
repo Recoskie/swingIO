@@ -760,6 +760,27 @@ function tree(el)
   var d = this.comp = document.getElementById(el); d.style.overflow = "auto";
 }
 
+tree.prototype.selectedNode = null;
+
+tree.prototype.treeClick = function treeClick(v,node)
+{
+  //Set the selected node.
+
+  v = v.querySelector("div"); if(this.selectedNode) { this.selectedNode.style.backgroundColor=""; } v.style.backgroundColor="#9EB0C1";
+  
+  //We can collapse, or expand nodes.
+  
+  var t = v.parentElement.parentElement.querySelector(".nested");
+
+  //Only collapse an node if double clicked.
+  
+  if(node && (t.className!="nested active" || v == this.selectedNode) ) { t.classList.toggle("active"); }
+  
+  this.event(this.selectedNode = v);
+}
+
+tree.prototype.event = function(){}
+
 treeNode.prototype.fileType = [ ".h", ".disk",
   ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
   ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
@@ -785,9 +806,7 @@ treeNode.prototype.node = [ 2, 3,
 
 function treeNode(n)
 {
-  var t = 0;
-  
-  for(var i = 0; i < this.fileType.length; i++)
+  var t = 0; for(var i = 0; i < this.fileType.length; i++)
   {
     if( n.substring(n.length-this.fileType[i].length, n.length) == this.fileType[i] )
     {
@@ -795,42 +814,14 @@ function treeNode(n)
     }
   }
   
-  this.data = "<li><span onclick=\"treeClick(this,true);\" class=\"node"+t+"\"><div>"+n+"</div></span><ul class=\"nested\">";
-}
-
-var lastNode = null;
-
-function treeClick(v,node)
-{
-  if(lastNode)
-  {
-    lastNode.querySelector("div").style.backgroundColor="";
-  }
-  
-  v.querySelector("div").style.backgroundColor="#9EB0C1";
-  
-  //We can colapse, or expand nodes.
-  
-  var t = v.parentElement.querySelector(".nested");
-  
-  if(node && (t.className!="nested active" || v == lastNode) )
-  {
-    t.classList.toggle("active");
-  }
-  
-  lastNode = v;
+  this.data = "<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div>"+n+"</div></span><ul class=\"nested\">";
 }
 
 treeNode.prototype.add = function(n)
 {
-  if(n instanceof treeNode)
-  {
-    this.data += n + ""; return;
-  }
+  if(n instanceof treeNode) { this.data += n + ""; return; }
   
-  var t = 1;
-  
-  for(var i = 0; i < this.fileType.length; i++)
+  var t = 1; for(var i = 0; i < this.fileType.length; i++)
   {
     if( n.substring(n.length-this.fileType[i].length, n.length) == this.fileType[i] )
     {
@@ -838,7 +829,7 @@ treeNode.prototype.add = function(n)
     }
   }
   
-  this.data += "<li onclick='treeClick(this,false);' class=\"node"+t+"\"><div>"+n+"</div></li>";
+  this.data += "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div>"+n+"</div></li>";
 }
 
 treeNode.prototype.toString = function()
