@@ -33,6 +33,7 @@ document.head.innerHTML += "<style>\
 .dataInspec fieldset { display: flex; justify-content: space-between; }\
 #treeUL{ margin: 0; padding: 0; }\
 #treeUL ul { list-style-type: none; }\
+#treeUL div { border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes; o+=".node"+(i++)+", ");return(o+".node"+i+" { cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }");})(treeNodes.length-1)+"\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 .nested { display: none; }.active { display: block; }\
@@ -794,7 +795,30 @@ function treeNode(n)
     }
   }
   
-  this.data = "<li><span class=\"node"+t+"\">"+n+"</span><ul class=\"nested\">";
+  this.data = "<li><span onclick=\"treeClick(this,true);\" class=\"node"+t+"\"><div>"+n+"</div></span><ul class=\"nested\">";
+}
+
+var lastNode = null;
+
+function treeClick(v,node)
+{
+  if(lastNode)
+  {
+    lastNode.querySelector("div").style.backgroundColor="";
+  }
+  
+  v.querySelector("div").style.backgroundColor="#9EB0C1";
+  
+  //We can colapse, or expand nodes.
+  
+  var t = v.parentElement.querySelector(".nested");
+  
+  if(node && (t.className!="nested active" || v == lastNode) )
+  {
+    t.classList.toggle("active");
+  }
+  
+  lastNode = v;
 }
 
 treeNode.prototype.add = function(n)
@@ -814,7 +838,7 @@ treeNode.prototype.add = function(n)
     }
   }
   
-  this.data += "<li class=\"node"+t+"\">"+n+"</li>";
+  this.data += "<li onclick='treeClick(this,false);' class=\"node"+t+"\"><div>"+n+"</div></li>";
 }
 
 treeNode.prototype.toString = function()
@@ -827,15 +851,6 @@ treeNode.prototype.toString = function()
 tree.prototype.set = function(v)
 {
   this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>";
-  
-  //Toggle between display none, and block for each node when clicked.
-
-  var toggler = this.comp.getElementsByTagName("span");
-
-  for (var i = 0; i < toggler.length; i++)
-  {
-    toggler[i].onclick = function() { this.parentElement.querySelector(".nested").classList.toggle("active"); }
-  }
 }
 
 //It can be scrolled at any size.
