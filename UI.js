@@ -1,4 +1,4 @@
-var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/"));
+var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/")), Ref = [];
 
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'), treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
@@ -41,8 +41,6 @@ document.head.innerHTML += "<style>\
 This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
-
-var Ref = [];
 
 VHex.prototype.sBarWidth = null, VHex.prototype.sBarMax = null, VHex.prototype.sBarLowLim = null, VHex.prototype.sBarUpLim = null;
 
@@ -753,10 +751,7 @@ This is a web based version of the binary tree tool originally designed to run i
 See https://github.com/Recoskie/swingIO/blob/master/tree/JDTree.java
 ------------------------------------------------------------*/
 
-function tree(el)
-{
-  var d = this.comp = document.getElementById(el); d.style.overflow = "auto";
-}
+function tree(el) { this.comp = document.getElementById(el); this.comp.style.overflow = "auto"; }
 
 tree.prototype.selectedNode = null;
 
@@ -766,18 +761,21 @@ tree.prototype.treeClick = function treeClick(v,node)
 
   v = v.querySelector("div"); if(this.selectedNode) { this.selectedNode.style.backgroundColor=""; } v.style.backgroundColor="#9EB0C1";
   
-  //We can collapse, or expand nodes.
-  
-  var t = v.parentElement.parentElement.querySelector(".nested");
+  //We can hide or show sub elements simulating collapse, or expand nodes.
 
-  //Only collapse an node if double clicked.
+  if( node )
+  {
+    var t = v.parentElement.parentElement.querySelector(".nested");
+
+    //Only collapse an node if double clicked.
   
-  if(node && (t.className!="nested active" || v == this.selectedNode) ) { t.classList.toggle("active"); }
+    if(t.className!="nested active" || v == this.selectedNode ) { t.classList.toggle("active"); }
+  }
   
   this.event(this.selectedNode = v);
 }
 
-tree.prototype.event = function(){}
+tree.prototype.event = function(){alert("Why");}
 
 treeNode.prototype.fileType = [ ".h", ".disk",
   ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
