@@ -755,7 +755,7 @@ function tree(el) { this.comp = document.getElementById(el); this.comp.style.ove
 
 tree.prototype.selectedNode = null;
 
-tree.prototype.treeClick = function treeClick(v,node)
+tree.prototype.treeClick = function(v,node)
 {
   //Set the selected node.
 
@@ -775,7 +775,7 @@ tree.prototype.treeClick = function treeClick(v,node)
   this.event(this.selectedNode = v);
 }
 
-tree.prototype.event = function(){alert("Why");}
+tree.prototype.event = function(){}
 
 treeNode.prototype.fileType = [ ".h", ".disk",
   ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
@@ -800,7 +800,7 @@ treeNode.prototype.node = [ 2, 3,
   15
 ];
 
-function treeNode(n)
+function treeNode(n,args)
 {
   var t = 0; for(var i = 0; i < this.fileType.length; i++)
   {
@@ -810,10 +810,10 @@ function treeNode(n)
     }
   }
   
-  this.data = "<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div>"+n+"</div></span><ul class=\"nested\">";
+  this.data = "<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested\">";
 }
 
-treeNode.prototype.add = function(n)
+treeNode.prototype.add = function(n,args)
 {
   if(n instanceof treeNode) { this.data += n + ""; return; }
   
@@ -825,7 +825,7 @@ treeNode.prototype.add = function(n)
     }
   }
   
-  this.data += "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div>"+n+"</div></li>";
+  this.data += "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>";
 }
 
 treeNode.prototype.toString = function()
