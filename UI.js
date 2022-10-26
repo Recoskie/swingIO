@@ -154,7 +154,7 @@ VHex.prototype.select = function(e, ref)
 {
   this.comp.focus();
   
-  var x = ( e.pageX - this.comp.offsetLeft ) - 164, y = ( e.pageY - this.comp.offsetTop ) - 16;
+  var x = ((e.pageX || e.touches[0].pageX) - this.comp.offsetLeft) - 164, y = ((e.pageY || e.touches[0].pageY) - this.comp.offsetTop) - 16;
 
   if( x > 0 && y > 0 )
   {
