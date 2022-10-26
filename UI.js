@@ -150,7 +150,7 @@ VHex.prototype.virtualSc = function()
 
 //Byte selection event.
 
-VHex.prototype.select = function(e, ref)
+VHex.prototype.select = function(e)
 {
   this.comp.focus();
   
@@ -170,7 +170,7 @@ VHex.prototype.select = function(e, ref)
 
 VHex.prototype.update = function(d)
 {
-  var g = this.g, width = this.c.width = this.comp.offsetWidth, height = this.c.height = this.comp.offsetHeight;
+  var g = this.g, height = this.c.height = this.comp.offsetHeight; this.c.width = this.comp.offsetWidth;
   
   var data = !this.virtual ? d.data : d.dataV, pos = !this.virtual ? this.io.data.offset : this.io.dataV.offset;
   
@@ -410,24 +410,9 @@ VHex.prototype.getPos = function() { return( Math.max(0, this.rel ? this.relPos 
 
 VHex.prototype.setPos = function( offset )
 {
-  //Relative position.
-
-  if( this.rel )
-  {
-    //We can directly set the relative position.
-
-    this.relPos = offset;
-
-    //The scroll bar must not pass the rel down position unless rel position is less than rel down.
-
-    if( offset <= this.sBarLowLim && this.relPos >= this.sBarLowLim ) { offset = this.sBarLowLim; }
-
-    //The scroll bar must not pass the rel Up position unless rel position is grater than rel up.
-
-    if( offset >= this.sBarUpLim && this.relPos <= this.relDataUP ) { offset = this.sBarUpLim; }
-  }
-
-  this.comp.scrollTo( 0, offset ); this.oldOff = offset;
+  offset /= 16; this.comp.scrollTo( 0, offset ); this.oldOff = this.comp.scrollTop;
+  
+  if( this.rel ){ this.relPos = offset; this.adjRelPos(); }
   
   this.sc();
 }
@@ -450,7 +435,7 @@ VHex.prototype.adjRelPos = function()
   //The scroll bar must not pass the rel Up position unless rel position is grater than rel up data.
 
   if( offset >= this.sBarUpLim && this.relPos <= this.relDataUp ) { offset = this.sBarUpLim; }
-  else if(this.relPos >= this.relDataUp ) { this.relPos = this.relDataUp + ( this.offset - this.sBarUpLim ); }
+  else if(this.relPos >= this.relDataUp ) { this.relPos = this.relDataUp + ( offset - this.sBarUpLim ); }
 
   //The only time the scroll bar passes the Rel UP or down position is when all that remains is that size of data.
 
@@ -856,19 +841,13 @@ tree.prototype.height = function( v ) { return(this.comp.style.height = v || thi
 
 Number.prototype.toString64 = function(v32,b)
 {
-  var o = "";
-  
-  var f = this * 4294967296, sec = b**((Math.log(f) / Math.log(b)) & -1), r = 0, r32 = false;
+  var o = "", f = this * 4294967296, sec = b**((Math.log(f) / Math.log(b)) & -1), r = 0, r32 = false;
   
   while( sec > 1 )
   {
-    r=(f/sec)&-1; f=(f-(r*sec)); r=Math.abs(r);
+    r=(f/sec)&-1; f=(f-(r*sec)); r=Math.abs(r); o += ( r < 10 ) ? r : String.fromCharCode(55 + r);
     
-    o += ( r < 10 ) ? r : String.fromCharCode(55 + r);
-    
-    if( !r32 && sec < 4503599627370496 ) { f += v32; r32 = true; }
-  
-    sec /= b;
+    if( !r32 && sec < 4503599627370496 ) { f += v32; r32 = true; } sec /= b;
   }
   
   f=Math.abs(f); return( o + (( f < 10 ) ? f : String.fromCharCode(55 + f)) );
