@@ -806,7 +806,7 @@ function treeNode(n,args)
 
 treeNode.prototype.add = function(n,args)
 {
-  if(n instanceof treeNode) { this.data[this.data.length] = n; return; }
+  if(n instanceof treeNode) { this.data[this.data.length] = n; n.parentNode = this; return; }
   
   var t = 1; for(var i = 0; i < this.fileType.length; i++)
   {
