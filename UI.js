@@ -757,6 +757,12 @@ tree.prototype.treeClick = function(v,node)
     if(t.className!="nested active" || v == this.selectedNode ) { t.classList.toggle("active"); }
   }
   
+  v.setArgs = function( arg ) { this.setAttribute("args", arg + ""); }
+
+  v.getArgs = function() { return( this.getAttribute("args").split(",")); }
+
+  v.setNode = function( node ) { this.parentElement.outerHTML = node; }
+  
   this.event(this.selectedNode = v);
 }
 
@@ -795,12 +801,12 @@ function treeNode(n,args)
     }
   }
   
-  this.data = "<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested\">";
+  this.data = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested\">"];
 }
 
 treeNode.prototype.add = function(n,args)
 {
-  if(n instanceof treeNode) { this.data += n + ""; return; }
+  if(n instanceof treeNode) { this.data[this.data.length] = n; return; }
   
   var t = 1; for(var i = 0; i < this.fileType.length; i++)
   {
@@ -810,20 +816,14 @@ treeNode.prototype.add = function(n,args)
     }
   }
   
-  this.data += "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>";
+  this.data[this.data.length] = "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>";
 }
 
-treeNode.prototype.toString = function()
-{
-  return( this.data + "</ul></li>" );
-}
+treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.data.length; o += this.data[i++] + "" ); return( o + "</ul></li>" ); }
 
 //Set the tree.
 
-tree.prototype.set = function(v)
-{
-  this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>";
-}
+tree.prototype.set = function(v) { this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
 //It can be scrolled at any size.
 
@@ -863,17 +863,13 @@ if( Number.prototype.address == null )
 {
   Number.prototype.address = function()
   {
-    for( var s = this.toString(16); s.length < 16; s = "0" + s );
-    return("0x"+s);
+    for( var s = this.toString(16); s.length < 16; s = "0" + s ); return("0x"+s);
   }
 }
 
 //Byte format
 
-Number.prototype.byte = function()
-{
-  return((s = this.toString(16)).length < 2 ? s = "0" + s : s);
-}
+Number.prototype.byte = function() { return((s = this.toString(16)).length < 2 ? s = "0" + s : s); }
 
 //Always uppercase.
 
