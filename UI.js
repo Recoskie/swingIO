@@ -791,7 +791,7 @@ treeNode.prototype.node = [ 2, 3,
   15
 ];
 
-function treeNode(n,args)
+function treeNode(n,args,expand,selected)
 {
   var t = 0; for(var i = 0; i < this.fileType.length; i++)
   {
@@ -801,12 +801,12 @@ function treeNode(n,args)
     }
   }
   
-  this.data = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested\">"];
+  this.nodes = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"];
 }
 
-treeNode.prototype.add = function(n,args)
+treeNode.prototype.add = function(n,args,selected)
 {
-  if(n instanceof treeNode) { this.data[this.data.length] = n; n.parentNode = this; return; }
+  if(n instanceof treeNode) { this.nodes[this.nodes.length] = n; n.parentNode = this; return; }
   
   var t = 1; for(var i = 0; i < this.fileType.length; i++)
   {
@@ -816,10 +816,10 @@ treeNode.prototype.add = function(n,args)
     }
   }
   
-  this.data[this.data.length] = "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>";
+  this.nodes[this.nodes.length] = "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></li>";
 }
 
-treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.data.length; o += this.data[i++] + "" ); return( o + "</ul></li>" ); }
+treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + "</ul></li>" ); }
 
 //Set the tree.
 
