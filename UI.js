@@ -2,47 +2,26 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'), treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
-document.head.innerHTML += "<style>\
-.vhex\
-{\
-  -webkit-user-select: none;\
-  -webkit-touch-callout: none;\
-  -moz-user-select: none;\
-  -ms-user-select: none;\
-  user-select: none;\
-  position: relative;\
-  overflow-y: scroll;\
-  overflow-x: hidden;\
-}\
-.dataInspec\
-{\
-  background:#CECECE;\
-}\
-.dataInspec table tr td\
-{\
-  font-size:16px;\
-  overflow: hidden;\
-  text-overflow: ellipsis;\
-  white-space: nowrap;\
-  width:50%;\
-}\
+document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+.dataInspec { background:#CECECE; }.dataInspec table tr td { font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width:50%; }\
 .dataInspec table tr:nth-child(n+0):nth-child(-n+1) { background:#8E8E8E; }\
 .dataInspec table tr:nth-child(n+2):nth-child(-n+17) { cursor: pointer; background:#FFFFFF; }\
 .dataInspec fieldset { display: flex; justify-content: space-between; }\
-#treeUL{ margin: 0; padding: 0; }\
-#treeUL ul { list-style-type: none; }\
-#treeUL div { border: 0; }\
+#treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 [class^='node']{ cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
-.nested { display: none; }.active { display: block; }\
-</style>"; treeNodes = path = undefined;
+.nested { display: none; }.active { display: block; }</style>"; treeNodes = path = undefined;
 
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
 
-VHex.prototype.sBarWidth = null, VHex.prototype.sBarMax = null, VHex.prototype.sBarLowLim = null, VHex.prototype.sBarUpLim = null;
+VHex.prototype.minDims = [0,0], VHex.prototype.sBarWidth = null, VHex.prototype.sBarMax = null, VHex.prototype.sBarLowLim = null, VHex.prototype.sBarUpLim = null;
+
+//Relative position parameters based on file size while scrolling data larger than the max scroll bar size.
+
+VHex.prototype.rel = false, VHex.prototype.relPos = 0, VHex.prototype.relSize = 0, VHex.prototype.oldOff = 0, VHex.prototype.relDataUp = 0;
 
 //The hex editor columns.
 
@@ -50,9 +29,7 @@ VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A"
 
 function VHex( el, io, v )
 {
-  this.io = io; var h = this.comp = document.getElementById(el);
-
-  h.className="vhex";
+  this.io = io; var h = this.comp = document.getElementById(el); h.className="vhex";
 
   h.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
@@ -89,7 +66,7 @@ function VHex( el, io, v )
   
   //Component min size.
   
-  h.style.minWidth = (682 + this.sBarWidth) + "px"; h.style.minHeight = "256px";
+  this.minDims = [682 + this.sBarWidth, 256]; this.resetDims();
   
   //text column output is optional.
   
@@ -346,37 +323,9 @@ VHex.prototype.selection = function(g, pos)
   }
 }
 
-//The scroll bar can only be made so big so then we need an way to display very far away addresses.
-//So we add a relative position while scrolling to the end based on the max scroll bar size.
-
-VHex.prototype.rel = false; VHex.prototype.relPos = 0; VHex.prototype.relSize = 0; VHex.prototype.oldOff = 0;
-
-//The upper limit for data while scrolling. The lower limit does not need to be calculated.
-
-VHex.prototype.relDataUp = 0;
-
 //Basic UI controls.
 
-VHex.prototype.setText = function( v )
-{
-  this.comp.style.minWidth = ((v ? 682 : 516) + this.sBarWidth) + "px"; this.end = (this.text = v) ? 518 : 352;
-}
-
-VHex.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible){ this.onseek(this.io); } }
-
-VHex.prototype.resetDims = function()
-{
-  this.comp.style.minWidth = ((this.text ? 682 : 516) + this.sBarWidth) + "px";
-  this.comp.style.minHeight = "256px"
-}
-
-VHex.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
-
-VHex.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
-
-VHex.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
-
-VHex.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
+VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + this.sBarWidth, 256]; this.end = (this.text = v) ? 518 : 352; this.resetDims(); }
 
 VHex.prototype.getRows = function() { return( Math.floor( this.comp.offsetHeight / 16 ) ); }
 
@@ -442,14 +391,9 @@ VHex.prototype.adjRelPos = function()
   this.comp.scrollTo( 0, offset ); this.oldOff = offset;
 }
 
-//The on read IO Event.
+VHex.prototype.onread = function( f ) { }
 
-VHex.prototype.onread = function( f )
-{
-
-}
-
-//The on seek IO Event.
+//Select the byte we have seeked to in the IO system. If the byte is outside the hex editor, then update the position.
 
 VHex.prototype.onseek = function( f )
 {
@@ -486,7 +430,7 @@ See https://github.com/Recoskie/swingIO/blob/master/dataInspector.java
 ------------------------------------------------------------*/
 
 dataInspector.prototype.dType = ["Binary (8 bit)","Int8","UInt8","Int16","UInt16","Int32","UInt32","Int64","UInt64","Float32","Float64","Char8","Char16","String8","String16","Use No Data type"];
-dataInspector.prototype.dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1], dataInspector.prototype.dMinDims = null;
+dataInspector.prototype.dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1], dataInspector.prototype.minDims = null;
 
 function dataInspector(el, io)
 {
@@ -538,9 +482,9 @@ function dataInspector(el, io)
   
   var t = d.getElementsByTagName("table")[0];
   
-  if(this.dMinDims == null) { dataInspector.prototype.dMinDims = [d.getElementsByTagName("fieldset")[1].offsetWidth+16, t.offsetHeight]; }
+  if(this.minDims == null) { dataInspector.prototype.minDims = [d.getElementsByTagName("fieldset")[1].offsetWidth+16, t.offsetHeight]; }
   
-  t.style.minWidth=d.style.minWidth=this.dMinDims[0]; d.style.minHeight=this.dMinDims[1];
+  t.style.minWidth=d.style.minWidth=this.minDims[0]; d.style.minHeight=this.minDims[1];
   
   t.style.width = "100%"; t.style.height = "100%"; t = undefined;
   
@@ -717,30 +661,101 @@ dataInspector.prototype.onseek = function( f )
   }
 }
 
-dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible){ this.onseek(this.io); } }
-
-dataInspector.prototype.resetDims = function() { this.comp.style.minWidth = this.dMinDims[0] + "px"; this.comp.style.minHeight = this.dMinDims[1] + "px"; }
-
-dataInspector.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
-
-dataInspector.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
-
-dataInspector.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
-
-dataInspector.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
-
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
+
+/*------------------------------------------------------------
+This is a web based version of the data model originally designed to run in Java.
+See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
+And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
+------------------------------------------------------------*/
+
+dataDescriptor.prototype.minDims = [0,0], dataDescriptor.prototype.di = null;
+
+function dataDescriptor( el, io )
+{
+  this.io = io; var d = this.comp = document.getElementById(el); d.className="vhex"; d.style.overflowY = "auto";
+  
+  d.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
+
+  this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
+
+  //For now we will default to the original "data model place holder".
+
+  d.innerHTML = "Data Model."; d.style.backgroundColor = "#00FF00";
+
+  //Selected element.
+
+  this.sel = 0;
+  
+  //Scroll.
+  
+  eval("var t = function(){Ref["+Ref.length+"].sc();}"); d.onscroll=t;
+
+  //clicked data type event.
+  
+  eval("var t = function(e){Ref["+Ref.length+"].select(e);}");
+  
+  //If touch screen.
+ 
+  if(('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) { this.comp.ontouchstart = t; } else { this.comp.onmousedown = t; }
+  
+  //Allows us to referenced the proper component to update on scroll.
+  
+  Ref[Ref.length] = this;
+}
+
+//Scrolling event.
+
+dataDescriptor.prototype.sc = function()
+{
+
+}
+
+dataDescriptor.prototype.select = function(e)
+{
+
+}
+
+dataDescriptor.prototype.update = function()
+{
+
+}
+
+dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
 
 /*------------------------------------------------------------
 This is a web based version of the binary tree tool originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/tree/JDTree.java
 ------------------------------------------------------------*/
 
+treeNode.prototype.fileType = [ ".h", ".disk",
+  ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
+  ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
+  ".bmp", ".dib",
+  ".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi",
+  ".pal",
+  ".ani",
+  ".webp",
+  ".wav", ".rmi",
+  ".avi"
+];
+treeNode.prototype.node = [ 2, 3,
+  4, 4, 5, 6, 6, 6, 6, 6,
+  7, 7, 7, 7, 7, 7, 7, 7, 7,
+  8, 8,
+  9, 9, 9, 9, 9, 9,
+  10,
+  11,
+  12,
+  13, 14,
+  15
+];
+
+tree.prototype.minDims = [0,0], tree.prototype.selectedNode = null;
+
 function tree(el) { this.comp = document.getElementById(el); this.comp.style.overflow = "auto"; }
 
-tree.prototype.selectedNode = null;
-
-tree.prototype.treeClick = function(v,node)
+tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
 {
   //Set the selected node.
 
@@ -766,30 +781,9 @@ tree.prototype.treeClick = function(v,node)
   this.event(this.selectedNode = v);
 }
 
-tree.prototype.event = function(){}
+tree.prototype.set = function(v) { this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
-treeNode.prototype.fileType = [ ".h", ".disk",
-  ".com", ".exe", ".dll", ".sys", ".drv", ".ocx", ".efi", ".mui",
-  ".axf", ".bin", ".elf", ".o", ".prx", ".puff", ".ko", ".mod", ".so",
-  ".bmp", ".dib",
-  ".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi",
-  ".pal",
-  ".ani",
-  ".webp",
-  ".wav", ".rmi",
-  ".avi"
-];
-treeNode.prototype.node = [ 2, 3,
-  4, 4, 5, 6, 6, 6, 6, 6,
-  7, 7, 7, 7, 7, 7, 7, 7, 7,
-  8, 8,
-  9, 9, 9, 9, 9, 9,
-  10,
-  11,
-  12,
-  13, 14,
-  15
-];
+//The tree nodes.
 
 function treeNode(n,args,expand,selected)
 {
@@ -821,33 +815,33 @@ treeNode.prototype.add = function(n,args,selected)
 
 treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + "</ul></li>" ); }
 
-//Set the tree.
+//Shared UI controls. Note this should be rolled up into a loop with each referencing the same function.
 
-tree.prototype.set = function(v) { this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+VHex.prototype.resetDims = dataInspector.prototype.resetDims = tree.prototype.resetDims = dataDescriptor.prototype.resetDims = function() { this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; }
 
-//It can be scrolled at any size.
+VHex.prototype.minWidth = dataInspector.prototype.minWidth = tree.prototype.minWidth = dataDescriptor.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
 
-tree.prototype.resetDims = function() { this.comp.style.minWidth = this.comp.style.minHeight = "0px"; }
+VHex.prototype.minHeight = dataInspector.prototype.minHeight = tree.prototype.minHeight = dataDescriptor.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
 
-tree.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
+VHex.prototype.width = dataInspector.prototype.width = tree.prototype.width = dataDescriptor.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
 
-tree.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
+VHex.prototype.height = dataInspector.prototype.height = tree.prototype.height = dataDescriptor.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
 
-tree.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
+VHex.prototype.hide = dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible){ this.onseek(this.io); } }
 
-tree.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
+tree.prototype.hide = dataDescriptor.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
 
 //64bit lossless base conversion.
 
-Number.prototype.toString64 = function(v32,b)
+Number.prototype.toString64 = function(v32,base)
 {
-  var o = "", f = this * 4294967296, sec = b**((Math.log(f) / Math.log(b)) & -1), r = 0, r32 = false;
+  var o = "", f = this * 4294967296, sec = base**((Math.log(f) / Math.log(base)) & -1), r = 0, r32 = false;
   
   while( sec > 1 )
   {
     r=(f/sec)&-1; f=(f-(r*sec)); r=Math.abs(r); o += ( r < 10 ) ? r : String.fromCharCode(55 + r);
     
-    if( !r32 && sec < 4503599627370496 ) { f += v32; r32 = true; } sec /= b;
+    if( !r32 && sec < 4503599627370496 ) { f += v32; r32 = true; } sec /= base;
   }
   
   f=Math.abs(f); return( o + (( f < 10 ) ? f : String.fromCharCode(55 + f)) );
