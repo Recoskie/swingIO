@@ -145,6 +145,27 @@ VHex.prototype.select = function(e)
   }
 }
 
+//Method that checks what has to be updated on the hex editor after resize.
+
+VHex.prototype.validate = function()
+{
+  //If component is not visible then just return.
+
+  if( !this.visible ) { return; }
+
+  //We must update the scroll bar any time height does not match.
+
+  if( this.c.height != this.comp.offsetHeight ){ this.adjSize(); }
+
+  //If canvas height is smaller we must rerender the output.
+
+  if( this.c.height < this.comp.offsetHeight ) { this.sc(); }
+
+  //If only width is smaller then we can set the canvas width larger.
+
+  else if( this.c.width < this.comp.offsetWidth ) { this.c.width = this.comp.offsetWidth }
+}
+
 VHex.prototype.update = function(d)
 {
   var g = this.g, height = this.c.height = this.comp.offsetHeight; this.c.width = this.comp.offsetWidth;
@@ -359,7 +380,7 @@ VHex.prototype.getPos = function() { return( Math.max(0, this.rel ? this.relPos 
 
 VHex.prototype.setPos = function( offset )
 {
-  offset /= 16; this.comp.scrollTo( 0, offset ); this.oldOff = this.comp.scrollTop;
+  this.comp.scrollTo( 0, offset ); this.oldOff = this.comp.scrollTop;
   
   if( this.rel ){ this.relPos = offset; this.adjRelPos(); }
   
