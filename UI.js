@@ -750,7 +750,7 @@ tree.prototype.setNode = function( node )
 {
   var el = document.createElement("template"); el.innerHTML = node + ""; el = el.content.firstChild;
 
-  if( (t = this.parentElement.parentElement.children).length >= 2 ){ t[1].remove(); }
+  if( (t = this.parentElement.parentElement).innerHTML.startsWith("<span") > 0 ){ t.children[1].remove(); }
 
   this.parentElement.parentElement.replaceChild(el,this.parentElement); if(this.self) { this.self.selectedNode = el.querySelector("div"); }
 }
