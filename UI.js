@@ -7,7 +7,7 @@ document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scrol
 .dataInspec table tr:nth-child(n+0):nth-child(-n+1) { background:#8E8E8E; }\
 .dataInspec table tr:nth-child(n+2):nth-child(-n+17) { cursor: pointer; background:#FFFFFF; }\
 .dataInspec fieldset { display: flex; justify-content: space-between; }\
-#treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { border: 0; }\
+#treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { white-space: nowrap; border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 [class^='node']{ cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .nested { display: none; }.active { display: block; }</style>"; treeNodes = path = undefined;
@@ -701,18 +701,28 @@ tree.prototype.minDims = [0,0], tree.prototype.selectedNode = null;
 
 function tree(el) { this.comp = document.getElementById(el); this.comp.style.overflow = "auto"; }
 
+//Set the tree nodes.
+
+tree.prototype.set = function(v) { this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+
+//Navigate the tree nodes.
+
+tree.prototype.getNode = function(i)
+{
+  var r = this.comp.firstChild.children[i]; if(r.children.length >= 2) { r = r.firstChild; } r = r.firstChild;
+
+  r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.getNode = function( i )
+  {
+    var r = this.parentElement.parentElement.children[1].children[i]; if(r.children.length >= 2) { r = r.firstChild; } r = r.firstChild;
+    r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.getNode = this.getNode; return(r);
+  }
+
+  return(r);
+}
+
 tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
 {
-  v = v.querySelector("div"); v.self = this; v.setArgs = function( arg ) { this.setAttribute("args", arg + ""); }
-
-  v.getArgs = function() { return( this.getAttribute("args").split(",")); }
-
-  v.setNode = function( node )
-  {
-    var el = document.createElement("template"); el.innerHTML = node + ""; el = el.content.firstChild;
-
-    this.parentElement.parentElement.replaceChild(el,this.parentElement); this.self.selectedNode = el.querySelector("div");
-  }
+  v = v.querySelector("div"); v.self = this; v.setArgs = this.setArgs; v.getArgs = this.getArgs; v.setNode = this.setNode;
   
   //Set the selected node.
 
@@ -732,7 +742,16 @@ tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
   this.event(this.selectedNode = v);
 }
 
-tree.prototype.set = function(v) { this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+//Modify nodes. Note these methods are referenced from node elements and should not be directly used.
+
+tree.prototype.setArgs = function( arg ) { this.setAttribute("args", arg + ""); }
+tree.prototype.getArgs = function() { return( this.getAttribute("args").split(",")); }
+tree.prototype.setNode = function( node )
+{
+  var el = document.createElement("template"); el.innerHTML = node + ""; el = el.content.firstChild;
+
+  this.parentElement.parentElement.replaceChild(el,this.parentElement); if(this.self) { this.self.selectedNode = el.querySelector("div"); }
+}
 
 //The tree nodes.
 
