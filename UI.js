@@ -303,9 +303,9 @@ VHex.prototype.setRows = function( size )
   this.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;";
 }
 
-//We want to keep an extra rows so the user can see the end of the file.
+//We want to keep an few extra rows so the user can see the end of the file.
 
-VHex.prototype.adjSize = function() { this.setRows( ( this.io.file.size / 16 ) + 1 ); }
+VHex.prototype.adjSize = function() { this.setRows( ( this.io.file.size / 16 ) + 3 ); }
 
 //Get the real position including relative scrolling if active.
 
