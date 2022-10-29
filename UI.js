@@ -401,9 +401,7 @@ function dataInspector(el, io)
   
   var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>";
   
-  this.out = [];
-  
-  for(var i = 0; i < this.dType.length; i++) { out += "<tr "+eventStr+"='Ref["+Ref.length+"].setType("+i+");'><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
+  this.out = []; for(var i = 0; i < this.dType.length; i++) { out += "<tr "+eventStr+"='Ref["+Ref.length+"].setType("+i+");'><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
   
   var event = "onclick='Ref["+Ref.length+"].order = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
   
@@ -762,7 +760,7 @@ function treeNode(n,args,expand,selected)
     }
   }
   
-  this.nodes = ["<li><span "+eventStr+"=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"];
+  this.nodes = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"];
 }
 
 treeNode.prototype.add = function(n,args,selected)
@@ -777,7 +775,7 @@ treeNode.prototype.add = function(n,args,selected)
     }
   }
   
-  this.nodes[this.nodes.length] = "<li "+eventStr+"='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></li>";
+  this.nodes[this.nodes.length] = "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></li>";
 }
 
 treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + "</ul></li>" ); }
