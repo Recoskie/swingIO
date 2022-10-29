@@ -157,16 +157,16 @@ VHex.prototype.validate = function()
 
   //We must update the scroll bar any time height does not match.
 
-  if( this.c.height != this.comp.offsetHeight ){ this.adjSize(); }
+  if( this.c.height != this.comp.clientHeight ){ this.adjSize(); }
 
   //If canvas width, or height is smaller we must rerender the output.
 
-  if( this.c.height < this.comp.offsetHeight || this.c.width < this.comp.offsetWidth ) { this.sc(); }
+  if( this.c.height < this.comp.clientHeight || this.c.width < this.comp.clientWidth ) { this.sc(); }
 }
 
 VHex.prototype.update = function(d)
 {
-  var g = this.g, height = this.c.height = this.comp.offsetHeight; this.c.width = this.comp.offsetWidth;
+  var g = this.g, height = this.c.height = this.comp.clientHeight; this.c.width = this.comp.clientWidth;
   
   var data = !this.virtual ? d.data : d.dataV, pos = !this.virtual ? this.io.data.offset : this.io.dataV.offset;
   
@@ -250,9 +250,9 @@ VHex.prototype.selection = function(g, pos)
 
   //Optimized Multi line selection.
 
-  if( y2 > 16 && y1 < this.comp.offsetHeight )
+  if( y2 > 16 && y1 < this.comp.clientHeight )
   {
-    if( y1 < 16 ) { y1 = 16; r1 = x1 = 0; } if( y2 > this.comp.offsetHeight ) { y2 = this.comp.offsetHeight; r2 = 0; x2 = 352; }
+    if( y1 < 16 ) { y1 = 16; r1 = x1 = 0; } if( y2 > this.comp.clientHeight ) { y2 = this.comp.clientHeight; r2 = 0; x2 = 352; }
     
     g.moveTo( 164 + x1, y1 ); if( mLine ) { g.lineTo( 516, y1 ); } else { g.lineTo( 164 + x2, y1 ); }
     
@@ -283,7 +283,7 @@ VHex.prototype.selection = function(g, pos)
 
 VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + this.sBarWidth, 256]; this.end = (this.text = v) ? 518 : 352; this.resetDims(); }
 
-VHex.prototype.getRows = function() { return( Math.floor( this.comp.offsetHeight / 16 ) ); }
+VHex.prototype.getRows = function() { return( Math.floor( this.comp.clientHeight / 16 ) ); }
 
 //It is important that we subtract what is visible from the scroll area otherwise we will scroll past the end.
 
@@ -429,7 +429,7 @@ function dataInspector(el, io)
   
   var t = d.getElementsByTagName("table")[0];
   
-  if(this.minDims == null) { dataInspector.prototype.minDims = [d.getElementsByTagName("fieldset")[1].offsetWidth+16, t.offsetHeight+32]; }
+  if(this.minDims == null) { dataInspector.prototype.minDims = [d.getElementsByTagName("fieldset")[1].clientWidth+16, t.clientHeight+32]; }
   
   t.style.minWidth=d.style.minWidth=this.minDims[0]; d.style.minHeight=this.minDims[1];
   
@@ -604,7 +604,7 @@ See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
 And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
 ------------------------------------------------------------*/
 
-dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.di = null;
+dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.di = null, dataDescriptor.prototype.textWidth = [];
 
 function dataDescriptor( el, io )
 {
@@ -616,7 +616,7 @@ function dataDescriptor( el, io )
 
   //We should only ever measure this once.
 
-  this.g.font = "12px " + this.g.font.split(" ")[1]; if( this.textWidth[0] == null ) { dataDescriptor.prototype.textWidth = [this.g.measureText("Use").width>>1,this.g.measureText("Raw Data").width>>1,this.g.measureText("Data Type").width>>1]; }
+  this.g.font = "14px " + this.g.font.split(" ")[1]; if( this.textWidth[0] == null ) { dataDescriptor.prototype.textWidth = [this.g.measureText("Use").width>>1,this.g.measureText("Raw Data").width>>1,this.g.measureText("Data Type").width>>1]; }
 
   //Component minimum size.
 
@@ -655,16 +655,13 @@ dataDescriptor.prototype.select = function(e)
 
 }
 
-dataDescriptor.prototype.textWidth = [];
-
-
 dataDescriptor.prototype.update = function()
 {
-  var g = this.g, height = this.c.height = this.comp.offsetHeight, width = this.c.width = this.comp.offsetWidth, cols = width / 3, colsH = cols >> 1;
+  var g = this.g, height = this.c.height = this.comp.clientHeight, width = this.c.width = this.comp.clientWidth, cols = width / 3, colsH = cols >> 1;
 
   //The first row explains what each column is.
 
-  g.fillStyle = "#CECECE"; g.fillRect(0,0,width,16); g.stroke();
+  g.fillStyle = "#CECECE"; g.fillRect(0,0,width,16); g.stroke(); this.g.font = "14px " + this.g.font.split(" ")[1];
 
   //Draw the text.
 
@@ -672,7 +669,13 @@ dataDescriptor.prototype.update = function()
 
   //draw columns.
 
-  g.moveTo(cols,0); g.lineTo(cols,height); g.moveTo(cols<<1,0); g.lineTo(cols<<1,height); g.stroke();
+  var y = 16;
+
+  g.moveTo(0,y); g.lineTo(width,y); g.moveTo(cols,0); g.lineTo(cols,height); g.moveTo(cols<<1,0); g.lineTo(cols<<1,height);
+  
+  
+  
+  g.stroke();
 }
 
 dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
