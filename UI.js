@@ -159,13 +159,9 @@ VHex.prototype.validate = function()
 
   if( this.c.height != this.comp.offsetHeight ){ this.adjSize(); }
 
-  //If canvas height is smaller we must rerender the output.
+  //If canvas width, or height is smaller we must rerender the output.
 
-  if( this.c.height < this.comp.offsetHeight ) { this.sc(); }
-
-  //If only width is smaller then we can set the canvas width larger.
-
-  else if( this.c.width < this.comp.offsetWidth ) { this.c.width = this.comp.offsetWidth }
+  if( this.c.height < this.comp.offsetHeight || this.c.width < this.comp.offsetWidth ) { this.sc(); }
 }
 
 VHex.prototype.update = function(d)
@@ -608,19 +604,23 @@ See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
 And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
 ------------------------------------------------------------*/
 
-dataDescriptor.prototype.minDims = [0,0], dataDescriptor.prototype.di = null;
+dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.di = null;
 
 function dataDescriptor( el, io )
 {
   this.io = io; var d = this.comp = document.getElementById(el); d.className="vhex"; d.style.overflowY = "auto";
   
-  d.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
+  d.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id=\""+el+"s\"></div>";
 
   this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
 
-  //For now we will default to the original "data model place holder".
+  //We should only ever measure this once.
 
-  d.innerHTML = "Data Model."; d.style.backgroundColor = "#00FF00";
+  this.g.font = "12px " + this.g.font.split(" ")[1]; if( this.textWidth[0] == null ) { dataDescriptor.prototype.textWidth = [this.g.measureText("Use").width>>1,this.g.measureText("Raw Data").width>>1,this.g.measureText("Data Type").width>>1]; }
+
+  //Component minimum size.
+
+  if( this.minDims == null ){ dataDescriptor.prototype.minDims = [((this.textWidth[0]+this.textWidth[1]+this.textWidth[2])<<1) + 16, 192]; } this.resetDims();
 
   //Selected element.
 
@@ -655,9 +655,24 @@ dataDescriptor.prototype.select = function(e)
 
 }
 
+dataDescriptor.prototype.textWidth = [];
+
+
 dataDescriptor.prototype.update = function()
 {
+  var g = this.g, height = this.c.height = this.comp.offsetHeight, width = this.c.width = this.comp.offsetWidth, cols = width / 3, colsH = cols >> 1;
 
+  //The first row explains what each column is.
+
+  g.fillStyle = "#CECECE"; g.fillRect(0,0,width,16); g.stroke();
+
+  //Draw the text.
+
+  g.fillStyle = "#000000"; g.fillText("Use",colsH - this.textWidth[0],12); colsH += cols; g.fillText("Raw Data",colsH - this.textWidth[1],12); colsH += cols; g.fillText("Data Type",colsH - this.textWidth[2],12); colsH += cols;
+
+  //draw columns.
+
+  g.moveTo(cols,0); g.lineTo(cols,height); g.moveTo(cols<<1,0); g.lineTo(cols<<1,height); g.stroke();
 }
 
 dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
