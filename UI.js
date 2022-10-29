@@ -246,98 +246,35 @@ VHex.prototype.selection = function(g, pos)
 
   //Converts offsets to real 2D coordinates.
 
-  var r1 = this.sel & 0xF, y1 = this.sel - pos - r1 + 16;
+  var r1 = this.sel & 0xF, r2 = (this.sele+1) & 0xF, y1 = this.sel - pos - r1 + 16, y2 = (this.sele+1) - pos - r2 + 32;
+  
+  if( r2 == 0 ){ y2 -= 16; r2 = 16; } var x1 = r1 * 22, x2 = r2 * 22, mLine = y2 - y1 > 16;
 
-  var r2 = (this.sele+1) & 0xF, y2 = (this.sele+1) - pos - r2 + 32;
-  
-  if( r2 == 0 ){ y2 -= 16; r2 = 16; }
-  
-  var x1 = r1 * 22, x2 = r2 * 22;
-  
-  var mLine = y2 - y1 > 16;
-
-  //Multi line selection.
+  //Optimized Multi line selection.
 
   if( y2 > 16 && y1 < this.comp.offsetHeight )
   {
-    if( y1 < 16 ) { y1 = 16; r1 = x1 = 0; }
-    if( y2 > this.comp.offsetHeight ) { y2 = this.comp.offsetHeight; r2 = 0; x2 = 352; }
+    if( y1 < 16 ) { y1 = 16; r1 = x1 = 0; } if( y2 > this.comp.offsetHeight ) { y2 = this.comp.offsetHeight; r2 = 0; x2 = 352; }
     
-    g.moveTo( 164 + x1, y1 );
+    g.moveTo( 164 + x1, y1 ); if( mLine ) { g.lineTo( 516, y1 ); } else { g.lineTo( 164 + x2, y1 ); }
     
-    if( mLine ) { g.lineTo( 516, y1 ); }
-    else { g.lineTo( 164 + x2, y1 ); }
+    if( x2 == 0 ) { g.lineTo( 516, y2 ); } else { if( mLine ) { g.lineTo( 516, y2 - 16 ); g.lineTo( 164 + x2, y2 - 16 ); } g.lineTo( 164 + x2, y2 ); }
     
-    if( x2 == 0 )
-    {
-      g.lineTo( 516, y2 );
-    }
-    else
-    {
-      if( mLine )
-      {
-        g.lineTo( 516, y2 - 16 );
-        g.lineTo( 164 + x2, y2 - 16 );
-      }
-      g.lineTo( 164 + x2, y2 );
-    }
+    if( mLine ) { g.lineTo( 164, y2 ); } else { g.lineTo( 164 + x1, y2 ); }
     
-    if( mLine ) { g.lineTo( 164, y2 ); }
-    else { g.lineTo( 164 + x1, y2 ); }
-    
-    if( x1 == 0 )
-    {
-      g.lineTo( 164, y1 );
-    }
-    else
-    {
-      if( mLine )
-      {
-        g.lineTo( 164, y1 + 16 );
-        g.lineTo( 164 + x1, y1 + 16 );
-      }
-      g.lineTo( 164 + x1, y1 );
-    }
+    if( x1 == 0 ) { g.lineTo( 164, y1 ); } else { if( mLine ) { g.lineTo( 164, y1 + 16 ); g.lineTo( 164 + x1, y1 + 16 ); } g.lineTo( 164 + x1, y1 ); }
     
     if( this.text )
     {
-      x1 = r1 * 9, x2 = r2 * 9;
+      x1 = r1 * 9, x2 = r2 * 9; g.moveTo( 528 + x1, y1 );
     
-      g.moveTo( 528 + x1, y1 );
+      if(mLine) { g.lineTo( 672, y1 ); } else { g.lineTo( 528 + x2, y1 ); }
     
-      if(mLine) { g.lineTo( 672, y1 ); }
-      else { g.lineTo( 528 + x2, y1 ); }
+      if( x2 == 0 ) { g.lineTo( 672, y2 ); } else { if(mLine) { g.lineTo( 672, y2 - 16 ); g.lineTo( 528 + x2, y2 - 16 ); } g.lineTo( 528 + x2, y2 ); }
     
-      if( x2 == 0 )
-      {
-        g.lineTo( 672, y2 );
-      }
-      else
-      {
-        if(mLine)
-        {
-          g.lineTo( 672, y2 - 16 );
-          g.lineTo( 528 + x2, y2 - 16 );
-        }
-        g.lineTo( 528 + x2, y2 );
-      }
+      if(mLine) { g.lineTo( 528, y2 ); } else { g.lineTo( 528 + x1, y2 ); }
     
-      if(mLine) { g.lineTo( 528, y2 ); }
-      else { g.lineTo( 528 + x1, y2 ); }
-    
-      if( x1 == 0 )
-      {
-        g.lineTo( 528, y1 );
-      }
-      else
-      {
-        if(mLine)
-        {
-          g.lineTo( 528, y1 + 16 );
-          g.lineTo( 528 + x1, y1 + 16 );
-        }
-        g.lineTo( 528 + x1, y1 );
-      }
+      if( x1 == 0 ) { g.lineTo( 528, y1 ); } else { if(mLine) { g.lineTo( 528, y1 + 16 ); g.lineTo( 528 + x1, y1 + 16 ); } g.lineTo( 528 + x1, y1 ); }
     }
     
     g.closePath(); g.fill(); g.beginPath();
@@ -503,7 +440,7 @@ function dataInspector(el, io)
   
   var t = d.getElementsByTagName("table")[0];
   
-  if(this.minDims == null) { dataInspector.prototype.minDims = [d.getElementsByTagName("fieldset")[1].offsetWidth+16, t.offsetHeight]; }
+  if(this.minDims == null) { dataInspector.prototype.minDims = [d.getElementsByTagName("fieldset")[1].offsetWidth+16, t.offsetHeight+32]; }
   
   t.style.minWidth=d.style.minWidth=this.minDims[0]; d.style.minHeight=this.minDims[1];
   
@@ -656,29 +593,17 @@ dataInspector.prototype.onseek = function( f )
   this.out[13].innerHTML = this.out[14].innerHTML = "<span></span>";
   var width = this.out[0].offsetWidth, text = this.out[13].getElementsByTagName("span")[0];
   
-  for( var i = 0, c = ""; i < this.strLen && text.offsetWidth < width; i++ )
-  {
-    c = String.fromCharCode(f.data[rel+i]);
-    
-    if( c == "\n" || c == "\r" || c == " " ){ c="&ndsp;"; }
-    text.innerHTML += c;
-  }
+  for( var i = 0, c = ""; i < this.strLen && text.offsetWidth < width; i++ ){ c = String.fromCharCode(f.data[rel+i]); text.innerHTML += c; }
   
   text = this.out[14].getElementsByTagName("span")[0];
   
   if(this.order == 0)
   {
-    for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 )
-    {
-      text.innerHTML += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]);
-    }
+    for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 ) { text.innerHTML += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]); }
   }
   else
   {
-    for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 )
-    {
-      text.innerHTML += String.fromCharCode((f.data[rel+i]<<8)+f.data[rel+i+1]);
-    }
+    for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 ) { text.innerHTML += String.fromCharCode((f.data[rel+i]<<8)+f.data[rel+i+1]); }
   }
 }
 
@@ -836,7 +761,7 @@ treeNode.prototype.add = function(n,args,selected)
 
 treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + "</ul></li>" ); }
 
-//Shared UI controls. Note this should be rolled up into a loop with each referencing the same function.
+//Shared UI controls.
 
 VHex.prototype.resetDims = dataInspector.prototype.resetDims = tree.prototype.resetDims = dataDescriptor.prototype.resetDims = function() { this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; }
 
