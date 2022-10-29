@@ -703,9 +703,20 @@ function tree(el) { this.comp = document.getElementById(el); this.comp.style.ove
 
 tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
 {
+  v = v.querySelector("div"); v.self = this; v.setArgs = function( arg ) { this.setAttribute("args", arg + ""); }
+
+  v.getArgs = function() { return( this.getAttribute("args").split(",")); }
+
+  v.setNode = function( node )
+  {
+    var el = document.createElement("template"); el.innerHTML = node + ""; el = el.content.firstChild;
+
+    this.parentElement.parentElement.replaceChild(el,this.parentElement); this.self.selectedNode = el.querySelector("div");
+  }
+  
   //Set the selected node.
 
-  v = v.querySelector("div"); if(this.selectedNode) { this.selectedNode.style.backgroundColor=""; } v.style.backgroundColor="#9EB0C1";
+  if(this.selectedNode) { this.selectedNode.style.backgroundColor=""; } v.style.backgroundColor="#9EB0C1";
   
   //We can hide or show sub elements simulating collapse, or expand nodes.
 
@@ -717,12 +728,6 @@ tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
   
     if(t.className!="nested active" || v == this.selectedNode ) { t.classList.toggle("active"); }
   }
-  
-  v.setArgs = function( arg ) { this.setAttribute("args", arg + ""); }
-
-  v.getArgs = function() { return( this.getAttribute("args").split(",")); }
-
-  v.setNode = function( node ) { this.parentElement.outerHTML = node; }
   
   this.event(this.selectedNode = v);
 }
@@ -764,17 +769,11 @@ treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.node
 //Shared UI controls.
 
 VHex.prototype.resetDims = dataInspector.prototype.resetDims = tree.prototype.resetDims = dataDescriptor.prototype.resetDims = function() { this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; }
-
 VHex.prototype.minWidth = dataInspector.prototype.minWidth = tree.prototype.minWidth = dataDescriptor.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
-
 VHex.prototype.minHeight = dataInspector.prototype.minHeight = tree.prototype.minHeight = dataDescriptor.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
-
 VHex.prototype.width = dataInspector.prototype.width = tree.prototype.width = dataDescriptor.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
-
 VHex.prototype.height = dataInspector.prototype.height = tree.prototype.height = dataDescriptor.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
-
 VHex.prototype.hide = dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible){ this.onseek(this.io); } }
-
 tree.prototype.hide = dataDescriptor.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
 
 //64bit lossless base conversion.
