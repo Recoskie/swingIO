@@ -621,7 +621,7 @@ function dataDescriptor( el, io )
 {
   this.io = io; var d = this.comp = document.getElementById(el); d.className="vhex"; d.style.overflowY = "auto";
   
-  d.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
+  d.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
   this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
 
@@ -749,6 +749,8 @@ tree.prototype.getArgs = function() { return( this.getAttribute("args").split(",
 tree.prototype.setNode = function( node )
 {
   var el = document.createElement("template"); el.innerHTML = node + ""; el = el.content.firstChild;
+
+  if( (t = this.parentElement.parentElement.children).length >= 2 ){ t[1].remove(); }
 
   this.parentElement.parentElement.replaceChild(el,this.parentElement); if(this.self) { this.self.selectedNode = el.querySelector("div"); }
 }
