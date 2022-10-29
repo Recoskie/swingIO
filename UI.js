@@ -12,6 +12,8 @@ document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scrol
 [class^='node']{ cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .nested { display: none; }.active { display: block; }</style>"; treeNodes = path = undefined;
 
+var touchScreen = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0), eventStr = touchScreen ? "ontouchstart" : "onmousedown";
+
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
@@ -86,7 +88,7 @@ function VHex( el, io, v )
   
   //If touch screen.
  
-  if(('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) { this.comp.ontouchstart = t; } else { this.comp.onmousedown = t; }
+  if(touchScreen) { this.comp.ontouchstart = t; } else { this.comp.onmousedown = t; }
 
   //Load Font.
   
@@ -399,18 +401,11 @@ function dataInspector(el, io)
   
   var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>";
   
-  //If touch screen.
-  
-  var event = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) ? "ontouchstart" : "onmousedown";
-  
   this.out = [];
   
-  for(var i = 0; i < this.dType.length; i++)
-  {
-    out += "<tr "+event+"='Ref["+Ref.length+"].setType("+i+");'><td>" + this.dType[i] + "</td><td>?</td></tr>";
-  }
+  for(var i = 0; i < this.dType.length; i++) { out += "<tr "+eventStr+"='Ref["+Ref.length+"].setType("+i+");'><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
   
-  event = "onclick='Ref["+Ref.length+"].order = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
+  var event = "onclick='Ref["+Ref.length+"].order = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
   
   out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
   
@@ -643,7 +638,7 @@ function dataDescriptor( el, io )
   
   //If touch screen.
  
-  if(('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)) { this.comp.ontouchstart = t; } else { this.comp.onmousedown = t; }
+  if(touchScreen) { this.comp.ontouchstart = t; } else { this.comp.onmousedown = t; }
   
   //Allows us to referenced the proper component to update on scroll.
   
@@ -767,7 +762,7 @@ function treeNode(n,args,expand,selected)
     }
   }
   
-  this.nodes = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"];
+  this.nodes = ["<li><span "+eventStr+"=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"];
 }
 
 treeNode.prototype.add = function(n,args,selected)
@@ -782,7 +777,7 @@ treeNode.prototype.add = function(n,args,selected)
     }
   }
   
-  this.nodes[this.nodes.length] = "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></li>";
+  this.nodes[this.nodes.length] = "<li "+eventStr+"='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"' "+(selected?"style='background-color:#9EB0C1;'":"")+">"+n+"</div></li>";
 }
 
 treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + "</ul></li>" ); }
