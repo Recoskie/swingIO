@@ -628,7 +628,7 @@ function dataDescriptor( el, io )
 
   //clicked data type event.
   
-  eval("var t = function(e){if(!tCheck){Ref["+Ref.length+"].select(e);alert(\"Event\");};tCheck=(e.type=='touchstart');}");
+  eval("var t = function(e){if(!tCheck){Ref["+Ref.length+"].select(e);};tCheck=(e.type=='touchstart');}");
   
   //If touch screen.
  
