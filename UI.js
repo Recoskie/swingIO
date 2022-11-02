@@ -676,6 +676,63 @@ dataDescriptor.prototype.update = function()
 
 dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
 
+function dataType(str,Type) { this.des = str; this.type = Type; }
+
+//The position we wish to style binary data.
+
+Descriptor.prototype.offset = 0;
+
+//Data inspector types, and byte length size.
+//Note that this could be shrunk down by better relating the data inspector types and names array.
+
+Descriptor.prototype.bytes = dataInspector.prototype.dLen.splice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
+for(var s=["Bit8",,"Int8",,"UInt8",,"Int16","LInt16","UInt16","LUInt16","Int32","LInt32","UInt32","LUInt32","Int64","LInt64","UInt64","LUInt64","Float32","LFloat32","Float64","LFloat64", "Char8",,"Char16","LChar16","String8",,"String16","LString16","Other",,"Array"],i=0;i<s.length;s[i]&&(Descriptor.prototype[s[i]]=i),i++);i=s=undefined;
+
+//Construct the data descriptor.
+
+function Descriptor(data)
+{
+  //Stores the data types that will be rendered.
+
+  this.des = []; this.data = [];
+  
+  //rows array starts at. This information is used to subtract row to find the individual items in rel pos.
+
+  this.relPos = []; this.arPos = [];
+
+  //Number of rows that this descriptor will display. Note when I add in set methods this value will change if array sizes change.
+  
+  this.rows = 0;
+
+  //begin organizing data for optimized display.
+
+  var defArray = false, arrayEl = 0, arraySize = 0, arrayLen = 0, length = 0;
+
+  for( var i = 0, b = 0; i < data.length; i++ )
+  {
+    this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.bytes[this.data[i]>>1];
+      
+    if( b == -1 ){ i += 1; this.data[i] = data[i].type; b = data[i]; } else if( defArray = ( b == -2 ) )
+    {
+      this.arPos[this.arPos.length] = rows; this.data[i+1] = data[i+1].type; this.data[i+2] = data[i+2].type;
+
+      rows += ( (arrayEl = this.data[i+1]) + 1 ) * (arraySize = this.data[i+2]); i += 2;
+    }
+      
+    if( !defArray ) { this.relPos[this.relPos.length]=length; length += b; this.rows += 1; }
+    else
+    {
+      arrayLen += b; if(!(defArray = (arrayEl-- > 0))) { length += arrayLen * arraySize; }
+    }
+  }
+    
+  this.relPos[this.relPos.length]=length;
+    
+  //Event handler for when data descriptor is set or user clicks on a property or value.
+  
+  this.Event = function(){};
+}
+
 /*------------------------------------------------------------
 This is a web based version of the binary tree tool originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/tree/JDTree.java
