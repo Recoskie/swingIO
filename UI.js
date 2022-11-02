@@ -1,4 +1,4 @@
-var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/")), Ref = [];
+var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/")), Ref = [], tCheck = false;
 
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'), treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
@@ -11,8 +11,6 @@ document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scrol
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 [class^='node']{ cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .nested { display: none; }.active { display: block; }</style>"; treeNodes = path = undefined;
-
-var touchScreen = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0), eventStr = touchScreen ? "ontouchstart" : "onmousedown";
 
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
@@ -84,11 +82,9 @@ function VHex( el, io, v )
 
   //Seek byte onclick Event
   
-  eval("var t = function(e){Ref["+Ref.length+"].select(e);}");
+  eval("var t = function(e){if(!tCheck){Ref["+Ref.length+"].select(e);};tCheck=(e.type=='touchstart');}");
   
-  //If touch screen.
- 
-  if(touchScreen) { this.comp.ontouchstart = t; } else { this.comp.onmousedown = t; }
+  this.comp.onmousedown = this.comp.ontouchstart = t;
 
   //Load Font.
   
@@ -395,11 +391,11 @@ function dataInspector(el, io)
   
   d.className = "dataInspec";
   
-  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>";
+  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "";
   
-  this.out = []; for(var i = 0; i < this.dType.length; i++) { out += "<tr "+eventStr+"='Ref["+Ref.length+"].setType("+i+");'><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
+  this.out = []; for(var i = 0; i < this.dType.length; i++) { event = "='event.preventDefault();Ref["+Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
   
-  var event = "onclick='Ref["+Ref.length+"].order = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
+  event = "onclick='Ref["+Ref.length+"].order = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
   
   out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
   
@@ -632,11 +628,11 @@ function dataDescriptor( el, io )
 
   //clicked data type event.
   
-  eval("var t = function(e){Ref["+Ref.length+"].select(e);}");
+  eval("var t = function(e){if(!tCheck){Ref["+Ref.length+"].select(e);alert(\"Event\");};tCheck=(e.type=='touchstart');}");
   
   //If touch screen.
  
-  if(touchScreen) { this.comp.ontouchstart = t; } else { this.comp.onmousedown = t; }
+  this.comp.ontouchstart = this.comp.onmousedown = t;
   
   //Allows us to referenced the proper component to update on scroll.
   
