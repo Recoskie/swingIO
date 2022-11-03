@@ -48,7 +48,18 @@ function VHex( el, io, v )
 
   if( this.sBarWidth == null )
   {
-    this.setRows(562949953421312); VHex.prototype.sBarMax = this.size.clientHeight / 2;
+    this.setRows(562949953421312); var o = this.size.clientHeight;
+    
+    //Firefox sets height 0 when too large. In this case we must calculate max height.
+
+    if( o == 0 )
+    {
+      this.setSize = function( s ){ this.size.style = "height:"+s+"px;min-height:"+s+"px;border:0;"; }
+      this.setSize(n = 1); while( this.size.clientHeight != 0 ){ this.setSize(n <<= 1); } o = n >>= 1; n >>= 1; while( n > 0 ){ this.setSize(o | n); if( this.size.clientHeight != 0 ) { o |= n; } n >>= 1; }
+      n = this.setSize = undefined;
+    }
+    
+    VHex.prototype.sBarMax = o / 2; o = undefined;
     VHex.prototype.sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
     VHex.prototype.sBarLowLim = Math.floor(this.sBarMax * 0.05);
     VHex.prototype.sBarUpLim = this.sBarMax - this.sBarLowLim;
