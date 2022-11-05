@@ -13,6 +13,67 @@ document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scrol
 .nested { display: none; }.active { display: block; }</style>"; treeNodes = path = undefined;
 
 /*------------------------------------------------------------
+Optimized graphical text clipping.
+--------------------------------------------------------------
+In the future we should have a next char width measure function to speed up such clipping operations rather than measuring the whole string.
+Instead we use an average and remainder that is only consistent to latin text for now to speed it up.
+------------------------------------------------------------*/
+
+CanvasRenderingContext2D.prototype.clipText = function(text,width)
+{
+  var o = text.substring(0,width/this.avg&-1), i = o.length, b = null; width -= this.clipPrefix; for( var c = 0; c < 2; c++)
+  {
+    while( (r = width - this.measureText(o).width) > 0 && i < text.length )
+    {
+      r /= this.avg; r += i; while( i < r ) { o += text.charAt( i++ ); }
+    }
+    if( b == null )
+    { b = o.slice(0,-1); while(b.length > 0 && this.measureText(b).width > width) { b = b.slice(0,-1); }; b += "..."; width += this.clipPrefix; }
+  }
+  if( i < text.length || this.measureText(o).width > width ){ o = b; }; return(o);
+}
+
+//This allows us to take advantage of text overflow in css when changing bytes to string in data inspector.
+//We use the minimum char width to create text that will be a bit bigger than the cell if posible.
+
+CanvasRenderingContext2D.prototype.bytesToText8 = function(bytes, offset, size, width)
+{
+  var o = "", i = offset; size = Math.min(size,width/this.min); size += i; while( i < size )
+  {
+    o += String.fromCharCode( bytes[i]==0x0D ? 0x20 : (bytes[i] || 0x20) ); i++;
+  }
+
+  return(o);
+}
+CanvasRenderingContext2D.prototype.bytesToText16 = function(bytes, little, offset, size, width)
+{
+  var o = "", i = offset; size *= 2; size = Math.min(size,width/this.min); size += i; while( i < size )
+  {
+    o += little ? String.fromCharCode( (bytes[i]||0x20) | ((bytes[i+1]||0x00)<<8) ) : String.fromCharCode( (bytes[i+1]||0x20) | ((bytes[i]||0x00)<<8) ); i += 2;
+  }
+
+  return(o);
+}
+
+//Calculating the average character for regular text and set font speeds up measurements by a lot.
+//Should only be called once on setting the graphics context font.
+
+CanvasRenderingContext2D.prototype.clipAvg = function()
+{
+  this.avg = 0; for( var i = 0x41; i < 0x5B; i++ ){ this.avg += this.measureText(String.fromCharCode(i)).width; this.avg += this.measureText(String.fromCharCode(i+0x20)).width; } this.avg /= 52;
+  this.clipPrefix = this.measureText("...").width;
+}
+CanvasRenderingContext2D.prototype.clipMin = function()
+{
+  this.min = this.measureText(" ").width; for( var i = 0x41, m = 0; i < 0x5B; i++ )
+  {
+    m = this.measureText(String.fromCharCode(i)).width; this.min = this.min > m ? m : this.min;
+    m = this.measureText(String.fromCharCode(i+0x20)).width; this.min = this.min > m ? m : this.min;
+  }
+}
+CanvasRenderingContext2D.prototype.min = CanvasRenderingContext2D.prototype.avg = 7; CanvasRenderingContext2D.prototype.clipPrefix = 13;
+
+/*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
@@ -393,12 +454,26 @@ See https://github.com/Recoskie/swingIO/blob/master/dataInspector.java
 ------------------------------------------------------------*/
 
 dataInspector.prototype.dType = ["Binary (8 bit)","Int8","UInt8","Int16","UInt16","Int32","UInt32","Int64","UInt64","Float32","Float64","Char8","Char16","String8","String16","Use No Data type"];
-dataInspector.prototype.dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1], dataInspector.prototype.minDims = null;
+dataInspector.prototype.dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1], dataInspector.prototype.minDims = null, dataInspector.prototype.text = null;
 
 function dataInspector(el, io)
 {
   this.io = io; var d = this.comp = document.getElementById(el);
   this.editors = [];
+
+  //We only want the graphics context for measuring text. The canvas should not exist as it was only created to generate the reference.
+  
+  if( dataInspector.prototype.text == null )
+  {
+    dataInspector.prototype.text = document.createElement("canvas").getContext("2d");
+
+    //Next we want the default font in the graphics context.
+    
+    dataInspector.prototype.text.font = window.getComputedStyle(this.comp, null).getPropertyValue('font');
+    dataInspector.prototype.text.clipMin();
+  }
+
+  //Create the component.
   
   d.className = "dataInspec";
   
@@ -586,21 +661,9 @@ dataInspector.prototype.onseek = function( f )
 
   //String 8 and 16. Char width, and length count.
 
-  this.out[13].innerHTML = this.out[14].innerHTML = "<span></span>";
-  var width = this.out[0].offsetWidth, text = this.out[13].getElementsByTagName("span")[0];
-  
-  for( var i = 0, c = ""; i < this.strLen && text.offsetWidth < width; i++ ){ c = String.fromCharCode(f.data[rel+i]); text.innerHTML += c; }
-  
-  text = this.out[14].getElementsByTagName("span")[0];
-  
-  if(this.order == 0)
-  {
-    for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 ) { text.innerHTML += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]); }
-  }
-  else
-  {
-    for( var i = 0, e = this.strLen << 1; i < e && text.offsetWidth < width; i+=2 ) { text.innerHTML += String.fromCharCode((f.data[rel+i]<<8)+f.data[rel+i+1]); }
-  }
+  var width = this.out[13].clientWidth;
+
+  this.out[13].innerHTML = this.text.bytesToText8(f.data, rel, this.strLen, width); this.out[14].innerHTML = this.text.bytesToText16(f.data, this.order == 0, rel, this.strLen, width);
 }
 
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
