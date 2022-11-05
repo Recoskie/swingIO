@@ -27,32 +27,9 @@ CanvasRenderingContext2D.prototype.clipText = function(text,width)
     {
       r /= this.avg; r += i; while( i < r ) { o += text.charAt( i++ ); }
     }
-    if( b == null )
-    { b = o.slice(0,-1); while(b.length > 0 && this.measureText(b).width > width) { b = b.slice(0,-1); }; b += "..."; width += this.clipPrefix; }
+    if( b == null ) { b = o.slice(0,-1) + "..."; width += this.clipPrefix; }
   }
   if( i < text.length || this.measureText(o).width > width ){ o = b; }; return(o);
-}
-
-//This allows us to take advantage of text overflow in css when changing bytes to string in data inspector.
-//We use the minimum char width to create text that will be a bit bigger than the cell if posible.
-
-CanvasRenderingContext2D.prototype.bytesToText8 = function(bytes, offset, size, width)
-{
-  var o = "", i = offset; size = Math.min(size,width/this.min); size += i; while( i < size )
-  {
-    o += String.fromCharCode( bytes[i]==0x0D ? 0x20 : (bytes[i] || 0x20) ); i++;
-  }
-
-  return(o);
-}
-CanvasRenderingContext2D.prototype.bytesToText16 = function(bytes, little, offset, size, width)
-{
-  var o = "", i = offset; size *= 2; size = Math.min(size,width/this.min); size += i; while( i < size )
-  {
-    o += little ? String.fromCharCode( (bytes[i]||0x20) | ((bytes[i+1]||0x00)<<8) ) : String.fromCharCode( (bytes[i+1]||0x20) | ((bytes[i]||0x00)<<8) ); i += 2;
-  }
-
-  return(o);
 }
 
 //Calculating the average character for regular text and set font speeds up measurements by a lot.
@@ -63,15 +40,7 @@ CanvasRenderingContext2D.prototype.clipAvg = function()
   this.avg = 0; for( var i = 0x41; i < 0x5B; i++ ){ this.avg += this.measureText(String.fromCharCode(i)).width; this.avg += this.measureText(String.fromCharCode(i+0x20)).width; } this.avg /= 52;
   this.clipPrefix = this.measureText("...").width;
 }
-CanvasRenderingContext2D.prototype.clipMin = function()
-{
-  this.min = this.measureText(" ").width; for( var i = 0x41, m = 0; i < 0x5B; i++ )
-  {
-    m = this.measureText(String.fromCharCode(i)).width; this.min = this.min > m ? m : this.min;
-    m = this.measureText(String.fromCharCode(i+0x20)).width; this.min = this.min > m ? m : this.min;
-  }
-}
-CanvasRenderingContext2D.prototype.min = CanvasRenderingContext2D.prototype.avg = 7; CanvasRenderingContext2D.prototype.clipPrefix = 13;
+CanvasRenderingContext2D.prototype.avg = 7; CanvasRenderingContext2D.prototype.clipPrefix = 13;
 
 /*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
@@ -454,23 +423,34 @@ See https://github.com/Recoskie/swingIO/blob/master/dataInspector.java
 ------------------------------------------------------------*/
 
 dataInspector.prototype.dType = ["Binary (8 bit)","Int8","UInt8","Int16","UInt16","Int32","UInt32","Int64","UInt64","Float32","Float64","Char8","Char16","String8","String16","Use No Data type"];
-dataInspector.prototype.dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1], dataInspector.prototype.minDims = null, dataInspector.prototype.text = null;
+dataInspector.prototype.dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1], dataInspector.prototype.minDims = null, dataInspector.prototype.minChar = null;
 
 function dataInspector(el, io)
 {
-  this.io = io; var d = this.comp = document.getElementById(el);
-  this.editors = [];
+  this.io = io; var d = this.comp = document.getElementById(el); this.editors = [];
 
-  //We only want the graphics context for measuring text. The canvas should not exist as it was only created to generate the reference.
+  //Text minium char width only needs to be calculated once. This is used to know the general length of an string before it is text-overflow: ellipsis.
+  //This is so we do not convert more bytes into a String of text than we have to as the rest will not be visible.
   
-  if( dataInspector.prototype.text == null )
+  if( dataInspector.prototype.minChar == null )
   {
-    dataInspector.prototype.text = document.createElement("canvas").getContext("2d");
+    //We create a reference to 2D graphics, but do not care about the non existing canvas.
+
+    var g2d = document.createElement("canvas").getContext("2d");
 
     //Next we want the default font in the graphics context.
     
-    dataInspector.prototype.text.font = window.getComputedStyle(this.comp, null).getPropertyValue('font');
-    dataInspector.prototype.text.clipMin();
+    g2d.font = window.getComputedStyle(this.comp, null).getPropertyValue('font');
+
+    //We now calculate the minimum width of the character font.
+
+    var min = g2d.measureText(" ").width; for( var i = 0x41, m = 0; i < 0x5B; i++ )
+    {
+      m = g2d.measureText(String.fromCharCode(i)).width; min = min > m ? m : min;
+      m = g2d.measureText(String.fromCharCode(i+0x20)).width; min = min > m ? m : min;
+    }
+    
+    dataInspector.prototype.minChar = min; g2d = undefined;
   }
 
   //Create the component.
@@ -661,9 +641,20 @@ dataInspector.prototype.onseek = function( f )
 
   //String 8 and 16. Char width, and length count.
 
-  var width = this.out[13].clientWidth;
+  var maxCharLen = Math.min( this.strLen, this.out[13].clientWidth / this.minChar ), c = "";
 
-  this.out[13].innerHTML = this.text.bytesToText8(f.data, rel, this.strLen, width); this.out[14].innerHTML = this.text.bytesToText16(f.data, this.order == 0, rel, this.strLen, width);
+  for( var i = 0; i < maxCharLen; i++ ){ c += String.fromCharCode(f.data[rel+i]); } this.out[13].innerHTML = c; c = "";
+
+  if(this.order == 0)
+  {
+    for( var i = 0, e = maxCharLen << 1; i < e; i+=2 ) { c += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]); }
+  }
+  else
+  {
+    for( var i = 0, e = maxCharLen << 1; i < e; i+=2 ) { c += String.fromCharCode((f.data[rel+i]<<8)+f.data[rel+i+1]); }
+  }
+
+  this.out[14].innerHTML = c; c = undefined;
 }
 
 dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors.length] = vhex; }
