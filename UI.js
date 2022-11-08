@@ -15,11 +15,11 @@ document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scrol
 /*------------------------------------------------------------
 Optimized graphical text clipping.
 --------------------------------------------------------------
-In the future we should have a next char width measure function to speed up such clipping operations rather than measuring the whole string.
-Instead we use an average and remainder that is only consistent to latin text for now to speed it up.
+In the future, we should have a next char width measure function to speed up such clipping operations rather than measuring the whole string.
+In most cases, text fits the average and we never have to use average into remainder meaning this method is very fast and pixel-perfect across platforms.
 ------------------------------------------------------------*/
 
-CanvasRenderingContext2D.prototype.clipText = function(text,width)
+CanvasRenderingContext2D.prototype.drawString = function(text,x,y,width)
 {
   var o = text.substring(0,width/this.avg&-1), i = o.length, b = null; width -= this.clipPrefix; for( var c = 0; c < 2; c++)
   {
@@ -29,7 +29,7 @@ CanvasRenderingContext2D.prototype.clipText = function(text,width)
     }
     if( b == null ) { b = o.slice(0,-1) + "..."; width += this.clipPrefix; }
   }
-  if( i < text.length || this.measureText(o).width > width ){ o = b; }; return(o);
+  if( i < text.length || this.measureText(o).width > width ){ o = b; }; this.fillText(o,x,y);
 }
 
 //Calculating the average character for regular text and set font speeds up measurements by a lot.
