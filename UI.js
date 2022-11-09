@@ -27,22 +27,9 @@ CanvasRenderingContext2D.prototype.drawString = function(text,x,y,width)
     {
       r /= this.avg; r += i; while( i < r ) { o += text.charAt( i++ ); }
     }
-    if( b == null ) { b = o.slice(0,-1) + "..."; width += this.clipPrefix; }
+    if( b == null ) { b = o.slice(0,-1); while(this.measureText(b).width>width){b = b.slice(0,-1);} b+="..."; width += this.clipPrefix; }
   }
   if( i < text.length || this.measureText(o).width > width ){ o = b; }; this.fillText(o,x,y);
-}
-
-CanvasRenderingContext2D.prototype.drawBytes = function(data,offset,size,x,y,width)
-{
-  var o = "", i = offset, b = null; size += offset; width -= this.clipPrefix; for( var c = 0; c < 2; c++)
-  {
-    while( (r = width - this.measureText(o).width) > 0 && i < size )
-    {
-      r /= this.avg * 3; r += i; while( i < r ) { o += data[i].byte() + " "; }
-    }
-    if( b == null ) { b = o.slice(0,-1) + "..."; width += this.clipPrefix; }
-  }
-  if( i < size || this.measureText(o).width > width ){ o = b; }; this.fillText(o,x,y);
 }
 
 //Calculating the average character for regular text and set font speeds up measurements by a lot.
@@ -678,8 +665,9 @@ See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
 And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
 ------------------------------------------------------------*/
 
-dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.di = null, dataDescriptor.prototype.data = new Descriptor([]), dataDescriptor.prototype.textWidth = [];
 dataDescriptor.prototype.DType = ["Bit8",,"Int8",,"UInt8",,"Int16","LInt16","UInt16","LUInt16","Int32","LInt32","UInt32","LUInt32","Int64","LInt64","UInt64","LUInt64","Float32","LFloat32","Float64","LFloat64", "Char8",,"Char16","LChar16","String8",,"String16","LString16","Other",,"Array"];
+dataDescriptor.prototype.di = null, dataDescriptor.prototype.data = new Descriptor([]);
+dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = [], dataDescriptor.prototype.minHex = 28;
 
 function dataDescriptor( el, io )
 {
@@ -691,7 +679,15 @@ function dataDescriptor( el, io )
 
   //We should only ever measure this once.
 
-  this.g.font = "14px " + this.g.font.split(" ")[1]; if( this.textWidth[0] == null ) { dataDescriptor.prototype.textWidth = [this.g.measureText("Use").width>>1,this.g.measureText("Raw Data").width>>1,this.g.measureText("Data Type").width>>1]; }
+  this.g.font = "14px " + this.g.font.split(" ")[1]; if( this.textWidth[0] == null )
+  {
+    dataDescriptor.prototype.textWidth = [this.g.measureText("Use").width>>1,this.g.measureText("Raw Data").width>>1,this.g.measureText("Data Type").width>>1];
+  
+    //Minium width of hex characters. We do not want to translate a lot more hex values that what will fit into a table cell.
+    
+    var w = Infinity; for( var i = 0; i < 16; w = Math.min(w, this.g.measureText((( i < 10 ) ? i : String.fromCharCode(55 + i)) + "").width), i++ );
+    dataDescriptor.prototype.minHex = w * 2 + this.g.measureText(" ").width - 2; w = undefined;
+  }
 
   //Component minimum size.
 
@@ -730,9 +726,33 @@ dataDescriptor.prototype.select = function(e)
 
 }
 
+//Before updating we must check if the buffer data is in the correct offset.
+
 dataDescriptor.prototype.update = function()
 {
-  var g = this.g, height = this.c.height = this.comp.clientHeight, width = this.c.width = this.comp.clientWidth, cols = width / 3, colsH = cols >> 1;
+  this.minRows = Math.min( this.data.rows, ((this.comp.clientHeight / 16) + 0.5)&-1 );
+  this.curRow = this.comp.scrollTop, this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
+ 
+  //Number of bytes needed to fill in columns by data types.
+
+  var Data = this.data.bytes(this.curRow,this.endRow);
+
+  //Because of the other data tools like the hex editor the data will match what we are looking at in other tools.
+  //Data within the current buffer area. 
+ 
+  if(this.io.data.offset >= (this.data.offset + this.data.relPos[this.curRow]) && this.io.data.length >= Data) { this.rUpdate(); }
+
+  //Else we need to load the data we need before updating the component. This is least likely to happen.
+
+  else
+  {
+
+  }
+}
+
+dataDescriptor.prototype.rUpdate = function()
+{
+  var g = this.g, width = this.c.width = this.comp.clientWidth, cols = width / 3, colsH = cols >> 1; this.c.height = this.comp.clientHeight;
 
   //The first row explains what each column is.
 
@@ -740,13 +760,13 @@ dataDescriptor.prototype.update = function()
 
   //The Number of rows that will fit on screen.
  
-  var minRows = Math.min( this.data.rows, (height / 16)-1 ); g.fillStyle = "#FFFFFF"; g.fillRect( 0, 16, width, minRows << 4 ); g.stroke();
+  g.fillStyle = "#FFFFFF"; g.fillRect( 0, 16, width, this.minRows << 4 ); g.stroke();
  
   //Draw the column lines.
  
   g.fillStyle = g.strokeStyle = "#000000";
  
-  g.moveTo(0, 0); g.lineTo(0, (minRows+1) << 4); g.moveTo(cols, 0); g.lineTo( cols, (minRows+1) << 4 ); g.moveTo(cols << 1, 0); g.lineTo( cols << 1, (minRows+1) << 4);
+  g.moveTo(0, 0); g.lineTo(0, (this.minRows+1) << 4); g.moveTo(cols, 0); g.lineTo( cols, (this.minRows+1) << 4 ); g.moveTo(cols << 1, 0); g.lineTo( cols << 1, (this.minRows+1) << 4);
      
   g.moveTo(0, 16); g.lineTo(width, 16);
  
@@ -754,32 +774,29 @@ dataDescriptor.prototype.update = function()
  
   g.fillText("Use", colsH - this.textWidth[0], 13); colsH += cols; g.fillText("Raw Data", colsH - this.textWidth[1], 13); colsH += cols; g.fillText("Data Type", colsH - this.textWidth[2], 13);
  
-  //The current start and end row in the data by scroll bar position
- 
-  var curRow = this.comp.scrollTop, endRow = Math.min( curRow + minRows, this.data.rows );
- 
-  //Number of bytes needed to fill in columns by data types.
-
-  var Data = this.data.bytes(curRow,endRow);
- 
-  //Data relative position.
- 
-  var rn = this.data.relPos[curRow];
- 
   //Fill in the columns based on the current position of the scroll bar.
+  
+  var str = "";
  
-  for( var i = curRow, posY = 32; i < endRow; posY += 16, i++ )
+  for( var i = this.curRow, posY = 32; i < this.endRow; posY += 16, i++ )
   {
-    //if( i == selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
+    //Selected row. Event handling not ready yet.
+
+    if( i == this.selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
+
+    //Data type description.
  
-    g.drawString( this.data.des[i], 2, posY - 3, cols );
+    g.drawString( this.data.des[i], 2, posY - 3, cols-4 );
  
-    //Data within the buffer area.
+    //Convert data to bytes.
  
-    if(this.io.data.offset >= (this.data.pos + rn) && this.io.data.length <= Data)
-    {
-      g.drawBytes( this.io.data, this.data.relPos[i] - rn, this.data.relPos[i + 1] - rn, cols + 2, posY - 3, cols );
-    }
+    var pos = (this.io.data.offset-this.data.offset)+this.data.relPos[i], size = this.data.relPos[i+1]-this.data.relPos[i]; size = Math.min( cols / this.minHex, size);
+      
+    for(var i2 = 0; i2 < size; str+=(this.io.data[pos+i2]&-1).byte()+((i2<(size-1))?" ":""), i2++);
+
+    g.drawString(str, cols + 2, posY - 3, cols-4); str = "";
+
+    //Show the related data type.
  
     g.fillText( this.DType[this.data.data[i]], ( cols << 1 ) + 2, posY - 3 ); g.moveTo(0, posY); g.lineTo(width, posY);
   }
@@ -807,7 +824,7 @@ Descriptor.prototype.offset = 0;
 //Data inspector types, and byte length size.
 //Note that this could be shrunk down by better relating the data inspector types and names array.
 
-Descriptor.prototype.bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
+Descriptor.prototype.Bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.Bytes[13]=Descriptor.prototype.Bytes[14]=Descriptor.prototype.Bytes[15]=-1;Descriptor.prototype.Bytes[16]=-2;
 for(var i=0;i<dataDescriptor.prototype.DType.length;dataDescriptor.prototype.DType[i]&&(Descriptor[dataDescriptor.prototype.DType[i]]=i),i++);
 
 //Construct the data descriptor.
@@ -832,7 +849,7 @@ function Descriptor(data)
 
   for( var i = 0, b = 0; i < data.length; i++ )
   {
-    this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.bytes[this.data[i]>>1];
+    this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.Bytes[this.data[i]>>1];
       
     if( b == -1 ){ i += 1; this.data[i] = data[i].type; b = data[i]; } else if( defArray = ( b == -2 ) )
     {
