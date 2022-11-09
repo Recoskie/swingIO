@@ -718,12 +718,13 @@ function dataDescriptor( el, io )
 
 dataDescriptor.prototype.sc = function()
 {
-
+  alert("Scrolling is not setup yet.");
 }
 
 dataDescriptor.prototype.select = function(e)
 {
-
+  this.comp.focus();
+  alert("Detailed decoding of a selected data type is not setup yet.");
 }
 
 //Before updating we must check if the buffer data is in the correct offset.
@@ -746,7 +747,7 @@ dataDescriptor.prototype.update = function()
 
 dataDescriptor.prototype.rUpdate = function()
 {
-  var g = this.g, width = this.c.width = this.comp.clientWidth, cols = width / 3, colsH = cols >> 1; this.c.height = this.comp.clientHeight;
+  var g = this.g, width = this.c.width = this.comp.clientWidth, cols = width / 3, colsH = cols >> 1; this.c.height = this.comp.clientHeight, str = "";
 
   //The first row explains what each column is.
 
@@ -769,8 +770,6 @@ dataDescriptor.prototype.rUpdate = function()
   g.fillText("Use", colsH - this.textWidth[0], 13); colsH += cols; g.fillText("Raw Data", colsH - this.textWidth[1], 13); colsH += cols; g.fillText("Data Type", colsH - this.textWidth[2], 13);
  
   //Fill in the columns based on the current position of the scroll bar.
-  
-  var str = "";
  
   for( var i = this.curRow, posY = 32; i < this.endRow; posY += 16, i++ )
   {
@@ -804,10 +803,32 @@ dataDescriptor.prototype.setDescriptor = function( d )
 {
   this.data = d; this.selectedRow = -1;
   
-  /*this.size.setMaximum(data.rows + 1); this.comp.scrollTo(0);*/ d.Event( -1 );
+  /*this.size.setMaximum(data.rows + 1);*/ this.comp.scrollTo(0,0); d.Event( -1 );
 }
 
 dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
+
+//Adjust scroll bar size on size change.
+
+dataDescriptor.prototype.adjSize = function()
+{
+  var size = this.data.rows - ((this.comp.clientHeight / 16) - 1);
+
+  this.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;";
+}
+
+//Method that checks what has to be updated on the data descriptor after resize.
+
+dataDescriptor.prototype.validate = function()
+{
+  //We must update the scroll bar any time height does not match.
+
+  if( this.c.height != this.comp.clientHeight ){ this.adjSize(); }
+
+  //If canvas width, or height is smaller we must rerender the output.
+
+  if( this.c.height < this.comp.clientHeight || this.c.width < this.comp.clientWidth ) { this.update(); }
+}
 
 function dataType(str,Type) { this.des = str; this.type = Type; }
 
