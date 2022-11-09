@@ -23,11 +23,11 @@ CanvasRenderingContext2D.prototype.drawString = function(text,x,y,width)
 {
   var o = text.substring(0,width/this.avg&-1), i = o.length, b = null; width -= this.clipPrefix; for( var c = 0; c < 2; c++)
   {
-    while( (re = width - this.measureText(o).width) > 0 && i < text.length )
+    var re = 0; while( (re = width - this.measureText(o).width) > 1 && i < text.length )
     {
-      re /= this.avg; r += i; while( i < re ) { o += text.charAt( i++ ); }
+      re /= this.avg; re += i; while( i < re ) { o += text.charAt( i++ ); }
     }
-    if( b == null ) { b = o.slice(0,-1); while(this.measureText(b).width>width){b = b.slice(0,-1);} b+="..."; width += this.clipPrefix; }
+    if( b == null ) { b = o.slice(0,-1)+"..."; width += this.clipPrefix; }
   }
   if( i < text.length || this.measureText(o).width > width ){ o = b; }; this.fillText(o,x,y);
 }
