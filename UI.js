@@ -732,22 +732,16 @@ dataDescriptor.prototype.update = function()
 {
   this.minRows = Math.min( this.data.rows, ((this.comp.clientHeight / 16) + 0.5)&-1 );
   this.curRow = this.comp.scrollTop, this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
- 
-  //Number of bytes needed to fill in columns by data types.
 
-  var Data = this.data.bytes(this.curRow,this.endRow);
+  //Data within the current buffer area.
 
-  //Because of the other data tools like the hex editor the data will match what we are looking at in other tools.
-  //Data within the current buffer area. 
+  var dPos = (this.data.offset + this.data.relPos[this.curRow]), data = this.data.bytes(this.curRow,this.endRow);
  
-  if(this.io.data.offset >= (this.data.offset + this.data.relPos[this.curRow]) && this.io.data.length >= Data) { this.rUpdate(); }
+  if(this.io.data.offset <= dPos && (this.io.data.offset-dPos+this.io.data.length) >= data) { this.rUpdate(); }
 
   //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-  else
-  {
-
-  }
+  else { this.io.call( this, "rUpdate" ); this.io.seek(dPos); this.io.read(data); }
 }
 
 dataDescriptor.prototype.rUpdate = function()
