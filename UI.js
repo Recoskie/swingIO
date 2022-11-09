@@ -23,7 +23,7 @@ CanvasRenderingContext2D.prototype.drawString = function(text,x,y,width)
 {
   var o = text.substring(0,width/this.avg&-1), i = o.length, b = null; width -= this.clipPrefix; for( var c = 0; c < 2; c++)
   {
-    var re = 0; while( (re = width - this.measureText(o).width) > 1 && i < text.length )
+    var re = 0; while( (re = width - this.measureText(o).width) > 0 && i < text.length )
     {
       re /= this.avg; re += i; while( i < re ) { o += text.charAt( i++ ); }
     }
