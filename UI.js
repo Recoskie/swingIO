@@ -32,6 +32,19 @@ CanvasRenderingContext2D.prototype.drawString = function(text,x,y,width)
   if( i < text.length || this.measureText(o).width > width ){ o = b; }; this.fillText(o,x,y);
 }
 
+CanvasRenderingContext2D.prototype.drawBytes = function(data,offset,size,x,y,width)
+{
+  var o = "", i = offset, b = null; size += offset; width -= this.clipPrefix; for( var c = 0; c < 2; c++)
+  {
+    while( (r = width - this.measureText(o).width) > 0 && i < size )
+    {
+      r /= this.avg * 3; r += i; while( i < r ) { o += data[i].byte() + " "; }
+    }
+    if( b == null ) { b = o.slice(0,-1) + "..."; width += this.clipPrefix; }
+  }
+  if( i < size || this.measureText(o).width > width ){ o = b; }; this.fillText(o,x,y);
+}
+
 //Calculating the average character for regular text and set font speeds up measurements by a lot.
 //Should only be called once on setting the graphics context font.
 
@@ -665,7 +678,8 @@ See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
 And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
 ------------------------------------------------------------*/
 
-dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.di = null, dataDescriptor.prototype.textWidth = [];
+dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.di = null, dataDescriptor.prototype.data = new Descriptor([]), dataDescriptor.prototype.textWidth = [];
+dataDescriptor.prototype.DType = ["Bit8",,"Int8",,"UInt8",,"Int16","LInt16","UInt16","LUInt16","Int32","LInt32","UInt32","LUInt32","Int64","LInt64","UInt64","LUInt64","Float32","LFloat32","Float64","LFloat64", "Char8",,"Char16","LChar16","String8",,"String16","LString16","Other",,"Array"];
 
 function dataDescriptor( el, io )
 {
@@ -685,7 +699,7 @@ function dataDescriptor( el, io )
 
   //Selected element.
 
-  this.sel = 0;
+  this.selectedRow = -1;
   
   //Scroll.
   
@@ -724,19 +738,62 @@ dataDescriptor.prototype.update = function()
 
   g.fillStyle = "#CECECE"; g.fillRect(0,0,width,16); g.stroke(); this.g.font = "14px " + this.g.font.split(" ")[1];
 
-  //Draw the text.
+  //The Number of rows that will fit on screen.
+ 
+  var minRows = Math.min( this.data.rows, (height / 16)-1 ); g.fillStyle = "#FFFFFF"; g.fillRect( 0, 16, width, minRows << 4 ); g.stroke();
+ 
+  //Draw the column lines.
+ 
+  g.fillStyle = g.strokeStyle = "#000000";
+ 
+  g.moveTo(0, 0); g.lineTo(0, (minRows+1) << 4); g.moveTo(cols, 0); g.lineTo( cols, (minRows+1) << 4 ); g.moveTo(cols << 1, 0); g.lineTo( cols << 1, (minRows+1) << 4);
+     
+  g.moveTo(0, 16); g.lineTo(width, 16);
+ 
+  //Column names.
+ 
+  g.fillText("Use", colsH - this.textWidth[0], 13); colsH += cols; g.fillText("Raw Data", colsH - this.textWidth[1], 13); colsH += cols; g.fillText("Data Type", colsH - this.textWidth[2], 13);
+ 
+  //The current start and end row in the data by scroll bar position
+ 
+  var curRow = this.comp.scrollTop, endRow = Math.min( curRow + minRows, this.data.rows );
+ 
+  //Number of bytes needed to fill in columns by data types.
 
-  g.fillStyle = "#000000"; g.fillText("Use",colsH - this.textWidth[0],12); colsH += cols; g.fillText("Raw Data",colsH - this.textWidth[1],12); colsH += cols; g.fillText("Data Type",colsH - this.textWidth[2],12); colsH += cols;
+  var Data = this.data.bytes(curRow,endRow);
+ 
+  //Data relative position.
+ 
+  var rn = this.data.relPos[curRow];
+ 
+  //Fill in the columns based on the current position of the scroll bar.
+ 
+  for( var i = curRow, posY = 32; i < endRow; posY += 16, i++ )
+  {
+    //if( i == selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
+ 
+    g.drawString( this.data.des[i], 2, posY - 3, cols );
+ 
+    //Data within the buffer area.
+ 
+    if(this.io.data.offset >= (this.data.pos + rn) && this.io.data.length <= Data)
+    {
+      g.drawBytes( this.io.data, this.data.relPos[i] - rn, this.data.relPos[i + 1] - rn, cols + 2, posY - 3, cols );
+    }
+ 
+    g.fillText( this.DType[this.data.data[i]], ( cols << 1 ) + 2, posY - 3 ); g.moveTo(0, posY); g.lineTo(width, posY);
+  }
 
-  //draw columns.
-
-  var y = 16;
-
-  g.moveTo(0,y); g.lineTo(width,y); g.moveTo(cols,0); g.lineTo(cols,height); g.moveTo(cols<<1,0); g.lineTo(cols<<1,height);
-  
-  
-  
   g.stroke();
+}
+
+//Set the data model.
+
+dataDescriptor.prototype.setDescriptor = function( d )
+{
+  this.data = d; this.selectedRow = -1;
+  
+  /*this.size.setMaximum(data.rows + 1); this.comp.scrollTo(0);*/ d.Event( -1 );
 }
 
 dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
@@ -750,8 +807,8 @@ Descriptor.prototype.offset = 0;
 //Data inspector types, and byte length size.
 //Note that this could be shrunk down by better relating the data inspector types and names array.
 
-Descriptor.prototype.bytes = dataInspector.prototype.dLen.splice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
-for(var s=["Bit8",,"Int8",,"UInt8",,"Int16","LInt16","UInt16","LUInt16","Int32","LInt32","UInt32","LUInt32","Int64","LInt64","UInt64","LUInt64","Float32","LFloat32","Float64","LFloat64", "Char8",,"Char16","LChar16","String8",,"String16","LString16","Other",,"Array"],i=0;i<s.length;s[i]&&(Descriptor.prototype[s[i]]=i),i++);i=s=undefined;
+Descriptor.prototype.bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
+for(var i=0;i<dataDescriptor.prototype.DType.length;dataDescriptor.prototype.DType[i]&&(Descriptor[dataDescriptor.prototype.DType[i]]=i),i++);
 
 //Construct the data descriptor.
 
@@ -797,6 +854,19 @@ function Descriptor(data)
   
   this.Event = function(){};
 }
+
+//Calc number of bytes that need to be read to display rows.
+//For now we will not involve array types.
+
+Descriptor.prototype.bytes = function(r1,r2) { return( this.relPos[r2] - this.relPos[r1] ); }
+
+//Sets the method that is called when user clicks a data type.
+
+Descriptor.prototype.setEvent = function( e ) { this.Event = e; }
+
+//The total length of the data.
+
+Descriptor.prototype.length = function() { return( this.relPos[this.relPos.length - 1] ); }
 
 /*------------------------------------------------------------
 This is a web based version of the binary tree tool originally designed to run in Java.
