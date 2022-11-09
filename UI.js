@@ -23,9 +23,9 @@ CanvasRenderingContext2D.prototype.drawString = function(text,x,y,width)
 {
   var o = text.substring(0,width/this.avg&-1), i = o.length, b = null; width -= this.clipPrefix; for( var c = 0; c < 2; c++)
   {
-    while( (r = width - this.measureText(o).width) > 0 && i < text.length )
+    while( (re = width - this.measureText(o).width) > 0 && i < text.length )
     {
-      r /= this.avg; r += i; while( i < r ) { o += text.charAt( i++ ); }
+      re /= this.avg; r += i; while( i < re ) { o += text.charAt( i++ ); }
     }
     if( b == null ) { b = o.slice(0,-1); while(this.measureText(b).width>width){b = b.slice(0,-1);} b+="..."; width += this.clipPrefix; }
   }
