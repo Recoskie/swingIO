@@ -718,7 +718,7 @@ function dataDescriptor( el, io )
 
 dataDescriptor.prototype.sc = function()
 {
-  alert("Scrolling is not setup yet.");
+  this.update();
 }
 
 dataDescriptor.prototype.select = function(e)
