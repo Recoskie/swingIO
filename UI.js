@@ -732,7 +732,7 @@ dataDescriptor.prototype.select = function(e)
 dataDescriptor.prototype.update = function()
 {
   this.minRows = Math.min( this.data.rows, ((this.comp.clientHeight / 16) + 0.5)&-1 );
-  this.curRow = this.comp.scrollTop, this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
+  this.curRow = Math.max(Math.min(this.comp.scrollTop,this.data.rows), 0), this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
 
   //Data within the current buffer area.
 
@@ -760,8 +760,10 @@ dataDescriptor.prototype.rUpdate = function()
   //Draw the column lines.
  
   g.fillStyle = g.strokeStyle = "#000000";
+  
+  var rows = (this.endRow - this.curRow + 1) << 4;
  
-  g.moveTo(0, 0); g.lineTo(0, (this.minRows+1) << 4); g.moveTo(cols, 0); g.lineTo( cols, (this.minRows+1) << 4 ); g.moveTo(cols << 1, 0); g.lineTo( cols << 1, (this.minRows+1) << 4);
+  g.moveTo(0, 0); g.lineTo(0, rows); g.moveTo(cols, 0); g.lineTo( cols, rows ); g.moveTo(cols << 1, 0); g.lineTo( cols << 1, rows);
      
   g.moveTo(0, 16); g.lineTo(width, 16);
  
@@ -803,7 +805,7 @@ dataDescriptor.prototype.setDescriptor = function( d )
 {
   this.data = d; this.selectedRow = -1;
   
-  /*this.size.setMaximum(data.rows + 1);*/ this.comp.scrollTo(0,0); d.Event( -1 );
+  this.adjSize(); this.comp.scrollTo(0,0); d.Event( -1 );
 }
 
 dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
