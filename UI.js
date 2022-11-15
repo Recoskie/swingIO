@@ -785,7 +785,7 @@ dataDescriptor.prototype.rUpdate = function()
  
     //Convert data to bytes.
  
-    var pos = (this.io.data.offset-this.data.offset)+this.data.relPos[i], size = this.data.relPos[i+1]-this.data.relPos[i]; size = Math.min( cols / this.minHex, size);
+    var pos = (this.data.relPos[i]+this.data.offset)-this.io.data.offset, size = this.data.relPos[i+1]-this.data.relPos[i]; size = Math.min( cols / this.minHex, size);
       
     for(var i2 = 0; i2 < size; str+=(this.io.data[pos+i2]&-1).byte()+((i2<(size-1))?" ":""), i2++);
 
