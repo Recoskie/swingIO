@@ -732,7 +732,7 @@ dataDescriptor.prototype.select = function(e)
 dataDescriptor.prototype.update = function()
 {
   this.minRows = Math.min( this.data.rows, ((this.comp.clientHeight / 16) + 0.5)&-1 );
-  this.curRow = Math.max(Math.min(this.comp.scrollTop,this.data.rows), 0), this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
+  this.curRow = Math.max(Math.min(this.comp.scrollTop,this.data.rows), 0) & -1, this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
 
   //Data within the current buffer area.
 
