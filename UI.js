@@ -725,7 +725,7 @@ dataDescriptor.prototype.select = function(e)
 {
   this.comp.focus(); this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop)) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
 
-  this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1; this.io.seek(this.data.pos + this.data.relPos[this.selectedRow]);
+  this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1; this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
     
   this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
 
