@@ -723,8 +723,13 @@ dataDescriptor.prototype.sc = function()
 
 dataDescriptor.prototype.select = function(e)
 {
-  this.comp.focus();
-  alert("Detailed decoding of a selected data type is not setup yet.");
+  this.comp.focus(); this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop)) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
+
+  this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1; this.io.seek(this.data.pos + this.data.relPos[this.selectedRow]);
+    
+  this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
+
+  this.update();
 }
 
 //Before updating we must check if the buffer data is in the correct offset.
@@ -777,7 +782,7 @@ dataDescriptor.prototype.rUpdate = function()
   {
     //Selected row. Event handling not ready yet.
 
-    if( i == this.selectedRow ){ g.setColor( new Color( 57, 105, 138, 128 ) ); g.fillRect(0, posY - 16, width, 16); g.setColor(Color.BLACK); }
+    if( i == this.selectedRow ){ g.stroke(); g.fillStyle = "#9EB0C1"; g.fillRect(0, posY - 16, width, 16); g.stroke(); g.fillStyle = "#000000"; }
 
     //Data type description.
  
@@ -805,7 +810,7 @@ dataDescriptor.prototype.setDescriptor = function( d )
 {
   this.data = d; this.selectedRow = -1;
   
-  this.adjSize(); this.comp.scrollTo(0,0); d.Event( -1 );
+  this.adjSize(); this.comp.scrollTo(0,0); this.data.source[this.data.event]( -1 );
 }
 
 dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
@@ -814,7 +819,7 @@ dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInsp
 
 dataDescriptor.prototype.adjSize = function()
 {
-  var size = this.data.rows - ((this.comp.clientHeight / 16) - 1);
+  var size = ( this.data.rows - ((this.comp.clientHeight / 16) - 1) ) + 2;
 
   this.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;";
 }
@@ -886,7 +891,7 @@ function Descriptor(data)
     
   //Event handler for when data descriptor is set or user clicks on a property or value.
   
-  this.Event = function(){};
+  this.Event = function(){}; this.event="Event"; this.source = this;
 }
 
 //Calc number of bytes that need to be read to display rows.
@@ -896,7 +901,7 @@ Descriptor.prototype.bytes = function(r1,r2) { return( this.relPos[r2] - this.re
 
 //Sets the method that is called when user clicks a data type.
 
-Descriptor.prototype.setEvent = function( e ) { this.Event = e; }
+Descriptor.prototype.setEvent = function( s, e ) { this.event = e; this.source = s; }
 
 //The total length of the data.
 
