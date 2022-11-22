@@ -168,8 +168,6 @@ VHex.prototype.virtualSc = function()
 
 VHex.prototype.select = function(e)
 {
-  this.comp.focus();
-  
   var x = ((e.pageX || e.touches[0].pageX) - this.comp.offsetLeft) - 164, y = ((e.pageY || e.touches[0].pageY) - this.comp.offsetTop) - 16;
 
   if( x > 0 && y > 0 )
@@ -473,6 +471,10 @@ function dataInspector(el, io)
   
   d.innerHTML = out;
   
+  //Byte order control.
+  
+  this.bOrder = document.getElementsByName(el+"o");
+  
   //Setup data type outputs.
   
   this.td = d.getElementsByTagName("table")[0];
@@ -481,7 +483,7 @@ function dataInspector(el, io)
   
   this.order = 0; this.base = 10; this.strLen = 0;
   
-  this.out[15].innerHTML = ""; this.setType(15);
+  this.out[15].innerHTML = ""; this.setType(15, 1);
   
   //Visible on creation.
   
@@ -506,8 +508,10 @@ function dataInspector(el, io)
   io.comps[io.comps.length] = this;
 }
 
-dataInspector.prototype.setType = function(t)
+dataInspector.prototype.setType = function(t,order)
 {
+  this.bOrder[this.order=(!order)&-1].checked = true;
+  
   if(this.sel)
   {
     this.td.rows[this.sel].style.background = "#FFFFFF";
@@ -723,11 +727,12 @@ dataDescriptor.prototype.sc = function()
 
 dataDescriptor.prototype.select = function(e)
 {
-  this.comp.focus(); this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop)) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
-
-  this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1; this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
-    
+  this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop)) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
+  
+  this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
   this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
+  
+  this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
 
   this.update();
 }
