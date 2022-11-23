@@ -459,7 +459,7 @@ function dataInspector(el, io)
   
   this.out = []; for(var i = 0; i < this.dType.length; i++) { event = "='event.preventDefault();Ref["+Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
   
-  event = "onclick='Ref["+Ref.length+"].order = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
+  event = "Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
   
   out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
   
@@ -473,7 +473,7 @@ function dataInspector(el, io)
   
   //Byte order control.
   
-  this.bOrder = document.getElementsByName(el+"o");
+  this.order = ([].slice.call(document.getElementsByName(el+"o"), 0)).reverse();
   
   //Setup data type outputs.
   
@@ -481,9 +481,9 @@ function dataInspector(el, io)
   
   for(var i = 1; i <= this.dType.length; i++) { this.out[this.out.length] = this.td.rows[i].cells[1]; }
   
-  this.order = 0; this.base = 10; this.strLen = 0;
+  this.base = 10; this.strLen = 0;
   
-  this.out[15].innerHTML = ""; this.setType(15, 1);
+  this.out[15].innerHTML = ""; this.setType(15, 0);
   
   //Visible on creation.
   
@@ -510,7 +510,7 @@ function dataInspector(el, io)
 
 dataInspector.prototype.setType = function(t,order)
 {
-  this.bOrder[this.order=(!order)&-1].checked = true;
+  this.order[order&-1].checked = true;
   
   if(this.sel)
   {
@@ -539,7 +539,7 @@ dataInspector.prototype.onseek = function( f )
     
     //Little endian, and big endian byte order.
     
-    if( this.order == 0 )
+    if( this.order[1].checked )
     {
       v32 = v8=f.data[rel]; v32 |= (v16=f.data[rel+1]) << 8; v32 |= f.data[rel+2] << 16; v32 += f.data[rel+3] * 16777216;
       v64 = f.data[rel+4]; v64 |= f.data[rel+5] << 8; v64 |= f.data[rel+6] << 16; v64 += f.data[rel+7] * 16777216;
@@ -562,7 +562,7 @@ dataInspector.prototype.onseek = function( f )
     this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base); this.out[4].innerHTML = v16 < 32768 ? this.out[3].innerHTML : v16.toString(this.base);
     this.out[5].innerHTML = (v32&-1).toString(this.base); this.out[6].innerHTML = v32 < 2147483648 ? this.out[5].innerHTML : v32.toString(this.base);
     
-    if( this.order == 0 )
+    if( this.order[1].checked )
     {
       if( v64 >= 2147483648 )
       {
@@ -614,7 +614,7 @@ dataInspector.prototype.onseek = function( f )
   
   //float64 number.
   
-  if( this.order == 0 )
+  if( this.order[1].checked )
   {
     sing = (v64 >> 31) & 1; exp = (v64 >> 20) & 0x7FF; mantissa = ((v64 & 0xFFFFF) * 0x100000000) + v32;
   }
@@ -649,7 +649,7 @@ dataInspector.prototype.onseek = function( f )
 
   for( var i = 0; i < maxCharLen; i++ ){ c += String.fromCharCode(f.data[rel+i]); } this.out[13].innerHTML = c; c = "";
 
-  if(this.order == 0)
+  if( this.order[1].checked )
   {
     for( var i = 0, e = maxCharLen << 1; i < e; i+=2 ) { c += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]); }
   }
@@ -732,9 +732,7 @@ dataDescriptor.prototype.select = function(e)
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
   this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
   
-  this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
-
-  this.update();
+  this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]); this.update();
 }
 
 //Before updating we must check if the buffer data is in the correct offset.
