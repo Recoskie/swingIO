@@ -1002,7 +1002,7 @@ function treeNode(n,args,expand,selected)
 {
   var t = 0; for(var i = 0; i < this.fileType.length; i++)
   {
-    if( n.substring(n.length-this.fileType[i].length, n.length) == this.fileType[i] )
+    if( n.substring(n.length-this.fileType[i].length, n.length).toLowerCase() == this.fileType[i] )
     {
       t = this.node[i]; n = n.substring(0, n.length-this.fileType[i].length);
     }
@@ -1017,7 +1017,7 @@ treeNode.prototype.add = function(n,args,selected)
   
   var t = 1; for(var i = 0; i < this.fileType.length; i++)
   {
-    if( n.substring(n.length-this.fileType[i].length, n.length) == this.fileType[i] )
+    if( n.substring(n.length-this.fileType[i].length, n.length).toLowerCase() == this.fileType[i] )
     {
       t = this.node[i]; n = n.substring(0, n.length-this.fileType[i].length);
     }
