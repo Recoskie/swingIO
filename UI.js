@@ -685,7 +685,8 @@ function dataDescriptor( el, io )
 
   this.g.font = "14px " + this.g.font.split(" ")[1]; if( this.textWidth[0] == null )
   {
-    dataDescriptor.prototype.textWidth = [this.g.measureText("Use").width>>1,this.g.measureText("Raw Data").width>>1,this.g.measureText("Data Type").width>>1];
+    dataDescriptor.prototype.textWidth = [this.g.measureText("Use").width>>1,this.g.measureText("Raw Data").width>>1,this.g.measureText("Data Type").width>>1,
+    this.g.measureText("Operation").width>>1, this.g.measureText("Address").width>>1];
   
     //Minium width of hex characters. We do not want to translate a lot more hex values that what will fit into a table cell.
     
@@ -720,24 +721,33 @@ function dataDescriptor( el, io )
 
 //Scrolling event.
 
-dataDescriptor.prototype.sc = function()
-{
-  this.update();
-}
+dataDescriptor.prototype.sc = function() { this.update(); }
 
 dataDescriptor.prototype.select = function(e)
 {
   this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop)) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
   
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
-  this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
+
+  if( this.update == this.dataUpdate )
+  {
+    this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
   
-  this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]); this.update();
+    this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]); this.update();
+  }
+
+  //Processor core.
+
+  else
+  {
+
+  }
 }
 
+//Update is changeable based on if we are working with processor core data, or just file data.
 //Before updating we must check if the buffer data is in the correct offset.
 
-dataDescriptor.prototype.update = function()
+dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function()
 {
   this.minRows = Math.min( this.data.rows, ((this.comp.clientHeight / 16) + 0.5)&-1 );
   this.curRow = Math.max(Math.min(this.comp.scrollTop,this.data.rows), 0) & -1, this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
@@ -746,14 +756,16 @@ dataDescriptor.prototype.update = function()
 
   var dPos = (this.data.offset + this.data.relPos[this.curRow]), data = this.data.bytes(this.curRow,this.endRow);
  
-  if(this.io.data.offset <= dPos && (this.io.data.offset-dPos+this.io.data.length) >= data) { this.rUpdate(); }
+  if(this.io.data.offset <= dPos && (this.io.data.offset-dPos+this.io.data.length) >= data) { this.dataUpdate(); }
 
   //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-  else { this.io.call( this, "rUpdate" ); this.io.seek(dPos); this.io.read(data); }
+  else { this.io.call( this, "dataUpdate" ); this.io.seek(dPos); this.io.read(data); }
 }
 
-dataDescriptor.prototype.rUpdate = function()
+//Update output as data model.
+
+dataDescriptor.prototype.dataUpdate = function()
 {
   var g = this.g, width = this.c.width = this.comp.clientWidth, cols = width / 3, colsH = cols >> 1; this.c.height = this.comp.clientHeight, str = "";
 
@@ -807,13 +819,85 @@ dataDescriptor.prototype.rUpdate = function()
   g.stroke();
 }
 
+//Update output as core data model.
+
+dataDescriptor.prototype.coreUpdate = function()
+{
+  var g = this.g, width = this.c.width = this.comp.clientWidth, cols = width >> 1, colsH = cols >> 1; this.c.height = this.comp.clientHeight, str = "";
+
+  //The first row explains what each column is.
+
+  var addresses = this.data.linear.length + this.data.crawl.length + this.data.data_off.length;
+
+  g.fillStyle = "#CECECE"; g.fillRect(0,0,width,16); g.stroke(); this.g.font = "14px " + this.g.font.split(" ")[1];
+  
+  //The Number of rows that will fit on screen.
+  
+  var minRows = Math.min( addresses, ((this.comp.clientHeight / 16) + 0.5)&-1 );
+  
+  g.fillStyle = "#FFFFFF"; g.fillRect( 0, 16, width, minRows << 4 ); g.stroke();
+  
+  //Draw the column lines.
+  
+  g.fillStyle = g.strokeStyle = "#000000"; g.moveTo(cols, 0); g.lineTo(cols, (minRows+1) << 4); g.moveTo(0, 16); g.lineTo(width, 16);
+  
+  //Column names.
+  
+  g.fillText("Operation", colsH - this.textWidth[3], 13); colsH += cols; g.fillText("Address", colsH - this.textWidth[4], 13);
+  
+  //The current start and end row in the data by scroll bar position
+  
+  var curRow = this.comp.scrollTop, endRow = Math.min( curRow + minRows, addresses );
+  
+  //Display the addresses and operations that can be carried out.
+  
+  for( var i = curRow, posY = 32; i < endRow; posY += 16, i++ )
+  {
+    if( i == this.selectedRow ){ g.stroke(); g.fillStyle = "#9EB0C1"; g.fillRect(0, posY - 16, width, 16); g.stroke(); g.fillStyle = "#000000"; }
+  
+    //Each operation is sorted into a list as the core engine reads the binary.
+  
+    var row = i; if( row < ( this.data.linear.length >> 1 ) )
+    {
+      g.fillText( "LDisassemble", 2, posY - 3 );
+      g.fillText( this.data.linear[ row << 1 ].address(), cols + 2, posY - 3 );
+    }
+    else if( ( row -= ( this.data.linear.length >> 1 ) ) < this.data.crawl.length )
+    {
+      g.fillText( "Disassemble", 2, posY - 3 );
+      g.fillText( this.data.crawl[ row ].address(), cols + 2, posY - 3 );
+    }
+    else
+    {
+      row -= this.data.crawl.length;
+      g.fillText( "Data", 2, posY - 3 );
+      g.fillText( this.data.data_off[ row << 1 ].address(), cols + 2, posY - 3 );
+    }
+  
+    g.moveTo(0, posY); g.lineTo(width, posY);
+  }
+
+  g.stroke();
+}
+
 //Set the data model.
 
 dataDescriptor.prototype.setDescriptor = function( d )
 {
-  this.data = d; this.selectedRow = -1;
+  this.update = this.dataCheck; this.data = d; this.selectedRow = -1;
   
   this.adjSize(); this.comp.scrollTo(0,0); this.data.source[this.data.event]( -1 );
+
+  this.update();
+}
+
+//Set core data model.
+
+dataDescriptor.prototype.setCore = function( c )
+{
+  this.update = this.coreUpdate; this.data = c; this.selectedRow = -1;
+  
+  this.adjSize(); this.comp.scrollTo(0,0); this.update();
 }
 
 dataDescriptor.prototype.setInspector = function( dInspector ) { this.di = dInspector; }
