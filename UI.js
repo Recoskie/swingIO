@@ -729,7 +729,7 @@ dataDescriptor.prototype.select = function(e)
   
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
 
-  if( this.update == this.dataUpdate )
+  if( this.update == this.dataCheck )
   {
     this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
   
