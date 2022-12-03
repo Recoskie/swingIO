@@ -726,22 +726,42 @@ dataDescriptor.prototype.sc = function() { this.update(); }
 dataDescriptor.prototype.select = function(e)
 {
   this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop)) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
-  
-  this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
+
+  //Data types.
 
   if( this.update == this.dataCheck )
   {
+    this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
     this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
   
-    this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]); this.update();
+    this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
   }
 
   //Processor core.
 
   else
   {
+    this.selectedRow = Math.min( this.selectedRow, ((this.data.data_off.length + this.data.linear.length) >> 1) + this.data.crawl.length ) - 1;
+    
+    if( this.selectedRow < ( this.data.linear.length >> 1 ) )
+    {
+      this.io.seekV(this.data.linear[ this.selectedRow ]); this.coreDisLoc(this.data.linear[this.selectedRow],false);
+    }
+    else if( ( this.selectedRow -= ( this.data.linear.length >> 1 ) ) < this.data.crawl.length )
+    {
+      this.coreDisLoc(this.data.crawl[this.selectedRow],true);
+    }
+    else
+    {
+      this.selectedRow -= this.data.crawl.length; this.selectedRow = this.selectedRow << 1;
 
+      this.io.seekV( this.data.data_off[ this.selectedRow ] );
+
+      this.di.setOther( this.data.data_off[ this.selectedRow + 1 ] );
+    }
   }
+  
+  this.update();
 }
 
 //Update is changeable based on if we are working with processor core data, or just file data.
@@ -827,7 +847,7 @@ dataDescriptor.prototype.coreUpdate = function()
 
   //The first row explains what each column is.
 
-  var addresses = this.data.linear.length + this.data.crawl.length + this.data.data_off.length;
+  var addresses = ((this.data.data_off.length + this.data.linear.length) >> 1) + this.data.crawl.length;
 
   g.fillStyle = "#CECECE"; g.fillRect(0,0,width,16); g.stroke(); this.g.font = "14px " + this.g.font.split(" ")[1];
   
@@ -879,6 +899,10 @@ dataDescriptor.prototype.coreUpdate = function()
 
   g.stroke();
 }
+
+//A programmable method for the actions to take when decompiling a location of code.
+
+dataDescriptor.prototype.coreDisLoc = function(virtual, crawl) { }
 
 //Set the data model.
 
