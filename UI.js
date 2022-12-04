@@ -725,13 +725,13 @@ dataDescriptor.prototype.sc = function() { this.update(); }
 
 dataDescriptor.prototype.select = function(e)
 {
-  this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop)) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
+  this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop ) ) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
+  this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
 
   //Data types.
 
   if( this.update == this.dataCheck )
   {
-    this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
     this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
   
     this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
@@ -741,23 +741,19 @@ dataDescriptor.prototype.select = function(e)
 
   else
   {
-    this.selectedRow = Math.min( this.selectedRow, ((this.data.data_off.length + this.data.linear.length) >> 1) + this.data.crawl.length ) - 1;
+    var r = 0; r += this.selectedRow;
     
-    if( this.selectedRow < ( this.data.linear.length >> 1 ) )
+    if( r < ( this.data.linear.length >> 1 ) )
     {
-      this.io.seekV(this.data.linear[ this.selectedRow ]); this.coreDisLoc(this.data.linear[this.selectedRow],false);
+      this.coreDisLoc(this.data.linear[r],false);
     }
-    else if( ( this.selectedRow -= ( this.data.linear.length >> 1 ) ) < this.data.crawl.length )
+    else if( ( r -= ( this.data.linear.length >> 1 ) ) < this.data.crawl.length )
     {
-      this.coreDisLoc(this.data.crawl[this.selectedRow],true);
+      this.coreDisLoc(this.data.crawl[r],true);
     }
     else
     {
-      this.selectedRow -= this.data.crawl.length; this.selectedRow = this.selectedRow << 1;
-
-      this.io.seekV( this.data.data_off[ this.selectedRow ] );
-
-      this.di.setOther( this.data.data_off[ this.selectedRow + 1 ] );
+      r -= this.data.crawl.length; r = r << 1; this.io.seekV( this.data.data_off[r] );
     }
   }
   
@@ -847,13 +843,11 @@ dataDescriptor.prototype.coreUpdate = function()
 
   //The first row explains what each column is.
 
-  var addresses = ((this.data.data_off.length + this.data.linear.length) >> 1) + this.data.crawl.length;
-
   g.fillStyle = "#CECECE"; g.fillRect(0,0,width,16); g.stroke(); this.g.font = "14px " + this.g.font.split(" ")[1];
   
   //The Number of rows that will fit on screen.
   
-  var minRows = Math.min( addresses, ((this.comp.clientHeight / 16) + 0.5)&-1 );
+  var curRow = this.comp.scrollTop & -1, minRows = Math.min( this.data.rows - curRow, ((this.comp.clientHeight / 16) + 0.5)&-1 );
   
   g.fillStyle = "#FFFFFF"; g.fillRect( 0, 16, width, minRows << 4 ); g.stroke();
   
@@ -867,7 +861,7 @@ dataDescriptor.prototype.coreUpdate = function()
   
   //The current start and end row in the data by scroll bar position
   
-  var curRow = this.comp.scrollTop, endRow = Math.min( curRow + minRows, addresses );
+  var endRow = Math.min( curRow + minRows, this.data.rows );
   
   //Display the addresses and operations that can be carried out.
   
@@ -900,7 +894,7 @@ dataDescriptor.prototype.coreUpdate = function()
   g.stroke();
 }
 
-//A programmable method for the actions to take when decompiling a location of code.
+//A programmable method for the actions to take when disassembling a location of code.
 
 dataDescriptor.prototype.coreDisLoc = function(virtual, crawl) { }
 
