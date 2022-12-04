@@ -847,7 +847,7 @@ dataDescriptor.prototype.coreUpdate = function()
   
   //The Number of rows that will fit on screen.
   
-  var curRow = this.comp.scrollTop & -1, minRows = Math.min( this.data.rows - curRow, ((this.comp.clientHeight / 16) + 0.5)&-1 );
+  var curRow = Math.max( this.comp.scrollTop & -1, 0 ), minRows = Math.min( this.data.rows - curRow, ((this.comp.clientHeight / 16) + 0.5)&-1 );
   
   g.fillStyle = "#FFFFFF"; g.fillRect( 0, 16, width, minRows << 4 ); g.stroke();
   
