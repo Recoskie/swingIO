@@ -316,7 +316,7 @@ VHex.prototype.selection = function(g, pos)
 
 //Basic UI controls.
 
-VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + this.sBarWidth, 256]; this.end = (this.text = v) ? 518 : 352; this.resetDims(); }
+VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + this.sBarWidth, 256]; this.end = (this.text = v) ? 518 : 352; this.resetDims(); if( this.visible ) { this.update(this.io); } }
 
 VHex.prototype.getRows = function() { return( Math.floor( this.comp.clientHeight / 16 ) ); }
 
