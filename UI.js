@@ -554,13 +554,13 @@ dataInspector.prototype.onseek = function( f )
 
     //Byte.
 
-    this.out[0].innerHTML = v8.toString(2).pad(8);
+    this.out[0].innerHTML = v8.toStr(2).pad(8);
 
     //The integer types. Limit the number of base conversions when sing and unsigned match.
     
-    this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toString(this.base); this.out[2].innerHTML = v8 < 128 ? this.out[1].innerHTML : v8.toString(this.base);
-    this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toString(this.base); this.out[4].innerHTML = v16 < 32768 ? this.out[3].innerHTML : v16.toString(this.base);
-    this.out[5].innerHTML = (v32&-1).toString(this.base); this.out[6].innerHTML = v32 < 2147483648 ? this.out[5].innerHTML : v32.toString(this.base);
+    this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toStr(this.base); this.out[2].innerHTML = v8 < 128 ? this.out[1].innerHTML : v8.toStr(this.base);
+    this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toStr(this.base); this.out[4].innerHTML = v16 < 32768 ? this.out[3].innerHTML : v16.toStr(this.base);
+    this.out[5].innerHTML = (v32&-1).toStr(this.base); this.out[6].innerHTML = v32 < 2147483648 ? this.out[5].innerHTML : v32.toStr(this.base);
     
     if( this.order[1].checked )
     {
@@ -1166,17 +1166,14 @@ if( Number.prototype.address == null )
 {
   Number.prototype.address = function()
   {
-    for( var s = this.toString(16); s.length < 16; s = "0" + s ); return("0x"+s);
+    for( var s = this.toStr(16); s.length < 16; s = "0" + s ); return("0x"+s);
   }
 }
 
 //Byte format
 
-Number.prototype.byte = function() { return((s = this.toString(16)).length < 2 ? s = "0" + s : s); }
+Number.prototype.byte = function() { return((s = this.toStr(16)).length < 2 ? s = "0" + s : s); }
 
 //Always uppercase.
 
-Number.prototype.toStringB = Number.prototype.toString; Number.prototype.toString = function(b)
-{
-  return(this.toStringB(b).toUpperCase());
-}
+Number.prototype.toStr = function(b) { return(this.toString(b).toUpperCase()); }
