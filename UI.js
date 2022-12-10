@@ -459,7 +459,7 @@ function dataInspector(el, io)
   
   this.out = []; for(var i = 0; i < this.dType.length; i++) { event = "='event.preventDefault();Ref["+Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
   
-  event = "Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
+  event = "onclick='Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
   
   out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
   
