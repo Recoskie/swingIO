@@ -172,7 +172,7 @@ VHex.prototype.select = function(e)
 
   if( x > 0 && y > 0 )
   {
-    var pos = this.getPos() * 16;
+    var pos = (this.virtual ? this.io.dataV.offset : this.io.data.offset);
 
     if( x < 355 ) { x = ( x / 22 ) & -1; } else if( this.text && x < 510 ) { x = ( ( x - 365 ) / 9 ) & -1; } else { return; }
     
@@ -344,18 +344,7 @@ VHex.prototype.adjSize = function() { this.setRows( ( this.io.file.size / 16 ) +
 
 //Get the real position including relative scrolling if active.
 
-VHex.prototype.getPos = function() { return( Math.max(0, this.rel ? this.relPos : Math.floor( this.comp.scrollTop ) ) ); }
-
-//Adjust relative scrolling or set position directly.
-
-VHex.prototype.setPos = function( offset )
-{
-  this.comp.scrollTo( 0, offset ); this.oldOff = this.comp.scrollTop;
-  
-  if( this.rel ){ this.relPos = offset; this.adjRelPos(); }
-  
-  this.sc();
-}
+VHex.prototype.getPos = function() { return( Math.floor( Math.max(0, this.rel ? this.relPos : this.comp.scrollTop ) ) ); }
 
 //Adjust relative positioned scrolling.
 
@@ -382,37 +371,37 @@ VHex.prototype.adjRelPos = function()
   this.comp.scrollTo( 0, offset ); this.oldOff = offset;
 }
 
-VHex.prototype.onread = function( f ) { }
+VHex.prototype.onread = function() { }
 
 //Select the byte we have seeked to in the IO system. If the byte is outside the hex editor, then update the position.
 
 VHex.prototype.onseek = function( f )
 {
-  if( this.virtual && f.curVra.Mapped ) { this.sele = ( this.sel = f.virtual ) + (this.slen > 0 ? this.slen - 1 : 0); } else if( !this.virtual ) { this.sele = ( this.sel = f.offset ) + (this.slen > 0 ? this.slen - 1 : 0); }
-  
-  var ds = !this.virtual ? this.io.offset : this.io.virtual;
-  
-  var ve = 0, vs = 0;
-  
-  if( !this.virtual )
+  /*this.sc = function(){};*/
+  if( this.virtual )
   {
-    vs = this.io.data.offset;
-    ve = vs + (this.getRows() * 16);
+    this.sele = ( this.sel = f.virtual ) + (this.slen > 0 ? this.slen - 1 : 0);
+
+    /*var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf;
+  
+    if( f.virtual > ve || f.virtual < vs ) { this.comp.scrollTo( 0, f.virtual >> 4 ); }
+    
+    this.adjRelPos(); this.sc = this.virtualSc;*/
   }
-  else
+  else if( !this.virtual )
   {
-    vs = this.io.dataV.offset;
-    ve = vs + (this.getRows() * 16);
+    this.sele = ( this.sel = f.offset ) + (this.slen > 0 ? this.slen - 1 : 0);
+
+    /*var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf;
+  
+    if( f.offset > ve || f.offset < vs ) { this.comp.scrollTo( 0, f.offset >> 4 ); }
+    
+    if( this.rel ) { this.adjRelPos(); }
+
+    this.sc = this.offsetSc;*/
   }
   
-  if( ds > ve || ds < vs )
-  {
-    this.setPos(Math.floor(ds/16));
-  }
-  else
-  {
-    this.update(this.io);
-  }
+  this.update(this.io);
 }
 
 /*------------------------------------------------------------
@@ -725,7 +714,7 @@ dataDescriptor.prototype.sc = function() { this.update(); }
 
 dataDescriptor.prototype.select = function(e)
 {
-  this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop ) ) >> 4 ))&-1; if( this.selectedRow < 1 ) { return; }
+  this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop ) ) >> 4 ))&-1; if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
 
   //Data types.
