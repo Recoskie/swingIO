@@ -164,6 +164,10 @@ VHex.prototype.virtualSc = function()
   this.io.readV(this.getRows() * 16);
 }
 
+//Blocks the scroll event when scroll bar is being adjusted.
+
+VHex.prototype.blockSc = function() { if(this.virtual) { this.sc = this.virtualSc; } else { this.sc = this.offsetSc; } }
+
 //Byte selection event.
 
 VHex.prototype.select = function(e)
@@ -368,7 +372,7 @@ VHex.prototype.adjRelPos = function()
 
   //The only time the scroll bar passes the Rel UP or down position is when all that remains is that size of data.
 
-  this.comp.scrollTo( 0, offset ); this.oldOff = offset;
+  this.sc = this.blockSc; this.comp.scrollTo( 0, offset ); this.oldOff = offset;
 }
 
 VHex.prototype.onread = function() { }
@@ -377,28 +381,31 @@ VHex.prototype.onread = function() { }
 
 VHex.prototype.onseek = function( f )
 {
-  /*this.sc = function(){};*/
   if( this.virtual )
   {
     this.sele = ( this.sel = f.virtual ) + (this.slen > 0 ? this.slen - 1 : 0);
 
-    /*var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf;
+    var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf;
   
-    if( f.virtual > ve || f.virtual < vs ) { this.comp.scrollTo( 0, f.virtual >> 4 ); }
+    if( f.virtual > ve || f.virtual < vs )
+    {
+      this.sc = this.blockSc; this.comp.scrollTo( 0, f.virtual >> 4 );
+    }
     
-    this.adjRelPos(); this.sc = this.virtualSc;*/
+    this.adjRelPos();
   }
   else if( !this.virtual )
   {
     this.sele = ( this.sel = f.offset ) + (this.slen > 0 ? this.slen - 1 : 0);
 
-    /*var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf;
+    var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf;
   
-    if( f.offset > ve || f.offset < vs ) { this.comp.scrollTo( 0, f.offset >> 4 ); }
+    if( f.offset > ve || f.offset < vs )
+    {
+      this.sc = this.blockSc; this.comp.scrollTo( 0, f.offset >> 4 );
+    }
     
     if( this.rel ) { this.adjRelPos(); }
-
-    this.sc = this.offsetSc;*/
   }
   
   this.update(this.io);
