@@ -381,34 +381,13 @@ VHex.prototype.onread = function() { }
 
 VHex.prototype.onseek = function( f )
 {
-  if( this.virtual )
-  {
-    this.sele = ( this.sel = f.virtual ) + (this.slen > 0 ? this.slen - 1 : 0);
+  var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf, pos = this.virtual ? f.virtual : f.offset;
 
-    var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf;
+  this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
   
-    if( f.virtual > ve || f.virtual < vs )
-    {
-      this.sc = this.blockSc; this.comp.scrollTo( 0, f.virtual >> 4 );
-    }
+  if( pos > ve || pos < vs ) { this.sc = this.blockSc; this.comp.scrollTo( 0, pos >> 4 ); }
     
-    this.adjRelPos();
-  }
-  else if( !this.virtual )
-  {
-    this.sele = ( this.sel = f.offset ) + (this.slen > 0 ? this.slen - 1 : 0);
-
-    var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf;
-  
-    if( f.offset > ve || f.offset < vs )
-    {
-      this.sc = this.blockSc; this.comp.scrollTo( 0, f.offset >> 4 );
-    }
-    
-    if( this.rel ) { this.adjRelPos(); }
-  }
-  
-  this.update(this.io);
+  if( this.rel ) { this.adjRelPos(); } this.update(f);
 }
 
 /*------------------------------------------------------------
