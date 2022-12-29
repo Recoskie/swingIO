@@ -199,8 +199,9 @@ VHex.prototype.validate = function()
   if( this.c.height != this.comp.clientHeight ){ this.adjSize(); }
 
   //If canvas width, or height is smaller we must rerender the output.
+  //Calling sc can lead to an race condition in which both bothers attempt to update at the same time and only one gets updated.
 
-  if( this.c.height < this.comp.clientHeight || this.c.width < this.comp.clientWidth ) { this.sc(); }
+  //if( this.c.height < this.comp.clientHeight || this.c.width < this.comp.clientWidth ) { this.sc(); }
 }
 
 VHex.prototype.update = function(d)
