@@ -200,7 +200,7 @@ VHex.prototype.validate = function()
 
   //If canvas height is smaller we must rerender the output.
 
-  if( this.c.height < this.comp.clientHeight ) { this.update(this.io); }
+  if( this.c.height>>4 < this.comp.clientHeight>>4 || (this.getPos() << 4) != (this.virtual ? this.io.dataV.offset : this.io.data.offset) ) { this.update(this.io); }
 }
 
 VHex.prototype.update = function(d)
@@ -912,9 +912,9 @@ dataDescriptor.prototype.validate = function()
 
   if( this.c.height != this.comp.clientHeight ){ this.adjSize(); }
 
-  //If canvas width, or height is smaller we must rerender the output.
+  //If canvas width changed, or height is smaller we must rerender the output.
 
-  if( this.c.height < this.comp.clientHeight || this.c.width < this.comp.clientWidth ) { this.update(); }
+  if( this.c.height>>4 < this.comp.clientHeight>>4 || this.c.width != this.comp.clientWidth ) { this.update(); }
 }
 
 function dataType(str,Type) { this.des = str; this.type = Type; }
