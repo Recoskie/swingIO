@@ -203,11 +203,11 @@ VHex.prototype.validate = function()
   if( this.c.height>>4 < this.comp.clientHeight>>4 || (this.getPos() << 4) != (this.virtual ? this.io.dataV.offset : this.io.data.offset) ) { this.update(this.io); }
 }
 
-VHex.prototype.update = function(d)
+VHex.prototype.update = function()
 {
   var g = this.g, height = this.c.height = this.comp.clientHeight; this.c.width = this.comp.clientWidth;
   
-  var data = !this.virtual ? d.data : d.dataV, pos = !this.virtual ? this.io.data.offset : this.io.dataV.offset;
+  var data = !this.virtual ? this.io.data : this.io.dataV, pos = !this.virtual ? this.io.data.offset : this.io.dataV.offset;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
@@ -1119,7 +1119,7 @@ tree.prototype.hide = dataDescriptor.prototype.hide = function( v ) { this.visib
 
 Number.prototype.toString64 = function(v32,base)
 {
-  var o = "", f = this * 4294967296, sec = base**((Math.log(f) / Math.log(base)) & -1), r = 0, r32 = false;
+  var o = "", f = (r32 = this == 0) ? v32 : this * 4294967296, sec = base**((Math.log(f) / Math.log(base)) & -1), r = 0;
   
   while( sec > 1 )
   {
