@@ -76,7 +76,7 @@ var vList = []; function validate()
     {
       //We must update the scroll bar any time height does not match.
 
-      if( this.c.height != this.comp.clientHeight ){ this.adjSize(); }
+      if( r.c.height != r.comp.clientHeight ){ r.adjSize(); }
 
       if( r.update == r.dataCheck )
       {
