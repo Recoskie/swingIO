@@ -49,7 +49,7 @@ All components that already have the data necessary are updated right away, whil
 Note that it would make sense to group together the loose public variables that are shared into one object.
 ------------------------------------------------------------*/
 
-var vList = []; function validate()
+var vList = []; async function validate()
 {
   if( vList.length > 0 ){ return; }
   
@@ -99,21 +99,28 @@ var vList = []; function validate()
 
   //Begin reading the data for the first component that needs to update.
 
-  if( vList.length > 0 ) { updateV(); }
+  if( vList.length > 0 ) { setTimeout(function() { updateV(); }, 0); }
 }
 
-function updateV()
+async function updateV()
 {
   if( vList.pos > 0 ) { Ref[vList[vList.pos-1].el].update(); }
 
   if( vList.pos < vList.length )
   {
-    var io = Ref[vList[vList.pos].el].io; io.Events = true; io.call(this, "updateV");
+    var io = Ref[vList[vList.pos].el].io;
     
-    if(vList[vList.pos].virtual) { io.seekV(vList[vList.pos].pos); io.readV(vList[vList.pos].size); }
-    else { io.seek(vList[vList.pos].pos); io.read(vList[vList.pos].size); }
+    //It is very important that we wait till other IO processing finishes before validating the data and UI components.
     
-    vList.pos += 1;
+    if ( !io.Events || io.fr.readyState == 1 ) { setTimeout(function() { updateV(); }, 0); } else
+    {
+      io.call(this, "updateV");
+    
+      if(vList[vList.pos].virtual) { io.seekV(vList[vList.pos].pos); io.readV(vList[vList.pos].size); }
+      else { io.seek(vList[vList.pos].pos); io.read(vList[vList.pos].size); }
+    
+      vList.pos += 1;
+    }
   }
   else { vList = []; }
 }
