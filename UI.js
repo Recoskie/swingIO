@@ -112,7 +112,7 @@ async function updateV()
     
     //It is very important that we wait till other IO processing finishes before validating the data and UI components.
     
-    if ( !io.Events || io.fr.readyState == 1 ) { setTimeout(function() { updateV(); }, 0); } else
+    if ( (io.fr.readyState | io.frv.readyState) & 1 ) { setTimeout(function() { updateV(); }, 0); } else
     {
       io.call(this, "updateV");
     
