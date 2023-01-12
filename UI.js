@@ -118,8 +118,10 @@ async function updateV()
     
       if(vList[vList.pos].virtual) { io.seekV(vList[vList.pos].pos); io.readV(vList[vList.pos].size); }
       else { io.seek(vList[vList.pos].pos); io.read(vList[vList.pos].size); }
+
+      //This acts as a fallback if operation completed else where or is cached.
     
-      vList.pos += 1;
+      vList.pos += 1; setTimeout(function() { updateV(); }, 0);
     }
   }
   else { vList = []; }
