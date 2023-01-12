@@ -108,7 +108,7 @@ async function updateV()
 
   if( vList.pos < vList.length )
   {
-    var io = Ref[vList[vList.pos].el].io;
+    var io = Ref[vList[vList.pos].el].io; io.buf = vList.pos == 0 ? vList[vList.pos].size : Math.max(io.buf, vList[vList.pos].size);
     
     //It is very important that we wait till other IO processing finishes before validating the data and UI components.
     
