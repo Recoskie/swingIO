@@ -49,11 +49,11 @@ All components that already have the data necessary are updated right away, whil
 Note that it would make sense to group together the loose public variables that are shared into one object.
 ------------------------------------------------------------*/
 
-var vList = []; async function validate()
+var vList = [], rType = false; async function validate()
 {
   if( vList.length > 0 ){ return; }
   
-  vList.pos = 0; for( var i = 0, r = Ref[0]; i < Ref.length; r=Ref[++i] )
+  vList.pos = 0; var buf = false; for( var i = 0, r = Ref[0]; i < Ref.length; r=Ref[++i] )
   {
     if(r instanceof VHex && r.visible)
     {
@@ -63,9 +63,9 @@ var vList = []; async function validate()
 
       //Does not match the memory buffer, then we must reload data and render the output.
 
-      if( (r.getPos() << 4) != (r.virtual ? r.io.dataV.offset : r.io.data.offset) || (((( r.comp.clientHeight >> 4 ) << 4 ) > (r.virtual ? r.io.dataV.length : r.io.data.length))) )
+      if( (buf = ((r.getPos() << 4) != (r.virtual ? r.io.dataV.offset : r.io.data.offset))) || (((( r.comp.clientHeight >> 4 ) << 4 ) > (r.virtual ? r.io.dataV.length : r.io.data.length))) )
       {
-        vList[vList.length] = {virtual:r.virtual,pos:r.getPos() << 4, size:( r.comp.clientHeight >> 4 ) << 4, el:i};
+        vList[vList.length] = {virtual:r.virtual,pos:r.getPos() << 4, size:( r.comp.clientHeight >> 4 ) << 4, el:i, buf:!buf };
       }
 
       //Aligns in memory buffer but needs to draw more rows.
@@ -87,11 +87,11 @@ var vList = []; async function validate()
     
         var dPos = (r.data.offset + r.data.relPos[r.curRow]), data = r.data.bytes(r.curRow,r.endRow);
      
-        if(r.io.data.offset <= dPos && (r.io.data.offset-dPos+r.io.data.length) >= data) { r.dataUpdate(); }
+        if(r.io.data.offset <= dPos && (r.io.data.offset-dPos+r.io.data.length) >= data) { r.dataUpdate(r.io.data); }
     
         //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-        vList[vList.length] = {virtual:false,pos:dPos, size:data, el:i};
+        else { vList[vList.length] = {virtual:false,pos:dPos, size:data, el:i, buf: false}; }
       }
       else { r.update(); }
     }
@@ -99,12 +99,12 @@ var vList = []; async function validate()
 
   //Begin reading the data for the first component that needs to update.
 
-  if( vList.length > 0 ) { setTimeout(function() { updateV(); }, 0); }
+  if( vList.length > 0 ) { console.log("Validating."); setTimeout(function() { updateV(); }, 0); }
 }
 
 async function updateV()
 {
-  if( vList.pos > 0 ) { Ref[vList[vList.pos-1].el].update(); }
+  if( vList.pos > 0 ) { Ref[vList[vList.pos-1].el].update(rType); }
 
   if( vList.pos < vList.length )
   {
@@ -114,14 +114,12 @@ async function updateV()
     
     if ( (io.fr.readyState | io.frv.readyState) & 1 ) { setTimeout(function() { updateV(); }, 0); } else
     {
-      io.call(this, "updateV");
+      if( vList[vList.pos].buf ) { rType = false; console.log("Buf read = " + (vList[vList.pos].virtual ? "Virtual" : "Offset") + ""); io.bufRead(this, "updateV"); } else { rType = true; console.log("On read = " + (vList[vList.pos].virtual ? "Virtual" : "Offset") + ""); io.onRead(this, "updateV"); }
     
       if(vList[vList.pos].virtual) { io.seekV(vList[vList.pos].pos); io.readV(vList[vList.pos].size); }
       else { io.seek(vList[vList.pos].pos); io.read(vList[vList.pos].size); }
-
-      //This acts as a fallback if operation completed else where or is cached.
     
-      vList.pos += 1; setTimeout(function() { updateV(); }, 0);
+      vList.pos += 1;
     }
   }
   else { vList = []; }
@@ -231,7 +229,7 @@ VHex.prototype.offsetSc = function()
 {
   if( this.rel ){ this.adjRelPos(); }
   
-  this.io.call( this, "update" );
+  this.io.bufRead( this, "update" );
 
   this.io.seek(this.getPos() * 16);
   
@@ -242,7 +240,7 @@ VHex.prototype.virtualSc = function()
 {
   this.adjRelPos();
   
-  this.io.call( this, "update" );
+  this.io.bufRead( this, "update" );
 
   this.io.seekV(this.getPos() * 16);
   
@@ -271,11 +269,11 @@ VHex.prototype.select = function(e)
   }
 }
 
-VHex.prototype.update = function()
+VHex.prototype.update = function(temp)
 {
   var g = this.g, height = this.c.height = this.comp.clientHeight; this.c.width = this.comp.clientWidth;
   
-  var data = !this.virtual ? this.io.data : this.io.dataV, pos = !this.virtual ? this.io.data.offset : this.io.dataV.offset;
+  var data = (temp == 1) ? this.io.tempD : (!this.virtual ? this.io.data : this.io.dataV), pos = data.offset;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
@@ -806,25 +804,25 @@ dataDescriptor.prototype.select = function(e)
 //Update is changeable based on if we are working with processor core data, or just file data.
 //Before updating we must check if the buffer data is in the correct offset.
 
-dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function()
+dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function(temp)
 {
   this.minRows = Math.min( this.data.rows, ((this.comp.clientHeight / 16) + 0.5)&-1 );
   this.curRow = Math.max(Math.min(this.comp.scrollTop,this.data.rows), 0) & -1, this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
 
   //Data within the current buffer area.
 
-  var dPos = (this.data.offset + this.data.relPos[this.curRow]), data = this.data.bytes(this.curRow,this.endRow);
+  var dPos = (this.data.offset + this.data.relPos[this.curRow]), rdata = this.data.bytes(this.curRow,this.endRow), data = (temp == 1) ? this.io.tempD : this.io.data;
  
-  if(this.io.data.offset <= dPos && (this.io.data.offset-dPos+this.io.data.length) >= data) { this.dataUpdate(); }
+  if(data.offset <= dPos && (data.offset-dPos+data.length) >= rdata) { this.dataUpdate(data); }
 
   //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-  else { this.io.call( this, "dataUpdate" ); this.io.seek(dPos); this.io.read(data); }
+  else { this.io.onRead( this, "dataUpdate" ); this.io.seek(dPos); this.io.read(data); }
 }
 
 //Update output as data model.
 
-dataDescriptor.prototype.dataUpdate = function()
+dataDescriptor.prototype.dataUpdate = function(data)
 {
   var g = this.g, width = this.c.width = this.comp.clientWidth, cols = width / 3, colsH = cols >> 1; this.c.height = this.comp.clientHeight, str = "";
 
@@ -864,9 +862,9 @@ dataDescriptor.prototype.dataUpdate = function()
  
     //Convert data to bytes.
  
-    var pos = (this.data.relPos[i]+this.data.offset)-this.io.data.offset, size = this.data.relPos[i+1]-this.data.relPos[i]; size = Math.min( cols / this.minHex, size);
+    var pos = (this.data.relPos[i]+this.data.offset)-data.offset, size = this.data.relPos[i+1]-this.data.relPos[i]; size = Math.min( cols / this.minHex, size);
       
-    for(var i2 = 0; i2 < size; str+=(this.io.data[pos+i2]&-1).byte()+((i2<(size-1))?" ":""), i2++);
+    for(var i2 = 0; i2 < size; str+=(data[pos+i2]&-1).byte()+((i2<(size-1))?" ":""), i2++);
 
     g.drawString(str, cols + 2, posY - 3, cols-4); str = "";
 
