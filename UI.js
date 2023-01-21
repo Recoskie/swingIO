@@ -63,9 +63,9 @@ var vList = [], rType = false; async function validate()
 
       //Does not match the memory buffer, then we must reload data and render the output.
 
-      if( (buf = ((r.getPos() << 4) != (r.virtual ? r.io.dataV.offset : r.io.data.offset))) || (((( r.comp.clientHeight >> 4 ) << 4 ) > (r.virtual ? r.io.dataV.length : r.io.data.length))) )
+      if( (r.getPos() << 4) != (r.virtual ? r.io.dataV.offset : r.io.data.offset) || (((( r.comp.clientHeight >> 4 ) << 4 ) > (r.virtual ? r.io.dataV.length : r.io.data.length))) )
       {
-        vList[vList.length] = {virtual:r.virtual,pos:r.getPos() << 4, size:( r.comp.clientHeight >> 4 ) << 4, el:i, buf:!buf };
+        vList[vList.length] = {virtual:r.virtual,pos:r.getPos() << 4, size:( r.comp.clientHeight >> 4 ) << 4, el:i, buf:true };
       }
 
       //Aligns in memory buffer but needs to draw more rows.
@@ -91,7 +91,7 @@ var vList = [], rType = false; async function validate()
     
         //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-        else { vList[vList.length] = {virtual:false,pos:dPos, size:data, el:i, buf: false}; }
+        else { vList[vList.length] = {virtual:false,pos:dPos, size:data, el:i, buf:false}; }
       }
       else { r.update(); }
     }
@@ -99,7 +99,7 @@ var vList = [], rType = false; async function validate()
 
   //Begin reading the data for the first component that needs to update.
 
-  if( vList.length > 0 ) { console.log("Validating."); setTimeout(function() { updateV(); }, 0); }
+  if( vList.length > 0 ) { setTimeout(function() { updateV(); }, 0); }
 }
 
 async function updateV()
@@ -114,7 +114,7 @@ async function updateV()
     
     if ( (io.fr.readyState | io.frv.readyState) & 1 ) { setTimeout(function() { updateV(); }, 0); } else
     {
-      if( vList[vList.pos].buf ) { rType = false; console.log("Buf read = " + (vList[vList.pos].virtual ? "Virtual" : "Offset") + ""); io.bufRead(this, "updateV"); } else { rType = true; console.log("On read = " + (vList[vList.pos].virtual ? "Virtual" : "Offset") + ""); io.onRead(this, "updateV"); }
+      if( vList[vList.pos].buf ) { rType = false; io.bufRead(this, "updateV"); } else { rType = true; io.onRead(this, "updateV"); }
     
       if(vList[vList.pos].virtual) { io.seekV(vList[vList.pos].pos); io.readV(vList[vList.pos].size); }
       else { io.seek(vList[vList.pos].pos); io.read(vList[vList.pos].size); }
