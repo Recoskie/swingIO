@@ -812,14 +812,12 @@ dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function(
   //Data within the current buffer area.
 
   var dPos = (this.data.offset + this.data.relPos[this.curRow]), rdata = this.data.bytes(this.curRow,this.endRow), data = (temp == 1) ? this.io.tempD : this.io.data;
-
-  console.log("check data"); console.log(this.io.tempD);
  
   if(data.offset <= dPos && (data.offset-dPos+data.length) >= rdata) { this.dataUpdate(data); }
 
   //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-  else { this.io.onRead( this, "dataCheck", 1 ); console.log("Read pos = " + dPos + ", length = " + rdata + ""); this.io.seek(dPos); this.io.read(rdata); }
+  else { this.io.onRead( this, "dataCheck", 1 ); this.io.seek(dPos); this.io.read(rdata); }
 }
 
 //Update output as data model.
