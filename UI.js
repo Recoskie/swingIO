@@ -49,7 +49,7 @@ All components that already have the data necessary are updated right away, whil
 Note that it would make sense to group together the loose public variables that are shared into one object.
 ------------------------------------------------------------*/
 
-var vList = []; async function validate()
+var vList = [], rType = false; async function validate()
 {
   if( vList.length > 0 ){ return; }
   
@@ -70,7 +70,7 @@ var vList = []; async function validate()
 
       //Aligns in memory buffer but needs to draw more rows.
 
-      else if( r.c.height>>4 < r.comp.clientHeight>>4 ) { r.update(r.virtual ? r.io.dataV : r.io.data); }
+      else if( r.c.height>>4 < r.comp.clientHeight>>4 ) { r.update(); }
     }
     else if(r instanceof dataDescriptor)
     {
@@ -102,9 +102,9 @@ var vList = []; async function validate()
   if( vList.length > 0 ) { console.log("Validating."); setTimeout(function() { updateV(); }, 0); }
 }
 
-async function updateV(data)
+async function updateV()
 {
-  if( vList.pos > 0 ) { Ref[vList[vList.pos-1].el].update(data); }
+  if( vList.pos > 0 ) { Ref[vList[vList.pos-1].el].update(rType); }
 
   if( vList.pos < vList.length )
   {
@@ -114,8 +114,7 @@ async function updateV(data)
     
     if ( (io.fr.readyState | io.frv.readyState) & 1 ) { setTimeout(function() { updateV(); }, 0); } else
     {
-      if( vList[vList.pos].buf ) { console.log("Buf read = " + (vList[vList.pos].virtual ? "Virtual" : "Offset") + ""); io.bufRead(this, "updateV", vList[vList.pos].virtual ? io.dataV : io.data); }
-      else { console.log("On read = " + (vList[vList.pos].virtual ? "Virtual" : "Offset") + ""); io.onRead(this, "updateV", io.tempD); }
+      if( vList[vList.pos].buf ) { rType = false; console.log("Buf read = " + (vList[vList.pos].virtual ? "Virtual" : "Offset") + ""); io.bufRead(this, "updateV"); } else { rType = true; console.log("On read = " + (vList[vList.pos].virtual ? "Virtual" : "Offset") + ""); io.onRead(this, "updateV"); }
     
       if(vList[vList.pos].virtual) { io.seekV(vList[vList.pos].pos); io.readV(vList[vList.pos].size); }
       else { io.seek(vList[vList.pos].pos); io.read(vList[vList.pos].size); }
@@ -230,7 +229,7 @@ VHex.prototype.offsetSc = function()
 {
   if( this.rel ){ this.adjRelPos(); }
   
-  this.io.bufRead( this, "update", this.io.data );
+  this.io.bufRead( this, "update" );
 
   this.io.seek(this.getPos() * 16);
   
@@ -241,7 +240,7 @@ VHex.prototype.virtualSc = function()
 {
   this.adjRelPos();
   
-  this.io.bufRead( this, "update", this.io.dataV );
+  this.io.bufRead( this, "update" );
 
   this.io.seekV(this.getPos() * 16);
   
@@ -270,9 +269,11 @@ VHex.prototype.select = function(e)
   }
 }
 
-VHex.prototype.update = function(data)
+VHex.prototype.update = function(temp)
 {
-  var g = this.g, height = this.c.height = this.comp.clientHeight; this.c.width = this.comp.clientWidth, pos = data.offset;
+  var g = this.g, height = this.c.height = this.comp.clientHeight; this.c.width = this.comp.clientWidth;
+  
+  var data = (temp == 1) ? this.io.tempD : (!this.virtual ? this.io.data : this.io.dataV), pos = data.offset;
   
   g.font = "16px dos"; g.fillStyle = "#FFFFFF";
   
@@ -452,7 +453,7 @@ VHex.prototype.onseek = function( f )
   
   if( pos > ve || pos < vs ) { this.sc = this.blockSc; this.comp.scrollTo( 0, pos >> 4 ); }
     
-  if( this.rel ) { this.adjRelPos(); } this.update(this.virtual ? this.io.dataV : this.io.data);
+  if( this.rel ) { this.adjRelPos(); } this.update(f);
 }
 
 /*------------------------------------------------------------
@@ -811,12 +812,14 @@ dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function(
   //Data within the current buffer area.
 
   var dPos = (this.data.offset + this.data.relPos[this.curRow]), rdata = this.data.bytes(this.curRow,this.endRow), data = (temp == 1) ? this.io.tempD : this.io.data;
+
+  console.log("check data"); console.log(this.io.tempD);
  
   if(data.offset <= dPos && (data.offset-dPos+data.length) >= rdata) { this.dataUpdate(data); }
 
   //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-  else { this.io.onRead( this, "dataUpdate", this.io.tempD ); this.io.seek(dPos); this.io.read(data); }
+  else { this.io.onRead( this, "dataCheck", 1 ); console.log("Read pos = " + dPos + ", length = " + rdata + ""); this.io.seek(dPos); this.io.read(rdata); }
 }
 
 //Update output as data model.
