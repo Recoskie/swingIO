@@ -786,19 +786,17 @@ dataDescriptor.prototype.select = function(e)
     
     if( r < ( this.data.linear.length >> 1 ) )
     {
-      this.coreDisLoc(this.data.linear[r],false);
+      this.coreDisLoc(this.data.linear[r],false); this.update();
     }
     else if( ( r -= ( this.data.linear.length >> 1 ) ) < this.data.crawl.length )
     {
-      this.coreDisLoc(this.data.crawl[r],true);
+      this.coreDisLoc(this.data.crawl[r],true); this.update();
     }
     else
     {
       r -= this.data.crawl.length; r = r << 1; this.io.seekV( this.data.data_off[r] );
     }
   }
-  
-  this.update();
 }
 
 //Update is changeable based on if we are working with processor core data, or just file data.
