@@ -773,7 +773,11 @@ dataDescriptor.prototype.select = function(e)
 
   if( this.update == this.dataCheck )
   {
-    this.di.setType( this.data.data[this.selectedRow] >> 1, (this.data.data[this.selectedRow] & 1) == 1 ); this.data.source[this.data.event]( this.selectedRow );
+    var type = this.data.data[this.selectedRow], order = (type & 1) == 1; type >>= 1;
+    
+    if( type == 13 || type == 14 ) { this.di.strLen = this.di.dLen[13] = this.data.relPos[this.selectedRow + 1] - this.data.relPos[this.selectedRow]; }
+    
+    this.di.setType( type, order ); this.data.source[this.data.event]( this.selectedRow );
   
     this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
   }
@@ -968,7 +972,21 @@ dataDescriptor.prototype.adjSize = function()
   this.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;";
 }
 
-function dataType(str,Type) { this.des = str; this.type = Type; }
+function dataType(str,Type) { this.des = str; this.type = Type; this.ref = []; this.el = []; }
+
+//Variable length data types modify the relative positions of the descriptors they are added to.
+
+dataType.prototype.length = function(size)
+{
+  var delta = 0, el = 0, r = [];
+  
+  for(var i1 = 0; i1 < this.ref.length; i1++)
+  {
+    el = this.el[i1]; r = this.ref[i1].relPos; delta = size - (r[el+1] - r[el]);
+    
+    el+=1; for(; el < r.length; r[el++] += delta);
+  }
+}
 
 //The position we wish to style binary data.
 
@@ -1003,8 +1021,15 @@ function Descriptor(data)
   for( var i = 0, b = 0; i < data.length; i++ )
   {
     this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.Bytes[this.data[i]>>1];
+    
+    //Variable length data types must be able to reference the descriptor and the element it is at.
+    //This allows variable length data types to be adjusted.
       
-    if( b == -1 ){ i += 1; this.data[i] = data[i].type; b = data[i]; } else if( defArray = ( b == -2 ) )
+    if( b == -1 ){ data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this; }
+    
+    //Defining arrays can be optimized better similar to variable length data types.
+    
+    else if( defArray = ( b == -2 ) )
     {
       this.arPos[this.arPos.length] = rows; this.data[i+1] = data[i+1].type; this.data[i+2] = data[i+2].type;
 
