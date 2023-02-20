@@ -508,7 +508,7 @@ function dataInspector(el, io)
   
   out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
   
-  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='Ref["+Ref.length+"].dLen[14] = (Ref["+Ref.length+"].dLen[13] = this.value = Ref["+Ref.length+"].strLen = Math.min( this.value, 65536)) << 1;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);' value='0' /></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='Ref["+Ref.length+"].dLen[14] = (Ref["+Ref.length+"].dLen[13] = Ref["+Ref.length+"].strLen = Math.min(this.value, 65536)) << 1;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);' value='0' /></fieldset></td><tr>";
   
   d.innerHTML = out;
   
@@ -521,6 +521,10 @@ function dataInspector(el, io)
   this.td = d.getElementsByTagName("table")[0];
   
   for(var i = 1; i <= this.dType.length; i++) { this.out[this.out.length] = this.td.rows[i].cells[1]; }
+
+  //User input string length is updated when clicking on a string data type as output element 16.
+
+  this.out[16] = this.td.rows[21].cells[0].getElementsByTagName("input")[0];
   
   this.base = 10; this.strLen = 0;
   
@@ -549,23 +553,19 @@ function dataInspector(el, io)
   io.comps[io.comps.length] = this;
 }
 
-dataInspector.prototype.setType = function(t,order)
+dataInspector.prototype.setType = function(t, order, len)
 {
-  this.order[order&-1].checked = true;
+  len = (t >= 13 && t <= 15) ? (len || this.dLen[t]) : this.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
   
-  if(this.sel)
-  {
-    this.td.rows[this.sel].style.background = "#FFFFFF";
-  }
-  this.td.rows[this.sel=t+1].style.background = "#9EB0C1";
+  if(this.sel) { this.td.rows[this.sel].style.background = "#FFFFFF"; } this.td.rows[this.sel=t+1].style.background = "#9EB0C1";
   
   //Update hex editor data length.
   
-  for( var i = 0; i < this.editors.length; i++ )
-  {
-    this.editors[i].slen = this.dLen[t];
-    if(this.editors[i].visible){this.editors[i].onseek(this.io);}
-  }
+  for( var i = 0; i < this.editors.length; i++ ) { this.editors[i].slen = len; if(this.editors[i].visible) { this.editors[i].onseek(this.io); } }
+
+  //Variable length string.
+
+  if( t == 13 || t == 14 ) { if( t == 14 ) { len >>= 1; } this.dLen[14] = (this.dLen[13] = this.out[16].value = this.strLen = len) << 1; }
 }
 
 dataInspector.prototype.onread = function( f ) { }
@@ -775,9 +775,9 @@ dataDescriptor.prototype.select = function(e)
   {
     var type = this.data.data[this.selectedRow], order = (type & 1) == 1; type >>= 1;
     
-    if( type == 13 || type == 14 ) { this.di.strLen = this.di.dLen[13] = this.data.relPos[this.selectedRow + 1] - this.data.relPos[this.selectedRow]; }
+    this.di.setType( type, order, this.data.relPos[this.selectedRow + 1] - this.data.relPos[this.selectedRow] );
     
-    this.di.setType( type, order ); this.data.source[this.data.event]( this.selectedRow );
+    this.data.source[this.data.event]( this.selectedRow );
   
     this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
   }
