@@ -854,7 +854,11 @@ dataDescriptor.prototype.dataUpdate = function(data)
  
   for( var i = this.curRow, posY = 32; i < this.endRow; posY += 16, i++ )
   {
-    //Selected row. Event handling not ready yet.
+    //Skip zero in size elements.
+    
+    while(this.data.relPos[i] == this.data.relPos[i+1]){i++;this.endRow++;}
+    
+    //Selected row.
 
     if( i == this.selectedRow ){ g.stroke(); g.fillStyle = "#9EB0C1"; g.fillRect(0, posY - 16, width, 16); g.stroke(); g.fillStyle = "#000000"; }
 
