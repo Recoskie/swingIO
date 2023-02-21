@@ -951,7 +951,7 @@ dataDescriptor.prototype.setDescriptor = function( d )
 {
   this.update = this.dataCheck; this.data = d; this.selectedRow = -1;
   
-  this.adjSize(); this.comp.scrollTo(0,0); //this.io.seek(d.offset); this does not work.
+  this.adjSize(); this.comp.scrollTo(0,0); this.io.seek(d.offset);
   
   this.di.setType(15, 0, this.data.relPos[this.data.relPos.length-1]);
   
