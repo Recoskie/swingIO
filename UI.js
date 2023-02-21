@@ -779,7 +779,7 @@ dataDescriptor.prototype.select = function(e)
     
     this.data.source[this.data.event]( this.selectedRow );
   
-    this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
+    this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]); this.update();
   }
 
   //Processor core.
