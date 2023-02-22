@@ -1031,7 +1031,7 @@ function Descriptor(data)
     //Variable length data types must be able to reference the descriptor and the element it is at.
     //This allows variable length data types to be adjusted.
       
-    if( b == -1 ){ data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this; }
+    if( b == -1 ){ data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this; b = 0; }
     
     //Defining arrays can be optimized better similar to variable length data types.
     
