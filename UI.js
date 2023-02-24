@@ -856,8 +856,8 @@ dataDescriptor.prototype.dataUpdate = function(data)
   {
     //Skip zero in size elements.
     
-    while(this.data.relPos[i] == this.data.relPos[i+1]){i++;this.endRow++;}
-    
+    //while(this.data.relPos[i] == this.data.relPos[i+1]){i++;if(this.endRow < this.data.relPos.length){this.endRow++;}}
+
     //Selected row.
 
     if( i == this.selectedRow ){ g.stroke(); g.fillStyle = "#9EB0C1"; g.fillRect(0, posY - 16, width, 16); g.stroke(); g.fillStyle = "#000000"; }
