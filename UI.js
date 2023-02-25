@@ -1109,10 +1109,10 @@ tree.prototype.getNode = function(i)
 {
   var r = this.comp.firstChild.children[i]; if(r.children.length >= 2) { r = r.firstChild; } r = r.firstChild;
 
-  r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.getNode = function( i )
+  r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.name = r.innerHTML; r.getNode = function( i )
   {
     var r = this.parentElement.parentElement.children[1].children[i]; if(r.children.length >= 2) { r = r.firstChild; } r = r.firstChild;
-    r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.getNode = this.getNode; return(r);
+    r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.name = r.innerHTML; r.getNode = this.getNode; return(r);
   }
 
   return(r);
@@ -1166,6 +1166,7 @@ function treeNode(n,args,expand)
   }
   
   this.nodes = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"];
+  this.name = n;
 }
 
 treeNode.prototype.add = function(n,args)
@@ -1180,8 +1181,12 @@ treeNode.prototype.add = function(n,args)
     }
   }
   
-  this.nodes[this.nodes.length] = "<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>";
+  this.nodes[this.nodes.length] = s = new String("<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>"); s.name = n;
 }
+
+treeNode.prototype.getNode = function(i){ return(this.nodes[i+1]); }
+
+treeNode.prototype.length = function() { return( this.nodes.length - 1 ); }
 
 treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + "</ul></li>" ); }
 
