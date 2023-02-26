@@ -1109,14 +1109,16 @@ tree.prototype.getNode = function(i)
 {
   var r = this.comp.firstChild.children[i]; if(r.children.length >= 2) { r = r.firstChild; } r = r.firstChild;
 
-  r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.name = r.innerHTML; r.getNode = function( i )
+  r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.length = this.length; r.name = r.innerHTML;  r.getNode = function( i )
   {
     var r = this.parentElement.parentElement.children[1].children[i]; if(r.children.length >= 2) { r = r.firstChild; } r = r.firstChild;
-    r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.name = r.innerHTML; r.getNode = this.getNode; return(r);
+    r.setArgs = this.setArgs; r.getArgs = this.getArgs; r.setNode = this.setNode; r.length = this.length; r.name = r.innerHTML; r.getNode = this.getNode; return(r);
   }
 
   return(r);
 }
+
+tree.prototype.length = function(){ return( (this.parentElement.parentElement.querySelector(".nested") || {children:{length:0}}).children.length ); }
 
 tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
 {
@@ -1165,8 +1167,7 @@ function treeNode(n,args,expand)
     }
   }
   
-  this.nodes = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"];
-  this.name = n;
+  this.nodes = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"]; this.name = n;
 }
 
 treeNode.prototype.add = function(n,args)
