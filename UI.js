@@ -1166,30 +1166,30 @@ function treeNode(n,args,expand)
       t = this.node[i]; n = n.substring(0, n.length-this.fileType[i].length);
     }
   }
+
+  //The first node has no nested children nodes until we add more nodes.
+
+  this.nodes = ["<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+((t==0)?1:t)+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>\r\n"]; this.name = n;
+
+  //The first node is replaced by 'node' as soon as we add more nodes to the nodes array.
   
-  this.nodes = ["<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">"]; this.name = n;
+  this.node = "<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">\r\n";
 }
 
 treeNode.prototype.add = function(n,args)
 {
-  if(n instanceof treeNode) { this.nodes[this.nodes.length] = n; n.parentNode = this; return; }
+  if(n instanceof treeNode) { if(this.node) { this.nodes[0] = this.node; this.node = undefined; } this.nodes[this.nodes.length] = n; n.parentNode = this; return; }
+
+  //The new system replaces the first node when there are more than one nodes. This also ensures that all the node methods can be called on any node.
   
-  var t = 1; for(var i = 0; i < this.fileType.length; i++)
-  {
-    if( n.substring(n.length-this.fileType[i].length, n.length).toLowerCase() == this.fileType[i] )
-    {
-      t = this.node[i]; n = n.substring(0, n.length-this.fileType[i].length);
-    }
-  }
-  
-  this.nodes[this.nodes.length] = s = new String("<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>"); s.name = n;
+  this.add(new treeNode(n,args,false));
 }
 
 treeNode.prototype.getNode = function(i){ return(this.nodes[i+1]); }
 
 treeNode.prototype.length = function() { return( this.nodes.length - 1 ); }
 
-treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + "</ul></li>" ); }
+treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + (this.node?"":"</ul></li>") ); }
 
 //Shared UI controls.
 
