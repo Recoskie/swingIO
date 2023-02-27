@@ -1103,7 +1103,7 @@ function tree(el) { this.comp = document.getElementById(el); this.comp.style.ove
 
 tree.prototype.set = function(v) { this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
-//Navigate the tree nodes.
+//Navigate the tree nodes. Does the same thing as treeNode getNode except this navigates the HTML list structure directly.
 
 tree.prototype.getNode = function(i)
 {
@@ -1118,7 +1118,11 @@ tree.prototype.getNode = function(i)
   return(r);
 }
 
+//Number of nested nodes under HTML tree node. Does the same thing as the treeNode length operation except this operates on the HTML structure directly.
+
 tree.prototype.length = function(){ return( (this.parentElement.parentElement.querySelector(".nested") || {children:{length:0}}).children.length ); }
+
+//Expands or hides nested nodes and gives the HTML node to users custom event handling code.
 
 tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
 {
@@ -1142,7 +1146,7 @@ tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
   this.event(this.selectedNode = v);
 }
 
-//Modify nodes. Note these methods are referenced from node elements and should not be directly used.
+//Modify nodes. Note these methods are referenced from the HTML node elements only.
 
 tree.prototype.setArgs = function( arg ) { this.setAttribute("args", arg + ""); }
 tree.prototype.getArgs = function() { return( this.getAttribute("args").split(",")); }
@@ -1150,7 +1154,7 @@ tree.prototype.setNode = function( node )
 {
   var el = document.createElement("template"); el.innerHTML = node + ""; el = el.content.firstChild;
 
-  if( (t = this.parentElement.parentElement).innerHTML.startsWith("<span") > 0 ){ t.children[1].remove(); }
+  if( (t = this.parentElement.parentElement).innerHTML.startsWith("<span") > 0 ){ t.children[1].remove(); } //Remove any nodes that have nested nodes.
 
   this.parentElement.parentElement.replaceChild(el,this.parentElement); if(this.self) { this.self.selectedNode = el.querySelector("div"); }
 }
@@ -1169,25 +1173,27 @@ function treeNode(n,args,expand)
 
   //The first node has no nested children nodes until we add more nodes.
 
-  this.nodes = ["<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+((t==0)?1:t)+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>\r\n"]; this.name = n;
+  this.nodes = ["<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+((t==0)?1:t)+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>"]; this.name = n;
 
   //The first node is replaced by 'node' as soon as we add more nodes to the nodes array.
   
-  this.node = "<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">\r\n";
+  this.node = "<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">";
 }
 
 treeNode.prototype.add = function(n,args)
 {
-  if(n instanceof treeNode) { if(this.node) { this.nodes[0] = this.node; this.node = undefined; } this.nodes[this.nodes.length] = n; n.parentNode = this; return; }
-
-  //The new system replaces the first node when there are more than one nodes. This also ensures that all the node methods can be called on any node.
-  
-  this.add(new treeNode(n,args,false));
+  n = (n instanceof treeNode) ? n : new treeNode(n,args,false); if(this.node) { this.nodes[0] = this.node; this.node = undefined; } this.nodes[this.nodes.length] = n; n.parentNode = this;
 }
+
+//Get a tree node.
 
 treeNode.prototype.getNode = function(i){ return(this.nodes[i+1]); }
 
+//Number of tree nodes we can iterate though with "getNode".
+
 treeNode.prototype.length = function() { return( this.nodes.length - 1 ); }
+
+//Combines the html together of all nodes. Adds </ul></li> at the end of nodes with nested elements.
 
 treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.nodes.length; o += this.nodes[i++] + "" ); return( o + (this.node?"":"</ul></li>") ); }
 
