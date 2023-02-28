@@ -769,18 +769,9 @@ dataDescriptor.prototype.select = function(e)
   this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop ) ) >> 4 ))&-1; if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
 
-  //Data types.
+  //Data types should always be seeked and in buffer before setting data type.
 
-  if( this.update == this.dataCheck )
-  {
-    var type = this.data.data[this.selectedRow], order = (type & 1) == 1; type >>= 1;
-    
-    this.di.setType( type, order, this.data.relPos[this.selectedRow + 1] - this.data.relPos[this.selectedRow] );
-    
-    this.data.source[this.data.event]( this.selectedRow );
-  
-    this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]); this.update();
-  }
+  if( this.update == this.dataCheck ) { this.io.onSeek(this,"setDataType"); this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]); }
 
   //Processor core.
 
@@ -854,10 +845,6 @@ dataDescriptor.prototype.dataUpdate = function(data)
  
   for( var i = this.curRow, posY = 32; i < this.endRow; posY += 16, i++ )
   {
-    //Skip zero in size elements.
-    
-    //while(this.data.relPos[i] == this.data.relPos[i+1]){i++;if(this.endRow < this.data.relPos.length){this.endRow++;}}
-
     //Selected row.
 
     if( i == this.selectedRow ){ g.stroke(); g.fillStyle = "#9EB0C1"; g.fillRect(0, posY - 16, width, 16); g.stroke(); g.fillStyle = "#000000"; }
@@ -963,7 +950,18 @@ dataDescriptor.prototype.setDescriptor = function( d )
   this.adjSize(); this.comp.scrollTo(0,0); this.io.onSeek(this,"load"); this.io.seek(d.offset);
 }
 
-dataDescriptor.prototype.load = function() { this.data.source[this.data.event]( -1 ); this.di.setType(15, 0, this.data.relPos[this.data.relPos.length-1]); this.update(); }
+dataDescriptor.prototype.load = function() { this.data.source[this.data.event]( -1, this.io.offset - this.io.data.offset ); this.di.setType(15, 0, this.data.relPos[this.data.relPos.length-1]); this.update(); }
+
+dataDescriptor.prototype.setDataType = function()
+{
+  var type = this.data.data[this.selectedRow], order = (type & 1) == 1; type >>= 1;
+
+  this.data.source[this.data.event]( this.selectedRow, this.io.offset - this.io.data.offset );
+  
+  this.di.setType(type, order, this.data.relPos[this.selectedRow + 1] - this.data.relPos[this.selectedRow]);
+  
+  this.update();
+}
 
 //Set core data model.
 
@@ -992,6 +990,8 @@ function dataType(str,Type) { this.des = str; this.type = Type; this.ref = []; t
 dataType.prototype.length = function(size)
 {
   var delta = 0, el = 0, r = [];
+
+  if( size == null ) { el = this.el[0]; r = this.ref[0].relPos; return( r[el+1] - r[el] ); }
   
   for(var i1 = 0; i1 < this.ref.length; i1++)
   {
