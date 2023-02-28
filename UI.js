@@ -945,6 +945,15 @@ dataDescriptor.prototype.coreUpdate = function()
 
 dataDescriptor.prototype.coreDisLoc = function(virtual, crawl) { }
 
+//Clear the data model.
+
+dataDescriptor.prototype.clear = function()
+{
+  this.update = this.dataCheck; this.minRows = this.curRow = this.endRow = 0;
+  
+  this.data = new Descriptor([]); this.selectedRow = -1; this.adjSize(); this.dataUpdate();
+}
+
 //Set the data model.
 
 dataDescriptor.prototype.setDescriptor = function( d )
