@@ -566,6 +566,8 @@ dataInspector.prototype.setType = function(t, order, len)
   //Variable length string.
 
   if( t == 13 || t == 14 ) { if( t == 14 ) { len >>= 1; } this.dLen[14] = (this.dLen[13] = this.out[16].value = this.strLen = len) << 1; }
+
+  this.onseek(this.io);
 }
 
 dataInspector.prototype.onread = function( f ) { }
