@@ -769,9 +769,21 @@ dataDescriptor.prototype.select = function(e)
   this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop ) ) >> 4 ))&-1; if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
 
-  //Data types should always be seeked and in buffer before setting data type.
+  //Data type descriptor.
 
-  if( this.update == this.dataCheck ) { this.io.onSeek(this,"setDataType"); this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]); }
+  if( this.update == this.dataCheck )
+  {
+    //Data types should always be seeked and in buffer before setting data type unless it is zero in size.
+
+    if(this.data.relPos[this.selectedRow] != this.data.relPos[this.selectedRow+1])
+    {
+      this.io.onSeek(this,"setDataType"); this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
+    }
+
+    //If the data is zero in size then we should display what the data felled is intended for.
+
+    else { this.data.source[this.data.event](this.selectedRow); this.update(); }
+  }
 
   //Processor core.
 
