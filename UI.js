@@ -555,7 +555,7 @@ function dataInspector(el, io)
 
 dataInspector.prototype.setType = function(t, order, len)
 {
-  len = (t >= 13 && t <= 15) ? (len || this.dLen[t]) : this.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
+  t = t >= 15 ? 15 : t; len = (t >= 13 && t <= 15) ? (len || this.dLen[t]) : this.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
   
   if(this.sel) { this.td.rows[this.sel].style.background = "#FFFFFF"; } this.td.rows[this.sel=t+1].style.background = "#9EB0C1";
   
@@ -1005,11 +1005,11 @@ function dataType(str,type) { this.des = str; this.type = type; this.ref = []; t
 
 function arrayType(str,types)
 {
-  this.des = str; this.data = []; this.type = 32; this.size = 0; this.length = 0; this.ref = []; this.el = [];
+  this.des = str; this.data = []; this.type = 32; this.size = 0; this.len = 0; this.ref = []; this.el = [];
 
   for( var i = 0; i < types.length; i++ )
   {
-    this.des[i] = types[i].des; this.data[i] = types[i].type; this.size += Descriptor.prototype.Bytes[types[i]>>1];
+    this.des[i] = types[i].des; this.data[i] = types[i].type; this.size += Descriptor.prototype.Bytes[types[i].type>>1];
   }
 }
 
@@ -1017,9 +1017,9 @@ function arrayType(str,types)
 
 dataType.prototype.length = function(size)
 {
-  var delta = 0, el = 0, r = [];
-
   if( size == null ) { el = this.el[0]; r = this.ref[0].relPos; return( r[el+1] - r[el] ); }
+
+  var delta = 0, el = 0, r = [];
   
   for(var i1 = 0; i1 < this.ref.length; i1++)
   {
@@ -1029,11 +1029,20 @@ dataType.prototype.length = function(size)
   }
 }
 
-//Variable length array that is a collection of data types.
+//Variable length array modify the relative positions of the descriptors they are added to.
 
-arrayType.prototype.length = function(size)
+arrayType.prototype.length = function(len)
 {
-  this.length = size;
+  if( len == null ) { return( this.len ); }
+
+  var size = this.size * (this.len = len), delta = 0, el = 0, r = [];
+  
+  for(var i1 = 0; i1 < this.ref.length; i1++)
+  {
+    el = this.el[i1]; r = this.ref[i1].relPos; delta = size - (r[el+1] - r[el]);
+    
+    el+=1; for(; el < r.length; r[el++] += delta);
+  }
 }
 
 //The position we wish to style binary data.
@@ -1083,7 +1092,7 @@ function Descriptor(data)
       
       this.arPos[this.arPos.length] = i; this.arPos[this.arPos.length] = data[i];
         
-      b = data[i].size * data[i].length;
+      b = data[i].size * data[i].len;
     }
 
     this.relPos[i]=length; length += b; this.rows += 1;
