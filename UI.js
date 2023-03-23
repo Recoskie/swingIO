@@ -1081,7 +1081,7 @@ function Descriptor(data)
     {
       data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this;
       
-      this.arPos[this.arPos.length] = row; this.arPos[this.arPos.length] = data[i];
+      this.arPos[this.arPos.length] = i; this.arPos[this.arPos.length] = data[i];
         
       b = data[i].size * data[i].length;
     }
