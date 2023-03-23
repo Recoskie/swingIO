@@ -997,7 +997,21 @@ dataDescriptor.prototype.adjSize = function()
   this.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;";
 }
 
-function dataType(str,Type) { this.des = str; this.type = Type; this.ref = []; this.el = []; }
+//Singular data type.
+
+function dataType(str,type) { this.des = str; this.type = type; this.ref = []; this.el = []; }
+
+//Collection of data types in array order.
+
+function arrayType(str,types)
+{
+  this.des = str; this.data = []; this.type = 32; this.size = 0; this.length = 0; this.ref = []; this.el = [];
+
+  for( var i = 0; i < types.length; i++ )
+  {
+    this.des[i] = types[i].des; this.data[i] = types[i].type; this.size += Descriptor.prototype.Bytes[types[i]>>1];
+  }
+}
 
 //Variable length data types modify the relative positions of the descriptors they are added to.
 
@@ -1013,6 +1027,13 @@ dataType.prototype.length = function(size)
     
     el+=1; for(; el < r.length; r[el++] += delta);
   }
+}
+
+//Variable length array that is a collection of data types.
+
+arrayType.prototype.length = function(size)
+{
+  this.length = size;
 }
 
 //The position we wish to style binary data.
@@ -1043,31 +1064,29 @@ function Descriptor(data)
 
   //begin organizing data for optimized display.
 
-  var defArray = false, arrayEl = 0, arraySize = 0, arrayLen = 0, length = 0;
+  var length = 0;
 
   for( var i = 0, b = 0; i < data.length; i++ )
   {
-    this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.Bytes[this.data[i]>>1];
-    
+    this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.Bytes[data[i].type>>1]
+
     //Variable length data types must be able to reference the descriptor and the element it is at.
     //This allows variable length data types to be adjusted.
       
     if( b == -1 ){ data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this; b = 0; }
-    
-    //Defining arrays can be optimized better similar to variable length data types.
-    
-    else if( defArray = ( b == -2 ) )
-    {
-      this.arPos[this.arPos.length] = rows; this.data[i+1] = data[i+1].type; this.data[i+2] = data[i+2].type;
 
-      rows += ( (arrayEl = this.data[i+1]) + 1 ) * (arraySize = this.data[i+2]); i += 2;
-    }
-      
-    if( !defArray ) { this.relPos[this.relPos.length]=length; length += b; this.rows += 1; }
-    else
+    //Array data type.
+    
+    if( b == -2 )
     {
-      arrayLen += b; if(!(defArray = (arrayEl-- > 0))) { length += arrayLen * arraySize; }
+      data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this;
+      
+      this.arPos[this.arPos.length] = row; this.arPos[this.arPos.length] = data[i];
+        
+      b = data[i].size * data[i].length;
     }
+
+    this.relPos[i]=length; length += b; this.rows += 1;
   }
     
   this.relPos[this.relPos.length]=length;
