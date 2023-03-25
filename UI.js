@@ -1071,10 +1071,15 @@ dataDescriptor.prototype.setDescriptor = function( d )
 {
   this.update = this.dataCheck; this.data = d; this.selectedRow = -1;
   
-  this.adjSize(); this.comp.scrollTo(0,0); this.io.onSeek(this,"load"); this.io.seek(d.offset);
+  this.io.onSeek(this,"load"); this.io.seek(d.offset);
 }
 
-dataDescriptor.prototype.load = function() { this.data.source[this.data.event]( -1, this.io.offset - this.io.data.offset ); this.di.setType(15, 0, this.data.relPos[this.data.relPos.length-1]); this.update(); }
+dataDescriptor.prototype.load = function()
+{
+  this.data.source[this.data.event]( -1, this.io.offset - this.io.data.offset ); this.di.setType(15, 0, this.data.relPos[this.data.relPos.length-1]);
+  
+  this.adjSize(); this.comp.scrollTo(0,0); this.update();
+}
 
 dataDescriptor.prototype.setDataType = function()
 {
@@ -1157,16 +1162,16 @@ arrayType.prototype.length = function(len)
 {
   if( len == null ) { return( this.len ); }
 
-  var size = this.size * (this.len = len), delta = 0, el = 0, r = [];
+  var size = this.size * (this.len = len), delta = 0, rDelta = this.endRow, el = 0, r = [];
+
+  rDelta = (this.endRow = this.len * this.dataTypes) - rDelta;
   
   for(var i1 = 0; i1 < this.ref.length; i1++)
   {
     el = this.el[i1]; r = this.ref[i1].relPos; delta = size - (r[el+1] - r[el]);
     
-    el+=1; for(; el < r.length; r[el++] += delta);
+    this.ref[i1].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
   }
-
-  this.endRow = this.len * this.dataTypes;
 }
 
 //The position we wish to style binary data.
@@ -1191,7 +1196,7 @@ function Descriptor(data)
 
   this.relPos = []; this.arRows = [];
 
-  //Relative position differences are used when handing a click of a data type or rendering.
+  //Relative position differences are used when user clicks a data type, or when rendering data.
 
   this.rel1 = 0; this.rel2 = 0; this.type = 0;
 
@@ -1220,7 +1225,7 @@ function Descriptor(data)
       
       this.arRows[this.arRows.length] = i + 1; this.arRows[this.arRows.length] = data[i];
         
-      b = data[i].size * data[i].len;
+      b = data[i].size * data[i].len; this.rows += data[i].endRow;
     }
 
     this.relPos[i]=length; length += b; this.rows += 1;
@@ -1234,9 +1239,15 @@ function Descriptor(data)
 }
 
 //Calc number of bytes that need to be read to display rows.
-//For now we will not involve array types.
 
-Descriptor.prototype.bytes = function(r1,r2) { return( this.relPos[r2] - this.relPos[r1] ); }
+Descriptor.prototype.bytes = function(r1,r2)
+{
+  //ToDo Convert r1, and r2 to relative potion in array if row align with array type.
+
+  if( r2 >= this.relPos.length ) { var dif = r2 - (this.relPos.length-1); console.log(dif); r1 -= dif; r2 -= dif; }
+
+  return( this.relPos[r2] - this.relPos[r1] );
+}
 
 //Sets the method that is called when user clicks a data type.
 
