@@ -773,13 +773,63 @@ dataDescriptor.prototype.select = function(e)
 
   //Data type descriptor.
 
-  if( this.update == this.dataCheck )
+  var r = this.selectedRow; if( this.update == this.dataCheck )
   {
+    //Check if data is within the array data type.
+
+    this.rel1 = null; this.rel2 = null; for( var i = 0; i < this.data.arRows.length; i += 2 )
+    {
+      var arRow = this.data.arRows[i], array = this.data.arRows[i+1];
+
+      //The start and end rows of the array.
+
+      if( r >= arRow && r < (arRow + array.endRow) )
+      {
+        //Subtract the current row to start of array.
+        //Divide the row by number of data type rows to find the array element number.
+        //Do division remainder of data type rows to find the data type in array element.
+
+        var arEl = ((r - arRow) / array.dataTypes) & -1, arType = (r - arRow) % array.dataTypes;
+
+        //If Data types are larger than one and align with the first element then it is the array element row.
+
+        if( array.dataTypes > 1 )
+        {
+          if( arType == 0 )
+          {
+            this.rel1 = (arEl * array.size) + this.data.relPos[arRow-1]; this.rel2 = this.rel1 + array.relPos[array.dataTypes-1]; this.type = 32;
+          }
+          arType -= 1;
+        }
+
+        //The array data type selector is -1 if we land on the array element row.
+        
+        if( arType >= 0 )
+        {
+          this.rel1 = (arEl * array.size) + this.data.relPos[arRow-1];
+
+          this.rel2 = this.rel1 + array.relPos[arType + 1]; this.rel1 += array.relPos[arType];
+
+          this.type = array.data[arType];
+        }
+
+        break;
+      }
+
+      //Row difference because of array.
+
+      else if( r >= (arRow + array.endRow) ){ r -= array.endRow; }
+    }
+
+    //If relative position is null then the data is not in array.
+
+    if( this.rel1 == null ) { this.rel1 = this.data.relPos[r]; this.rel2 = this.data.relPos[r+1]; this.type = this.data.data[r]; }
+
     //Data types should always be seeked and in buffer before setting data type unless it is zero in size.
 
-    if(this.data.relPos[this.selectedRow] != this.data.relPos[this.selectedRow+1])
+    if(this.rel1 != this.rel2)
     {
-      this.io.onSeek(this,"setDataType"); this.io.seek(this.data.offset + this.data.relPos[this.selectedRow]);
+      this.io.onSeek(this,"setDataType"); this.io.seek(this.data.offset + this.rel1);
     }
 
     //If the data is zero in size then we should display what the data felled is intended for.
@@ -791,8 +841,6 @@ dataDescriptor.prototype.select = function(e)
 
   else
   {
-    var r = 0; r += this.selectedRow;
-    
     if( r < ( this.data.linear.length >> 1 ) )
     {
       this.coreDisLoc(this.data.linear[r],false); this.update();
@@ -855,6 +903,10 @@ dataDescriptor.prototype.dataUpdate = function(data)
  
   g.fillText("Use", colsH - this.textWidth[0], 13); colsH += cols; g.fillText("Raw Data", colsH - this.textWidth[1], 13); colsH += cols; g.fillText("Data Type", colsH - this.textWidth[2], 13);
  
+  //Used when rendering the array data type.
+
+  var array = null, arRow = 0, rowDif = 0, des = "", dType = null;
+
   //Fill in the columns based on the current position of the scroll bar.
  
   for( var i = this.curRow, posY = 32; i < this.endRow; posY += 16, i++ )
@@ -863,13 +915,67 @@ dataDescriptor.prototype.dataUpdate = function(data)
 
     if( i == this.selectedRow ){ g.stroke(); g.fillStyle = "#9EB0C1"; g.fillRect(0, posY - 16, width, 16); g.stroke(); g.fillStyle = "#000000"; }
 
+    //If we are within the array data type then how each data type is read and displayed is different.
+
+    for( var i2 = 0; i2 < this.data.arRows.length; i2 += 2 )
+    {
+      arRow = this.data.arRows[i2]; array = this.data.arRows[i2+1];
+
+      //The start and end rows of the array.
+
+      if( i >= arRow && i < (arRow + array.endRow) )
+      {
+        //Subtract the current row to start of array.
+        //Divide the row by number of data type rows to find the array element number.
+        //Do division remainder of data type rows to find the data type in array element.
+
+        var arEl = ((i - arRow) / array.dataTypes) & -1, arType = (i - arRow) % array.dataTypes;
+
+        //If Data types are larger than one and align with the first element then insert the array element row.
+
+        if( array.dataTypes > 1 )
+        {
+          if( arType == 0 )
+          {
+            this.rel1 = (arEl * array.size) + this.data.relPos[arRow-1]; this.rel2 = this.rel1 + array.relPos[array.dataTypes-1]
+
+            dType = this.DType[32]; des = "Array element " + arEl + "";
+          }
+          arType -= 1;
+        }
+
+        //The array data type selector is -1 if we inserted the array element row.
+        
+        if( arType >= 0 )
+        {
+          this.rel1 = (arEl * array.size) + this.data.relPos[arRow-1];
+
+          this.rel2 = this.rel1 + array.relPos[arType + 1]; this.rel1 += array.relPos[arType];
+
+          //Array that has one element has the (El #) prefix added.
+
+          dType = this.DType[array.data[arType]]; des = array.aDes[arType] + (array.dataTypes == 1 ? "(El " + arEl + ")" : "");
+        }
+
+        break;
+      }
+
+      //Arrays that exists before current row add row difference so that data types in the descriptor continue after the array.
+
+      else if ( i >= (arRow + array.endRow) ){ rowDif += array.endRow; }
+    }
+
+    //Regular data types are stored in relative position and by description and data type.
+
+    if( dType == null ) { this.rel1 = this.data.relPos[i-rowDif]; this.rel2 = this.data.relPos[(i-rowDif)+1]; des = this.data.des[i-rowDif]; dType = this.DType[this.data.data[i-rowDif]]; rowDif = 0; }
+
     //Data type description.
  
-    g.drawString( this.data.des[i], 2, posY - 3, cols-4 );
+    g.drawString( des, 2, posY - 3, cols-4 );
  
     //Convert data to bytes.
  
-    var pos = (this.data.relPos[i]+this.data.offset)-data.offset, size = this.data.relPos[i+1]-this.data.relPos[i]; size = Math.min( cols / this.minHex, size);
+    var pos = (this.rel1+this.data.offset)-data.offset, size = this.rel2-this.rel1; size = Math.min( cols / this.minHex, size);
       
     for(var i2 = 0; i2 < size; str+=(data[pos+i2]&-1).byte()+((i2<(size-1))?" ":""), i2++);
 
@@ -877,7 +983,11 @@ dataDescriptor.prototype.dataUpdate = function(data)
 
     //Show the related data type.
  
-    g.fillText( this.DType[this.data.data[i]], ( cols << 1 ) + 2, posY - 3 ); g.moveTo(0, posY); g.lineTo(width, posY);
+    g.fillText( dType, ( cols << 1 ) + 2, posY - 3 ); g.moveTo(0, posY); g.lineTo(width, posY);
+
+    //Set data type null. This will be used to determine if the data is in array or is in relative position of the data type array.
+
+    dType = null;
   }
 
   g.stroke();
@@ -968,13 +1078,11 @@ dataDescriptor.prototype.load = function() { this.data.source[this.data.event]( 
 
 dataDescriptor.prototype.setDataType = function()
 {
-  var type = this.data.data[this.selectedRow], order = (type & 1) == 1; type >>= 1;
+  var order = (this.type & 1) == 1; this.type >>= 1;
 
   this.data.source[this.data.event]( this.selectedRow, this.io.offset - this.io.data.offset );
   
-  this.di.setType(type, order, this.data.relPos[this.selectedRow + 1] - this.data.relPos[this.selectedRow]);
-  
-  this.update();
+  this.di.setType(this.type, order, this.rel2 - this.rel1); this.update();
 }
 
 //Set core data model.
@@ -1005,12 +1113,26 @@ function dataType(str,type) { this.des = str; this.type = type; this.ref = []; t
 
 function arrayType(str,types)
 {
-  this.des = str; this.data = []; this.type = 32; this.size = 0; this.len = 0; this.ref = []; this.el = [];
+  this.des = str; this.type = 32; this.ref = []; this.el = [];
+  
+  this.aDes = []; this.data = []; this.relPos = [];
+
+  //Basic array properties.
+  
+  this.size = 0; this.len = 0; this.endRow = 0;
+
+  //Arrays with more than one data type have a data type array element.
+  
+  this.dataTypes = types.length > 1 ? types.length + 1 : types.length;
 
   for( var i = 0; i < types.length; i++ )
   {
-    this.des[i] = types[i].des; this.data[i] = types[i].type; this.size += Descriptor.prototype.Bytes[types[i].type>>1];
+    this.aDes[i] = types[i].des; this.data[i] = types[i].type;
+    
+    this.relPos[this.relPos.length] = this.size; this.size += Descriptor.prototype.Bytes[types[i].type>>1];
   }
+
+  this.relPos[this.relPos.length] = this.size;
 }
 
 //Variable length data types modify the relative positions of the descriptors they are added to.
@@ -1043,6 +1165,8 @@ arrayType.prototype.length = function(len)
     
     el+=1; for(; el < r.length; r[el++] += delta);
   }
+
+  this.endRow = this.len * this.dataTypes;
 }
 
 //The position we wish to style binary data.
@@ -1063,9 +1187,13 @@ function Descriptor(data)
 
   this.des = []; this.data = [];
   
-  //rows array starts at. This information is used to subtract row to find the individual items in rel pos.
+  //This information is used to subtract row to find the individual items in rel pos.
 
-  this.relPos = []; this.arPos = [];
+  this.relPos = []; this.arRows = [];
+
+  //Relative position differences are used when handing a click of a data type or rendering.
+
+  this.rel1 = 0; this.rel2 = 0; this.type = 0;
 
   //Number of rows that this descriptor will display. Note when I add in set methods this value will change if array sizes change.
   
@@ -1090,7 +1218,7 @@ function Descriptor(data)
     {
       data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this;
       
-      this.arPos[this.arPos.length] = i; this.arPos[this.arPos.length] = data[i];
+      this.arRows[this.arRows.length] = i + 1; this.arRows[this.arRows.length] = data[i];
         
       b = data[i].size * data[i].len;
     }
