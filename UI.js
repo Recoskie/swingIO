@@ -1244,7 +1244,7 @@ Descriptor.prototype.bytes = function(r1,r2)
 {
   //ToDo Convert r1, and r2 to relative potion in array if row align with array type.
 
-  if( r2 >= this.relPos.length ) { var dif = r2 - (this.relPos.length-1); console.log(dif); r1 -= dif; r2 -= dif; }
+  if( r2 >= this.relPos.length ) { var dif = r2 - (this.relPos.length-1); r1 -= dif; r2 -= dif; }
 
   return( this.relPos[r2] - this.relPos[r1] );
 }
