@@ -1256,27 +1256,15 @@ Descriptor.prototype.rel = function(r)
 
     if( r >= arRow && r < (arRow + array.endRow) )
     {
-      var arEl = ((r - arRow) / array.dataTypes) & -1, arType = (r - arRow) % array.dataTypes;
+      r -= arRow; var arEl = (r / array.dataTypes) & -1, arType = r % array.dataTypes;
 
       //If Data types are larger than one and align with the first element then it is the array element row.
 
-      if( array.dataTypes > 1 )
-      {
-        if( arType == 0 )
-        {
-          r = (arEl * array.size) + this.relPos[arRow-1];
-        }
-        arType -= 1;
-      }
+      if( array.dataTypes > 1 ) { if( arType == 0 ) { return( (arEl * array.size) + this.relPos[arRow-1] ); } arType -= 1; }
 
       //The array data type selector is -1 if we land on the array element row.
         
-      if( arType >= 0 )
-      {
-        r = ((arEl * array.size) + this.relPos[arRow-1]) + array.relPos[arType];
-      }
-
-      return( r );
+      if( arType >= 0 ) { return(((arEl * array.size) + this.relPos[arRow-1]) + array.relPos[arType]); }
     }
 
     //Row difference because of array.
