@@ -1240,13 +1240,51 @@ function Descriptor(data)
 
 //Calc number of bytes that need to be read to display rows.
 
-Descriptor.prototype.bytes = function(r1,r2)
+Descriptor.prototype.bytes = function(r1,r2) { return( this.rel(r2) - this.rel(r1) ); }
+
+//Get relative position by row number.
+
+Descriptor.prototype.rel = function(r)
 {
-  //ToDo Convert r1, and r2 to relative potion in array if row align with array type.
+  //Check if data is within the array data type.
 
-  if( r2 >= this.relPos.length ) { var dif = r2 - (this.relPos.length-1); r1 -= dif; r2 -= dif; }
+  for( var i = 0; i < this.arRows.length; i += 2 )
+  {
+    var arRow = this.arRows[i], array = this.arRows[i+1];
 
-  return( this.relPos[r2] - this.relPos[r1] );
+    //The start and end rows of the array.
+
+    if( r >= arRow && r < (arRow + array.endRow) )
+    {
+      var arEl = ((r - arRow) / array.dataTypes) & -1, arType = (r - arRow) % array.dataTypes;
+
+      //If Data types are larger than one and align with the first element then it is the array element row.
+
+      if( array.dataTypes > 1 )
+      {
+        if( arType == 0 )
+        {
+          r = (arEl * array.size) + this.relPos[arRow-1];
+        }
+        arType -= 1;
+      }
+
+      //The array data type selector is -1 if we land on the array element row.
+        
+      if( arType >= 0 )
+      {
+        r = ((arEl * array.size) + this.relPos[arRow-1]) + array.relPos[arType];
+      }
+
+      return( r );
+    }
+
+    //Row difference because of array.
+
+    else if( r >= (arRow + array.endRow) ){ r -= array.endRow; }
+  }
+  
+  return( this.relPos[r] );
 }
 
 //Sets the method that is called when user clicks a data type.
