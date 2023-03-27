@@ -866,13 +866,13 @@ dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function(
 
   //Data within the current buffer area.
 
-  var dPos = (this.data.offset + this.data.relPos[this.curRow]), rdata = this.data.bytes(this.curRow,this.endRow), data = (temp == 1) ? this.io.tempD : this.io.data;
+  var dPos = this.data.rel(this.curRow) + this.data.offset, dEnd = this.data.rel(this.endRow) + this.data.offset, data = (temp == 1) ? this.io.tempD : this.io.data;
  
-  if(data.offset <= dPos && (data.offset-dPos+data.length) >= rdata) { this.dataUpdate(data); }
+  if(data.offset <= dPos && (dPos+data.length) >= dEnd) { this.dataUpdate(data); }
 
   //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-  else { this.io.onRead( this, "dataCheck", 1 ); this.io.seek(dPos); this.io.read(rdata); }
+  else { this.io.onRead( this, "dataCheck", 1 ); this.io.seek(dPos); this.io.read(dEnd - dPos); }
 }
 
 //Update output as data model.
@@ -1238,11 +1238,7 @@ function Descriptor(data)
   this.Event = function(){}; this.event="Event"; this.source = this;
 }
 
-//Calc number of bytes that need to be read to display rows.
-
-Descriptor.prototype.bytes = function(r1,r2) { return( this.rel(r2) - this.rel(r1) ); }
-
-//Get relative position by row number.
+//Get data relative position by row number.
 
 Descriptor.prototype.rel = function(r)
 {
