@@ -85,13 +85,13 @@ var vList = [], rType = false; async function validate()
     
         //Data within the current buffer area.
     
-        var dPos = (r.data.offset + r.data.relPos[r.curRow]), data = r.data.bytes(r.curRow,r.endRow);
+        var dPos = r.data.rel(this.curRow) + r.data.offset, dEnd = r.data.rel(this.endRow) + r.data.offset
      
-        if(r.io.data.offset <= dPos && (r.io.data.offset-dPos+r.io.data.length) >= data) { r.dataUpdate(r.io.data); }
+        if(r.io.data.offset <= dPos && (dPos+r.io.data.length) >= dEnd) { r.dataUpdate(r.io.data); }
     
         //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-        else { vList[vList.length] = {virtual:false,pos:dPos, size:data, el:i, buf:false}; }
+        else { vList[vList.length] = {virtual:false,pos:dPos, size:dEnd - dPos, el:i, buf:false}; }
       }
       else { r.update(); }
     }
@@ -1134,7 +1134,7 @@ function arrayType(str,types)
   {
     this.aDes[i] = types[i].des; this.data[i] = types[i].type;
     
-    this.relPos[this.relPos.length] = this.size; this.size += Descriptor.prototype.Bytes[types[i].type>>1];
+    this.relPos[this.relPos.length] = this.size; this.size += Descriptor.prototype.bytes[types[i].type>>1];
   }
 
   this.relPos[this.relPos.length] = this.size;
@@ -1181,7 +1181,7 @@ Descriptor.prototype.offset = 0;
 //Data inspector types, and byte length size.
 //Note that this could be shrunk down by better relating the data inspector types and names array.
 
-Descriptor.prototype.Bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.Bytes[13]=Descriptor.prototype.Bytes[14]=Descriptor.prototype.Bytes[15]=-1;Descriptor.prototype.Bytes[16]=-2;
+Descriptor.prototype.bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
 for(var i=0;i<dataDescriptor.prototype.DType.length;dataDescriptor.prototype.DType[i]&&(Descriptor[dataDescriptor.prototype.DType[i]]=i),i++);
 
 //Construct the data descriptor.
@@ -1210,7 +1210,7 @@ function Descriptor(data)
 
   for( var i = 0, b = 0; i < data.length; i++ )
   {
-    this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.Bytes[data[i].type>>1]
+    this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.bytes[data[i].type>>1]
 
     //Variable length data types must be able to reference the descriptor and the element it is at.
     //This allows variable length data types to be adjusted.
