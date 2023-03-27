@@ -85,13 +85,13 @@ var vList = [], rType = false; async function validate()
     
         //Data within the current buffer area.
     
-        var dPos = r.data.rel(this.curRow) + r.data.offset, dEnd = r.data.rel(this.endRow) + r.data.offset
+        var dPos = r.data.rel(r.curRow) + r.data.offset, dEnd = r.data.rel(r.endRow) + r.data.offset;
      
         if(r.io.data.offset <= dPos && (dPos+r.io.data.length) >= dEnd) { r.dataUpdate(r.io.data); }
     
         //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-        else { vList[vList.length] = {virtual:false,pos:dPos, size:dEnd - dPos, el:i, buf:false}; }
+        else { vList[vList.length] = {virtual:false,pos:dPos, size: dEnd - dPos, el:i, buf:false}; }
       }
       else { r.update(); }
     }
