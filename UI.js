@@ -1142,35 +1142,26 @@ function arrayType(str,types)
 
 //Variable length data types modify the relative positions of the descriptors they are added to.
 
-dataType.prototype.length = function(size)
+dataType.prototype.length = arrayType.prototype.length = function(size)
 {
-  if( size == null ) { el = this.el[0]; r = this.ref[0].relPos; return( r[el+1] - r[el] ); }
+  var rDelta = 0, delta = 0, el = 0, r = [], arType = this instanceof arrayType;
 
-  var delta = 0, el = 0, r = [];
+  //Return length of array, or data type bytes.
+
+  if(size == null) { if(arType) { return(this.len); } else { el = this.el[0]; r = this.ref[0].relPos; return(r[el+1] - r[el]); } }
+
+  //Data types adjust number of bytes changing relative byte positions.
+  //Arrays adjust size by length of each array element adjusting both rows and number of bytes.
   
-  for(var i1 = 0; i1 < this.ref.length; i1++)
-  {
-    el = this.el[i1]; r = this.ref[i1].relPos; delta = size - (r[el+1] - r[el]);
-    
-    el+=1; for(; el < r.length; r[el++] += delta);
-  }
-}
+  if( arType ) { size = this.size * (this.len = size); rDelta = this.endRow; rDelta = (this.endRow = this.len * this.dataTypes) - rDelta; }
 
-//Variable length array modify the relative positions of the descriptors they are added to.
-
-arrayType.prototype.length = function(len)
-{
-  if( len == null ) { return( this.len ); }
-
-  var size = this.size * (this.len = len), delta = 0, rDelta = this.endRow, el = 0, r = [];
-
-  rDelta = (this.endRow = this.len * this.dataTypes) - rDelta;
+  //Update relative byte positions plus number of rows for arrays.
   
-  for(var i1 = 0; i1 < this.ref.length; i1++)
+  for(var i = 0; i < this.ref.length; i++)
   {
-    el = this.el[i1]; r = this.ref[i1].relPos; delta = size - (r[el+1] - r[el]);
+    el = this.el[i]; r = this.ref[i].relPos; delta = size - (r[el+1] - r[el]);
     
-    this.ref[i1].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
+    this.ref[i].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
   }
 }
 
