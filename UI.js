@@ -905,31 +905,31 @@ dataDescriptor.prototype.dataUpdate = function(data)
  
   //Used when rendering the array data type.
 
-  var array = null, arRow = 0, rowDif = 0, des = "", dType = null;
+  var array = null, curArray = 0, arRow = 0, row = this.curRow, des = "", dType = null;
 
   //Fill in the columns based on the current position of the scroll bar.
  
-  for( var i = this.curRow, posY = 32; i < this.endRow; posY += 16, i++ )
+  for( var i = this.curRow, posY = 32; i < this.endRow; posY += 16, i++, row++ )
   {
     //Selected row.
 
     if( i == this.selectedRow ){ g.stroke(); g.fillStyle = "#9EB0C1"; g.fillRect(0, posY - 16, width, 16); g.stroke(); g.fillStyle = "#000000"; }
 
-    //If we are within the array data type then how each data type is read and displayed is different.
+    //If we are within the array data type.
 
-    for( var i2 = 0; i2 < this.data.arRows.length; i2 += 2 )
+    while( curArray < this.data.arRows.length )
     {
-      arRow = this.data.arRows[i2]; array = this.data.arRows[i2+1];
+      arRow = this.data.arRows[curArray]; array = this.data.arRows[curArray+1];
 
       //The start and end rows of the array.
 
-      if( i >= arRow && i < (arRow + array.endRow) )
+      if( row >= arRow && row < (arRow + array.endRow) )
       {
         //Subtract the current row to start of array.
         //Divide the row by number of data type rows to find the array element number.
         //Do division remainder of data type rows to find the data type in array element.
 
-        var arEl = ((i - arRow) / array.dataTypes) & -1, arType = (i - arRow) % array.dataTypes;
+        var arEl = ((row - arRow) / array.dataTypes) & -1, arType = (row - arRow) % array.dataTypes;
 
         //If Data types are larger than one and align with the first element then insert the array element row.
 
@@ -962,12 +962,12 @@ dataDescriptor.prototype.dataUpdate = function(data)
 
       //Arrays that exists before current row add row difference so that data types in the descriptor continue after the array.
 
-      else if ( i >= (arRow + array.endRow) ){ rowDif += array.endRow; }
+      else if ( row >= (arRow + array.endRow) ){ row -= array.endRow; curArray += 2 } else { break; }
     }
 
     //Regular data types are stored in relative position and by description and data type.
 
-    if( dType == null ) { this.rel1 = this.data.relPos[i-rowDif]; this.rel2 = this.data.relPos[(i-rowDif)+1]; des = this.data.des[i-rowDif]; dType = this.DType[this.data.data[i-rowDif]]; rowDif = 0; }
+    if( dType == null ) { this.rel1 = this.data.relPos[row]; this.rel2 = this.data.relPos[row+1]; des = this.data.des[row]; dType = this.DType[this.data.data[row]]; }
 
     //Data type description.
  
