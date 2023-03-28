@@ -1329,7 +1329,7 @@ tree.prototype.length = function(){ return( (this.parentElement.parentElement.qu
 
 tree.prototype.event = function(){}; tree.prototype.treeClick = function(v)
 {
-  v = document.elementFromPoint(v.pageX || v.touches[0].pageX, v.pageY || v.touches[0].pageY); if( v.tagName == "DIV" ){ v = v.parentElement; }
+  v = document.elementFromPoint((v.pageX || v.touches[0].pageX) - window.scrollX, (v.pageY || v.touches[0].pageY) - window.scrollY); if( v.tagName == "DIV" ){ v = v.parentElement; }
 
   if(window.getComputedStyle(v,"before").getPropertyValue("content") == "none") { return; } var node = v.tagName == "SPAN";
 
