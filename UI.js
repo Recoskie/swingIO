@@ -1304,7 +1304,7 @@ function tree(el) { this.comp = document.getElementById(el); this.comp.style.ove
 
 //Set the tree nodes.
 
-tree.prototype.set = function(v) { this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+tree.prototype.set = function(v) { eval("var t = function(e){if(!tCheck){tree.prototype.treeClick(e);};tCheck=(e.type=='touchstart');}"); this.comp.onmousedown = this.comp.ontouchstart = t; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
 //Navigate the tree nodes. Does the same thing as treeNode getNode except this navigates the HTML list structure directly.
 
@@ -1327,8 +1327,12 @@ tree.prototype.length = function(){ return( (this.parentElement.parentElement.qu
 
 //Expands or hides nested nodes and gives the HTML node to users custom event handling code.
 
-tree.prototype.event = function(){}; tree.prototype.treeClick = function(v,node)
+tree.prototype.event = function(){}; tree.prototype.treeClick = function(v)
 {
+  v = document.elementFromPoint(v.pageX || v.touches[0].pageX, v.pageY || v.touches[0].pageY); if( v.tagName == "DIV" ){ v = v.parentElement; }
+
+  if(window.getComputedStyle(v,"before").getPropertyValue("content") == "none") { return; } var node = v.tagName == "SPAN";
+
   v = v.querySelector("div"); v.self = this; v.setArgs = this.setArgs; v.getArgs = this.getArgs; v.setNode = this.setNode;
   
   //Set the selected node.
@@ -1376,11 +1380,11 @@ function treeNode(n,args,expand)
 
   //The first node has no nested children nodes until we add more nodes.
 
-  this.nodes = ["<li onclick='tree.prototype.treeClick(this,false);' class=\"node"+((t==0)?1:t)+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>"]; this.name = n;
+  this.nodes = ["<li class=\"node"+((t==0)?1:t)+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></li>"]; this.name = n;
 
   //The first node is replaced by 'node' as soon as we add more nodes to the nodes array.
   
-  this.node = "<li><span onclick=\"tree.prototype.treeClick(this,true);\" class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">";
+  this.node = "<li><span class=\"node"+t+"\"><div args='"+((args!=null)?args:"")+"'>"+n+"</div></span><ul class=\"nested"+(expand?" active":"")+"\">";
 }
 
 treeNode.prototype.add = function(n,args)
