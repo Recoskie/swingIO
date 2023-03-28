@@ -1,4 +1,4 @@
-var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/")), Ref = [], tCheck = false;
+var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/")), Ref = [];
 
 var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'), treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
@@ -206,7 +206,7 @@ function VHex( el, io, v )
 
   //Seek byte onclick Event
   
-  eval("var t = function(e){if(!tCheck){Ref["+Ref.length+"].select(e);};tCheck=(e.type=='touchstart');}");
+  eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } Ref["+Ref.length+"].select(e);}");
   
   this.comp.onmousedown = this.comp.ontouchstart = t;
 
@@ -751,7 +751,7 @@ function dataDescriptor( el, io )
 
   //clicked data type event.
   
-  eval("var t = function(e){if(!tCheck){Ref["+Ref.length+"].select(e);};tCheck=(e.type=='touchstart');}");
+  eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } Ref["+Ref.length+"].select(e);}");
   
   //If touch screen.
  
@@ -1304,7 +1304,7 @@ function tree(el) { this.comp = document.getElementById(el); this.comp.style.ove
 
 //Set the tree nodes.
 
-tree.prototype.set = function(v) { eval("var t = function(e){if(!tCheck){tree.prototype.treeClick(e);};tCheck=(e.type=='touchstart');}"); this.comp.onmousedown = this.comp.ontouchstart = t; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+tree.prototype.set = function(v) { eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } tree.prototype.treeClick(e);}"); this.comp.onmousedown = this.comp.ontouchstart = t; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
 //Navigate the tree nodes. Does the same thing as treeNode getNode except this navigates the HTML list structure directly.
 
