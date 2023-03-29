@@ -88,8 +88,6 @@ var vList = [], rType = false; async function validate()
         //Data within the current buffer area.
     
         var dPos = r.data.rel(r.curRow) + r.data.offset, dEnd = r.data.rel(r.endRow) + r.data.offset;
-
-        r.io.buf = Math.max(r.io.buf, dEnd - dPos);
      
         if(r.io.data.offset <= dPos && (dPos+r.io.data.length) >= dEnd) { r.dataUpdate(r.io.data); }
     
