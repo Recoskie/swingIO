@@ -1172,12 +1172,17 @@ dataType.prototype.length = arrayType.prototype.length = function(size)
   for(var i = 0; i < this.ref.length; i++)
   {
     el = this.el[i]; r = this.ref[i].relPos; delta = size - (r[el+1] - r[el]);
+
+    //Skip deltas that are zero.
     
-    this.ref[i].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
+    if( delta != 0 )
+    {
+      this.ref[i].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
 
-    //If adjustable data type is inside array.
+      //If adjustable data type is inside an array.
 
-    if( this.ref[i].size ) { this.ref[i].size += delta; }
+      if( this.ref[i].size ) { this.ref[i].size += delta; this.ref[i].length(this.ref[i].length()); }
+    }
   }
 }
 
