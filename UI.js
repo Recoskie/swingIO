@@ -53,7 +53,7 @@ var vList = [], rType = false; async function validate()
 {
   if( vList.length > 0 ){ return; }
   
-  vList.pos = 0; var buf = false; for( var i = 0, r = Ref[0]; i < Ref.length; r=Ref[++i] )
+  vList.pos = 0; for( var i = 0; i < Ref.length; Ref[i++].io.buf = 0 ); for( var i = 0, r = Ref[0]; i < Ref.length; r=Ref[++i] )
   {
     if(r instanceof VHex && r.visible)
     {
@@ -62,6 +62,8 @@ var vList = [], rType = false; async function validate()
       if( r.c.height != r.comp.clientHeight ){ r.adjSize(); }
 
       //Does not match the memory buffer, then we must reload data and render the output.
+
+      r.io.buf = Math.max(r.io.buf, (( r.comp.clientHeight >> 4 ) << 4 ));
 
       if( (r.getPos() << 4) != (r.virtual ? r.io.dataV.offset : r.io.data.offset) || (((( r.comp.clientHeight >> 4 ) << 4 ) > (r.virtual ? r.io.dataV.length : r.io.data.length))) )
       {
@@ -86,6 +88,8 @@ var vList = [], rType = false; async function validate()
         //Data within the current buffer area.
     
         var dPos = r.data.rel(r.curRow) + r.data.offset, dEnd = r.data.rel(r.endRow) + r.data.offset;
+
+        r.io.buf = Math.max(r.io.buf, dEnd - dPos);
      
         if(r.io.data.offset <= dPos && (dPos+r.io.data.length) >= dEnd) { r.dataUpdate(r.io.data); }
     
