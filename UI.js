@@ -710,11 +710,179 @@ dataInspector.prototype.addEditor = function( vhex ) { this.editors[this.editors
 
 /*------------------------------------------------------------
 This is a web based version of the data model originally designed to run in Java.
-See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
 And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
 ------------------------------------------------------------*/
 
+//Singular data type.
+
+function dataType(str,type) { this.des = str; this.type = type; this.ref = []; this.el = []; }
+
+//Collection of data types in array order.
+
+function arrayType(str,types)
+{
+  this.des = str; this.type = 32; this.ref = []; this.el = [];
+
+  //Basic array properties.
+  
+  this.size = 0; this.len = 0; this.endRow = 0;
+
+  //Arrays with more than one data type have a data type array element.
+  
+  this.dataTypes = types.length > 1 ? types.length + 1 : types.length;
+
+  this.optimizeData(types,false);
+}
+
+//Variable length data types modify the relative positions of the descriptors they are added to.
+
+dataType.prototype.length = arrayType.prototype.length = function(size)
+{
+  var rDelta = 0, delta = 0, el = 0, r = [], arType = this instanceof arrayType;
+
+  //Return length of array, or data type bytes.
+
+  if(size == null) { if(arType) { return(this.len); } else { el = this.el[0]; r = this.ref[0].relPos; return((r[el+1] - r[el]) || 0); } }
+
+  //Data types adjust number of bytes changing relative byte positions.
+  //Arrays adjust size by length of each array element adjusting both rows and number of bytes.
+  
+  if( arType ) { size = this.size * (this.len = size); rDelta = this.endRow; rDelta = (this.endRow = this.len * this.dataTypes) - rDelta; }
+
+  //Update relative byte positions plus number of rows for arrays.
+  
+  for(var i = 0; i < this.ref.length; i++)
+  {
+    el = this.el[i]; r = this.ref[i].relPos; delta = size - (r[el+1] - r[el]);
+
+    //Skip deltas that are zero.
+    
+    if( delta != 0 )
+    {
+      this.ref[i].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
+
+      //If adjustable data type is inside an array.
+
+      if( this.ref[i].size ) { this.ref[i].size += delta; this.ref[i].length(this.ref[i].length()); }
+    }
+  }
+}
+
+//Data inspector types, and byte length size.
+//Note that this could be shrunk down by better relating the data inspector types and names array.
+
+arrayType.prototype.bytes = Descriptor.prototype.bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
+
+//The position we wish to style binary data.
+
+Descriptor.prototype.offset = 0;
+
+//Construct the data descriptor.
+
+function Descriptor(data)
+{
+  //This information is used to subtract row to find the individual items in array rel pos.
+
+  this.arRows = [];
+
+  //Number of rows that this descriptor will display.
+  
+  this.rows = 0;
+
+  //Begin organizing data for optimized display.
+
+  this.optimizeData(data);
+    
+  //Event handler for when data descriptor is set or user clicks on a property or value.
+  
+  this.Event = function(){}; this.event="Event"; this.source = this;
+}
+
+//Both the data descriptor and array store elements in relative positions and in optimized array indexes.
+//Array differs in that each element has an size and a length for number of times the data types repeat.
+
+arrayType.prototype.optimizeData = Descriptor.prototype.optimizeData = function( data )
+{
+  //Stores the data types that will be rendered.
+
+  var isDes = this instanceof Descriptor, des = isDes ? this.des = [] : this.aDes = []; this.data = [];
+  
+  //This information is used to subtract row to find the individual items in rel pos.
+  
+  this.relPos = []; var length = 0; for( var i = 0, b = 0; i < data.length; i++ )
+  {
+    des[i] = data[i].des; this.data[i] = data[i].type; b = this.bytes[data[i].type>>1]
+
+    //Variable length data types must be able to reference the descriptor, or array.
+    //This allows variable length data types to be adjusted.
+      
+    if( b == -1 ){ data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this; b = data[i].length(); }
+
+    //Array data type.
+    
+    if( b == -2 )
+    {
+      data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this; b = data[i].size * data[i].length();
+
+      //Only descriptors have the array rows.
+      
+      if( isDes ) { this.arRows[this.arRows.length] = i + 1; this.arRows[this.arRows.length] = data[i]; this.rows += data[i].endRow; }
+    }
+
+    this.relPos[i] = length; length += b; if( isDes ) { this.rows += 1; }
+  }
+    
+  this.relPos[this.relPos.length] = length; if( !isDes ) { this.size = length; }
+}
+
+//Get data relative position by row number.
+
+Descriptor.prototype.rel = function(r)
+{
+  //Check if data is within the array data type.
+
+  for( var i = 0; i < this.arRows.length; i += 2 )
+  {
+    var arRow = this.arRows[i], array = this.arRows[i+1];
+
+    //The start and end rows of the array.
+
+    if( r >= arRow && r < (arRow + array.endRow) )
+    {
+      r -= arRow; var arEl = (r / array.dataTypes) & -1, arType = r % array.dataTypes;
+
+      //If Data types are larger than one and align with the first element then it is the array element row.
+
+      if( array.dataTypes > 1 ) { if( arType == 0 ) { return( (arEl * array.size) + this.relPos[arRow-1] ); } arType -= 1; }
+
+      //The array data type selector is -1 if we land on the array element row.
+        
+      if( arType >= 0 ) { return(((arEl * array.size) + this.relPos[arRow-1]) + array.relPos[arType]); }
+    }
+
+    //Row difference because of array.
+
+    else if( r >= (arRow + array.endRow) ){ r -= array.endRow; }
+  }
+  
+  return( this.relPos[r] );
+}
+
+//Sets the method that is called when user clicks a data type.
+
+Descriptor.prototype.setEvent = function( s, e ) { this.event = e; this.source = s; }
+
+//The total length of the data.
+
+Descriptor.prototype.length = function() { return( this.relPos[this.relPos.length - 1] ); }
+
+/*------------------------------------------------------------
+This is a web based version of the data model originally designed to run in Java.
+See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
+------------------------------------------------------------*/
+
 dataDescriptor.prototype.DType = ["Bit8",,"Int8",,"UInt8",,"Int16","LInt16","UInt16","LUInt16","Int32","LInt32","UInt32","LUInt32","Int64","LInt64","UInt64","LUInt64","Float32","LFloat32","Float64","LFloat64", "Char8",,"Char16","LChar16","String8",,"String16","LString16","Other",,"Array"];
+for(var i=0;i<dataDescriptor.prototype.DType.length;dataDescriptor.prototype.DType[i]&&(Descriptor[dataDescriptor.prototype.DType[i]]=i),i++);
 dataDescriptor.prototype.di = null, dataDescriptor.prototype.data = new Descriptor([]);
 dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = [], dataDescriptor.prototype.minHex = 28;
 
@@ -745,7 +913,7 @@ function dataDescriptor( el, io )
 
   //Selected element.
 
-  this.selectedRow = -1;
+  this.rel1 = 0; this.rel2 = 0; this.type = 0; this.selectedRow = -1;
   
   //Scroll.
   
@@ -1111,183 +1279,6 @@ dataDescriptor.prototype.adjSize = function()
 
   this.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;";
 }
-
-//Singular data type.
-
-function dataType(str,type) { this.des = str; this.type = type; this.ref = []; this.el = []; }
-
-//Collection of data types in array order.
-
-function arrayType(str,types)
-{
-  this.des = str; this.type = 32; this.ref = []; this.el = [];
-  
-  this.aDes = []; this.data = []; this.relPos = [];
-
-  //Basic array properties.
-  
-  this.size = 0; this.len = 0; this.endRow = 0;
-
-  //Arrays with more than one data type have a data type array element.
-  
-  this.dataTypes = types.length > 1 ? types.length + 1 : types.length;
-
-  for( var i = 0, b = 0; i < types.length; i++ )
-  {
-    this.aDes[i] = types[i].des; this.data[i] = types[i].type; b = Descriptor.prototype.bytes[types[i].type>>1];
-
-    //This allows variable length data types to be adjusted.
-      
-    if( b == -1 ){ types[i].ref[types[types[i].el[types[i].el.length] = i].ref.length] = this; b = types[i].length(); }
-
-    //This allows variable length array data type to be adjusted.
-    
-    if( b == -2 ) { types[i].ref[types[types[i].el[types[i].el.length] = i].ref.length] = this; b = types[i].size * types[i].length(); }
-
-    this.relPos[i] = this.size; this.size += b;
-  }
-  
-  this.relPos[this.relPos.length] = this.size;
-}
-
-//Variable length data types modify the relative positions of the descriptors they are added to.
-
-dataType.prototype.length = arrayType.prototype.length = function(size)
-{
-  var rDelta = 0, delta = 0, el = 0, r = [], arType = this instanceof arrayType;
-
-  //Return length of array, or data type bytes.
-
-  if(size == null) { if(arType) { return(this.len); } else { el = this.el[0]; r = this.ref[0].relPos; return((r[el+1] - r[el]) || 0); } }
-
-  //Data types adjust number of bytes changing relative byte positions.
-  //Arrays adjust size by length of each array element adjusting both rows and number of bytes.
-  
-  if( arType ) { size = this.size * (this.len = size); rDelta = this.endRow; rDelta = (this.endRow = this.len * this.dataTypes) - rDelta; }
-
-  //Update relative byte positions plus number of rows for arrays.
-  
-  for(var i = 0; i < this.ref.length; i++)
-  {
-    el = this.el[i]; r = this.ref[i].relPos; delta = size - (r[el+1] - r[el]);
-
-    //Skip deltas that are zero.
-    
-    if( delta != 0 )
-    {
-      this.ref[i].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
-
-      //If adjustable data type is inside an array.
-
-      if( this.ref[i].size ) { this.ref[i].size += delta; this.ref[i].length(this.ref[i].length()); }
-    }
-  }
-}
-
-//The position we wish to style binary data.
-
-Descriptor.prototype.offset = 0;
-
-//Data inspector types, and byte length size.
-//Note that this could be shrunk down by better relating the data inspector types and names array.
-
-Descriptor.prototype.bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
-for(var i=0;i<dataDescriptor.prototype.DType.length;dataDescriptor.prototype.DType[i]&&(Descriptor[dataDescriptor.prototype.DType[i]]=i),i++);
-
-//Construct the data descriptor.
-
-function Descriptor(data)
-{
-  //Stores the data types that will be rendered.
-
-  this.des = []; this.data = [];
-  
-  //This information is used to subtract row to find the individual items in rel pos.
-
-  this.relPos = []; this.arRows = [];
-
-  //Relative position differences are used when user clicks a data type, or when rendering data.
-
-  this.rel1 = 0; this.rel2 = 0; this.type = 0;
-
-  //Number of rows that this descriptor will display. Note when I add in set methods this value will change if array sizes change.
-  
-  this.rows = 0;
-
-  //begin organizing data for optimized display.
-
-  var length = 0;
-
-  for( var i = 0, b = 0; i < data.length; i++ )
-  {
-    this.des[i] = data[i].des; this.data[i] = data[i].type; b = this.bytes[data[i].type>>1]
-
-    //Variable length data types must be able to reference the descriptor and the element it is at.
-    //This allows variable length data types to be adjusted.
-      
-    if( b == -1 ){ data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this; b = 0; }
-
-    //Array data type.
-    
-    if( b == -2 )
-    {
-      data[i].ref[data[data[i].el[data[i].el.length] = i].ref.length] = this;
-      
-      this.arRows[this.arRows.length] = i + 1; this.arRows[this.arRows.length] = data[i];
-        
-      b = data[i].size * data[i].len; this.rows += data[i].endRow;
-    }
-
-    this.relPos[i]=length; length += b; this.rows += 1;
-  }
-    
-  this.relPos[this.relPos.length]=length;
-    
-  //Event handler for when data descriptor is set or user clicks on a property or value.
-  
-  this.Event = function(){}; this.event="Event"; this.source = this;
-}
-
-//Get data relative position by row number.
-
-Descriptor.prototype.rel = function(r)
-{
-  //Check if data is within the array data type.
-
-  for( var i = 0; i < this.arRows.length; i += 2 )
-  {
-    var arRow = this.arRows[i], array = this.arRows[i+1];
-
-    //The start and end rows of the array.
-
-    if( r >= arRow && r < (arRow + array.endRow) )
-    {
-      r -= arRow; var arEl = (r / array.dataTypes) & -1, arType = r % array.dataTypes;
-
-      //If Data types are larger than one and align with the first element then it is the array element row.
-
-      if( array.dataTypes > 1 ) { if( arType == 0 ) { return( (arEl * array.size) + this.relPos[arRow-1] ); } arType -= 1; }
-
-      //The array data type selector is -1 if we land on the array element row.
-        
-      if( arType >= 0 ) { return(((arEl * array.size) + this.relPos[arRow-1]) + array.relPos[arType]); }
-    }
-
-    //Row difference because of array.
-
-    else if( r >= (arRow + array.endRow) ){ r -= array.endRow; }
-  }
-  
-  return( this.relPos[r] );
-}
-
-//Sets the method that is called when user clicks a data type.
-
-Descriptor.prototype.setEvent = function( s, e ) { this.event = e; this.source = s; }
-
-//The total length of the data.
-
-Descriptor.prototype.length = function() { return( this.relPos[this.relPos.length - 1] ); }
 
 /*------------------------------------------------------------
 This is a web based version of the binary tree tool originally designed to run in Java.
