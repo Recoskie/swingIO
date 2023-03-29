@@ -1333,14 +1333,14 @@ tree.prototype.length = function(){ return( (this.parentElement.parentElement.qu
 
 tree.prototype.event = function(){}; tree.prototype.treeClick = function(v)
 {
-  var node = v.tagName; if(!node)
+  if(!v.tagName)
   {
     v = document.elementFromPoint((v.pageX || v.touches[0].pageX) - window.scrollX, (v.pageY || v.touches[0].pageY) - window.scrollY); if( v.tagName == "DIV" ){ v = v.parentElement; }
 
     if(window.getComputedStyle(v,"before").getPropertyValue("content") == "none") { return; }
   }
   
- node = node == "SPAN"; v = v.querySelector("div"); v.self = this; v.setArgs = this.setArgs; v.getArgs = this.getArgs; v.setNode = this.setNode;
+  var node = v.tagName == "SPAN"; v = v.querySelector("div"); v.self = this; v.setArgs = this.setArgs; v.getArgs = this.getArgs; v.setNode = this.setNode;
 
   //Set the selected node.
 
