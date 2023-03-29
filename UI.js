@@ -1134,13 +1134,21 @@ function arrayType(str,types)
   
   this.dataTypes = types.length > 1 ? types.length + 1 : types.length;
 
-  for( var i = 0; i < types.length; i++ )
+  for( var i = 0, b = 0; i < types.length; i++ )
   {
-    this.aDes[i] = types[i].des; this.data[i] = types[i].type;
-    
-    this.relPos[this.relPos.length] = this.size; this.size += Descriptor.prototype.bytes[types[i].type>>1];
-  }
+    this.aDes[i] = types[i].des; this.data[i] = types[i].type; b = Descriptor.prototype.bytes[types[i].type>>1];
 
+    //This allows variable length data types to be adjusted.
+      
+    if( b == -1 ){ types[i].ref[types[types[i].el[types[i].el.length] = i].ref.length] = this; b = types[i].length(); }
+
+    //This allows variable length array data type to be adjusted.
+    
+    if( b == -2 ) { types[i].ref[types[types[i].el[types[i].el.length] = i].ref.length] = this; b = types[i].size * types[i].length(); }
+
+    this.relPos[i] = this.size; this.size += b;
+  }
+  
   this.relPos[this.relPos.length] = this.size;
 }
 
@@ -1152,7 +1160,7 @@ dataType.prototype.length = arrayType.prototype.length = function(size)
 
   //Return length of array, or data type bytes.
 
-  if(size == null) { if(arType) { return(this.len); } else { el = this.el[0]; r = this.ref[0].relPos; return(r[el+1] - r[el]); } }
+  if(size == null) { if(arType) { return(this.len); } else { el = this.el[0]; r = this.ref[0].relPos; return((r[el+1] - r[el]) || 0); } }
 
   //Data types adjust number of bytes changing relative byte positions.
   //Arrays adjust size by length of each array element adjusting both rows and number of bytes.
@@ -1166,6 +1174,10 @@ dataType.prototype.length = arrayType.prototype.length = function(size)
     el = this.el[i]; r = this.ref[i].relPos; delta = size - (r[el+1] - r[el]);
     
     this.ref[i].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
+
+    //If adjustable data type is inside array.
+
+    if( this.ref[i].size ) { this.ref[i].size += delta; }
   }
 }
 
