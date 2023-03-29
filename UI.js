@@ -713,6 +713,15 @@ This is a web based version of the data model originally designed to run in Java
 And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
 ------------------------------------------------------------*/
 
+//Data inspector types, and byte length size.
+//Note that this could be shrunk down by better relating the data inspector types and names array.
+
+arrayType.prototype.bytes = Descriptor.prototype.bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
+
+//The position we wish to style binary data.
+
+Descriptor.prototype.offset = 0;
+
 //Singular data type.
 
 function dataType(str,type) { this.des = str; this.type = type; this.ref = []; this.el = []; }
@@ -731,7 +740,7 @@ function arrayType(str,types)
   
   this.dataTypes = types.length > 1 ? types.length + 1 : types.length;
 
-  this.optimizeData(types,false);
+  this.optimizeData(types);
 }
 
 //Variable length data types modify the relative positions of the descriptors they are added to.
@@ -767,15 +776,6 @@ dataType.prototype.length = arrayType.prototype.length = function(size)
     }
   }
 }
-
-//Data inspector types, and byte length size.
-//Note that this could be shrunk down by better relating the data inspector types and names array.
-
-arrayType.prototype.bytes = Descriptor.prototype.bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
-
-//The position we wish to style binary data.
-
-Descriptor.prototype.offset = 0;
 
 //Construct the data descriptor.
 
