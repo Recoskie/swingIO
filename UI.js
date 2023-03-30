@@ -89,7 +89,7 @@ var vList = [], rType = false; async function validate()
     
         var dPos = r.data.rel(r.curRow) + r.data.offset, dEnd = r.data.rel(r.endRow) + r.data.offset;
      
-        if(r.io.data.offset <= dPos && (dPos+r.io.data.length) >= dEnd) { r.dataUpdate(r.io.data); }
+        if(r.io.data.offset <= dPos && (r.io.data.offset+r.io.data.length) >= dEnd) { r.dataUpdate(r.io.data); }
     
         //Else we need to load the data we need before updating the component. This is least likely to happen.
 
@@ -743,40 +743,6 @@ function arrayType(str,types)
   this.optimizeData(types);
 }
 
-//Variable length data types modify the relative positions of the descriptors they are added to.
-
-dataType.prototype.length = arrayType.prototype.length = function(size)
-{
-  var rDelta = 0, delta = 0, el = 0, r = [], arType = this instanceof arrayType;
-
-  //Return length of array, or data type bytes.
-
-  if(size == null) { if(arType) { return(this.len); } else { el = this.el[0]; r = this.ref[0].relPos; return((r[el+1] - r[el]) || 0); } }
-
-  //Data types adjust number of bytes changing relative byte positions.
-  //Arrays adjust size by length of each array element adjusting both rows and number of bytes.
-  
-  if( arType ) { size = this.size * (this.len = size); rDelta = this.endRow; rDelta = (this.endRow = this.len * this.dataTypes) - rDelta; }
-
-  //Update relative byte positions plus number of rows for arrays.
-  
-  for(var i = 0; i < this.ref.length; i++)
-  {
-    el = this.el[i]; r = this.ref[i].relPos; delta = size - (r[el+1] - r[el]);
-
-    //Skip deltas that are zero.
-    
-    if( delta != 0 )
-    {
-      this.ref[i].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
-
-      //If adjustable data type is inside an array.
-
-      if( this.ref[i].size ) { this.ref[i].size += delta; this.ref[i].length(this.ref[i].length()); }
-    }
-  }
-}
-
 //Construct the data descriptor.
 
 function Descriptor(data)
@@ -833,6 +799,40 @@ arrayType.prototype.optimizeData = Descriptor.prototype.optimizeData = function(
   }
     
   this.relPos[this.relPos.length] = length; if( !isDes ) { this.size = length; }
+}
+
+//Variable length data types modify the relative positions of the descriptors they are added to.
+
+dataType.prototype.length = arrayType.prototype.length = function(size)
+{
+  var rDelta = 0, delta = 0, el = 0, r = [], arType = this instanceof arrayType;
+
+  //Return length of array, or data type bytes.
+
+  if(size == null) { if(arType) { return(this.len); } else { el = this.el[0]; r = this.ref[0].relPos; return((r[el+1] - r[el]) || 0); } }
+
+  //Data types adjust number of bytes changing relative byte positions.
+  //Arrays adjust size by length of each array element adjusting both rows and number of bytes.
+  
+  if( arType ) { size = this.size * (this.len = size); rDelta = this.endRow; rDelta = (this.endRow = this.len * this.dataTypes) - rDelta; }
+
+  //Update relative byte positions plus number of rows for arrays.
+  
+  for(var i = 0; i < this.ref.length; i++)
+  {
+    el = this.el[i]; r = this.ref[i].relPos; delta = size - (r[el+1] - r[el]);
+
+    //Skip deltas that are zero.
+    
+    if( delta != 0 )
+    {
+      this.ref[i].rows += rDelta; el+=1; for(; el < r.length; r[el++] += delta);
+
+      //If adjustable data type is inside an array.
+
+      if( this.ref[i].size ) { this.ref[i].size += delta; this.ref[i].length(this.ref[i].length()); }
+    }
+  }
 }
 
 //Get data relative position by row number.
@@ -1038,7 +1038,7 @@ dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function(
 
   var dPos = this.data.rel(this.curRow) + this.data.offset, dEnd = this.data.rel(this.endRow) + this.data.offset, data = (temp == 1) ? this.io.tempD : this.io.data;
  
-  if(data.offset <= dPos && (dPos+data.length) >= dEnd) { this.dataUpdate(data); }
+  if(data.offset <= dPos && (data.offset+data.length) >= dEnd) { this.dataUpdate(data); }
 
   //Else we need to load the data we need before updating the component. This is least likely to happen.
 
