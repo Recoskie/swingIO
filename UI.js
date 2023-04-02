@@ -389,20 +389,16 @@ VHex.prototype.validate = function()
 
   if( (this.getPos() << 4) != (this.virtual ? this.io.dataV.offset : this.io.data.offset) || (((( this.comp.clientHeight >> 4 ) << 4 ) > (this.virtual ? this.io.dataV.length : this.io.data.length))) )
   {
-    if( this.io.Events )
-    {
-      this.io.bufRead(this, "update");
+    if( this.io.wait(this.validate) ) { return; } this.io.bufRead(this, "update");
     
-      if(this.virtual)
-      {
-        this.io.seekV(this.getPos()); this.io.readV(this.io.buf);
-      }
-      else
-      {
-        this.io.seek(this.getPos()); this.io.read(this.io.buf);
-      }
+    if(this.virtual)
+    {
+      this.io.seekV(this.getPos()); this.io.readV(this.io.buf);
     }
-    else { setTimeout(function(r){r.validate();},0,this); }
+    else
+    {
+      this.io.seek(this.getPos()); this.io.read(this.io.buf);
+    }
   }
 
   //Aligns in memory buffer but needs to draw more rows.
@@ -1255,7 +1251,7 @@ dataDescriptor.prototype.validate = function()
     
     //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-    else { if( this.io.Events ) { this.io.onRead(this, "dataUpdate",this.io.tempD); this.io.seek(dPos); this.io.read(dEnd - dPos); } else { setTimeout(function(r){r.validate();},0,this); } }
+    else if( !this.io.wait(this.validate) ) { this.io.onRead(this, "dataUpdate",this.io.tempD); this.io.seek(dPos); this.io.read(dEnd - dPos); }
   }
   else { this.update(); }
 }
