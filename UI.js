@@ -53,7 +53,7 @@ var vList = [], rType = false; async function validate()
 {
   if( vList.length > 0 ){ return; }
   
-  vList.pos = 0; for( var i = 0; i < Ref.length; Ref[i++].io.buf = 0 ); for( var i = 0, r = Ref[0]; i < Ref.length; r=Ref[++i] )
+  vList.pos = 0; for( var i = 0; i < Ref.length; Ref[i++].io.buf = 240 ); for( var i = 0, r = Ref[0]; i < Ref.length; r=Ref[++i] )
   {
     if(r instanceof VHex && r.visible)
     {
