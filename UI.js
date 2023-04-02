@@ -43,91 +43,6 @@ CanvasRenderingContext2D.prototype.clipAvg = function()
 CanvasRenderingContext2D.prototype.avg = 7; CanvasRenderingContext2D.prototype.clipPrefix = 13;
 
 /*------------------------------------------------------------
-This is a specialized UI function that is called when components resize and more data needs to be displayed.
-Only one read operation can occur at a time so it is important that we iterate through them and load in data needed.
-All components that already have the data necessary are updated right away, while components that do not are updated after data is read in updateV.
-Note that it would make sense to group together the loose public variables that are shared into one object.
-------------------------------------------------------------*/
-
-var vList = [], rType = false; async function validate()
-{
-  if( vList.length > 0 ){ return; }
-  
-  vList.pos = 0; for( var i = 0; i < Ref.length; Ref[i++].io.buf = 240 ); for( var i = 0, r = Ref[0]; i < Ref.length; r=Ref[++i] )
-  {
-    if(r instanceof VHex && r.visible)
-    {
-      //We must update the scroll bar any time height does not match.
-
-      if( r.c.height != r.comp.clientHeight ){ r.adjSize(); }
-
-      //Does not match the memory buffer, then we must reload data and render the output.
-
-      r.io.buf = Math.max(r.io.buf, (( r.comp.clientHeight >> 4 ) << 4 ));
-
-      if( (r.getPos() << 4) != (r.virtual ? r.io.dataV.offset : r.io.data.offset) || (((( r.comp.clientHeight >> 4 ) << 4 ) > (r.virtual ? r.io.dataV.length : r.io.data.length))) )
-      {
-        vList[vList.length] = {virtual:r.virtual,pos:r.getPos() << 4, size:( r.comp.clientHeight >> 4 ) << 4, el:i, buf:true };
-      }
-
-      //Aligns in memory buffer but needs to draw more rows.
-
-      else if( r.c.height>>4 < r.comp.clientHeight>>4 ) { r.update(); }
-    }
-    else if(r instanceof dataDescriptor)
-    {
-      //We must update the scroll bar any time height does not match.
-
-      if( r.c.height != r.comp.clientHeight ){ r.adjSize(); }
-
-      if( r.update == r.dataCheck )
-      {
-        r.minRows = Math.min( r.data.rows, ((r.comp.clientHeight / 16) + 0.5)&-1 );
-        r.curRow = Math.max(Math.min(r.comp.scrollTop,r.data.rows), 0) & -1, r.endRow = Math.min( r.curRow + r.minRows, r.data.rows ) & - 1;
-    
-        //Data within the current buffer area.
-    
-        var dPos = r.data.rel(r.curRow) + r.data.offset, dEnd = r.data.rel(r.endRow) + r.data.offset;
-     
-        if(r.io.data.offset <= dPos && (r.io.data.offset+r.io.data.length) >= dEnd) { r.dataUpdate(r.io.data); }
-    
-        //Else we need to load the data we need before updating the component. This is least likely to happen.
-
-        else { vList[vList.length] = {virtual:false,pos:dPos, size: dEnd - dPos, el:i, buf:false}; }
-      }
-      else { r.update(); }
-    }
-  }
-
-  //Begin reading the data for the first component that needs to update.
-
-  if( vList.length > 0 ) { setTimeout(function() { updateV(); }, 0); }
-}
-
-async function updateV()
-{
-  if( vList.pos > 0 ) { Ref[vList[vList.pos-1].el].update(rType); }
-
-  if( vList.pos < vList.length )
-  {
-    var io = Ref[vList[vList.pos].el].io; io.buf = vList.pos == 0 ? vList[vList.pos].size : Math.max(io.buf, vList[vList.pos].size);
-    
-    //It is very important that we wait till other IO processing finishes before validating the data and UI components.
-    
-    if ( (io.fr.readyState | io.frv.readyState) & 1 ) { setTimeout(function() { updateV(); }, 0); } else
-    {
-      if( vList[vList.pos].buf ) { rType = false; io.bufRead(this, "updateV"); } else { rType = true; io.onRead(this, "updateV"); }
-    
-      if(vList[vList.pos].virtual) { io.seekV(vList[vList.pos].pos); io.readV(vList[vList.pos].size); }
-      else { io.seek(vList[vList.pos].pos); io.read(vList[vList.pos].size); }
-    
-      vList.pos += 1;
-    }
-  }
-  else { vList = []; }
-}
-
-/*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
@@ -456,6 +371,43 @@ VHex.prototype.onseek = function( f )
   if( pos > ve || pos < vs ) { this.sc = this.blockSc; this.comp.scrollTo( 0, pos >> 4 ); }
     
   if( this.rel ) { this.adjRelPos(); } this.update(f);
+}
+
+VHex.prototype.validate = function()
+{
+  //Do not update components that are not visible.
+
+  if(!this.visible){ return; }
+  
+  //We must update the scroll bar any time height does not match.
+
+  if( this.c.height != this.comp.clientHeight ){ this.adjSize(); }
+
+  //Does not match the memory buffer, then we must reload data and render the output.
+
+  this.io.buf = ( this.comp.clientHeight >> 4 ) << 4;
+
+  if( (this.getPos() << 4) != (this.virtual ? this.io.dataV.offset : this.io.data.offset) || (((( this.comp.clientHeight >> 4 ) << 4 ) > (this.virtual ? this.io.dataV.length : this.io.data.length))) )
+  {
+    if( this.io.Events )
+    {
+      this.io.bufRead(this, "update");
+    
+      if(this.virtual)
+      {
+        this.io.seekV(this.getPos()); this.io.readV(this.io.buf);
+      }
+      else
+      {
+        this.io.seek(this.getPos()); this.io.read(this.io.buf);
+      }
+    }
+    else { setTimeout(function(r){r.validate();},0,this); }
+  }
+
+  //Aligns in memory buffer but needs to draw more rows.
+
+  else if( this.c.height>>4 < this.comp.clientHeight>>4 ) { this.update(); }
 }
 
 /*------------------------------------------------------------
@@ -1278,6 +1230,34 @@ dataDescriptor.prototype.adjSize = function()
   var size = ( this.data.rows - ((this.comp.clientHeight / 16) - 1) ) + 2;
 
   this.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;";
+}
+
+dataDescriptor.prototype.validate = function()
+{
+  //Do not update components that are not visible.
+
+  if(!this.visible){ return; }
+  
+  //We must update the scroll bar any time height does not match.
+
+  if( this.c.height != this.comp.clientHeight ){ this.adjSize(); }
+
+  if( this.update == this.dataCheck )
+  {
+    this.minRows = Math.min( this.data.rows, ((this.comp.clientHeight / 16) + 0.5)&-1 );
+    this.curRow = Math.max(Math.min(this.comp.scrollTop,this.data.rows), 0) & -1, this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
+    
+    //Data within the current buffer area.
+    
+    var dPos = this.data.rel(this.curRow) + this.data.offset, dEnd = this.data.rel(this.endRow) + this.data.offset;
+     
+    if(this.io.data.offset <= dPos && (this.io.data.offset+this.io.data.length) >= dEnd) { this.dataUpdate(this.io.data); }
+    
+    //Else we need to load the data we need before updating the component. This is least likely to happen.
+
+    else { if( this.io.Events ) { this.io.onRead(this, "dataUpdate",this.io.tempD); this.io.seek(dPos); this.io.read(dEnd - dPos); } else { setTimeout(function(r){r.validate();},0,this); } }
+  }
+  else { this.update(); }
 }
 
 /*------------------------------------------------------------
