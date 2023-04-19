@@ -1,6 +1,6 @@
-var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/")), Ref = [];
+var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf("/"));
 
-var dosFont = new FontFace('dos', 'url('+path+'/Font/DOS.ttf)'), treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
+var treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
 document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .dataInspec { background:#CECECE; }.dataInspec table tr td { font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width:50%; }\
@@ -10,7 +10,7 @@ document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scrol
 #treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { white-space: nowrap; border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 [class^='node']{ cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
-.nested { display: none; }.active { display: block; }</style>"; treeNodes = path = undefined;
+.nested { display: none; }.active { display: block; }</style>";
 
 /*------------------------------------------------------------
 Optimized graphical text clipping.
@@ -43,11 +43,47 @@ CanvasRenderingContext2D.prototype.clipAvg = function()
 CanvasRenderingContext2D.prototype.avg = 7; CanvasRenderingContext2D.prototype.clipPrefix = 13;
 
 /*------------------------------------------------------------
+The main swingIO object is used to store references to other components and to share properties.
+------------------------------------------------------------*/
+
+swingIO = {
+  //Component reference list.
+  Ref: [],
+  //Scroll bar information.
+  sBarWidth: null, sBarMax: null, sBarLowLim: null, sBarUpLim: null,
+  /*------------------------------------------------------------
+  Get scroll bar information via a component. Must be swingIO component format.
+  Note that comp must contain the parent element and size must contain the canvas, or element to display in the component.
+  ------------------------------------------------------------*/
+  getScrollBarInfo: function( el )
+  {
+    if(!this.setSize) { return; } this.setSize(el,562949953421312); var o = el.size.clientHeight, n = 0;
+    
+    //Firefox sets height 0 when too large. In this case we must calculate max height.
+
+    if( o == 0 )
+    {
+      this.setSize(el,n = 1); while( el.size.clientHeight != 0 ){ this.setSize(el,n <<= 1); } o = n >>= 1; n >>= 1; while( n > 0 ){ this.setSize(el,o | n); if( el.size.clientHeight != 0 ) { o |= n; } n >>= 1; }
+    }
+    
+    this.sBarMax = o / 2;
+    this.sBarWidth = el.comp.offsetWidth - el.comp.clientWidth;
+    this.sBarLowLim = Math.floor(this.sBarMax * 0.05);
+    this.sBarUpLim = this.sBarMax - this.sBarLowLim;
+
+    o = n = this.setSize = undefined;
+  },
+  setSize: function(el,size) { el.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;"; },
+  //Once dos font is used and loaded by a hex editor then the font reference object is no longer needed.
+  dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.ttf)')
+}; treeNodes = path = undefined;
+
+/*------------------------------------------------------------
 This is a web based version of VHex originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/VHex.java
 ------------------------------------------------------------*/
 
-VHex.prototype.minDims = [0,0], VHex.prototype.sBarWidth = null, VHex.prototype.sBarMax = null, VHex.prototype.sBarLowLim = null, VHex.prototype.sBarUpLim = null;
+VHex.prototype.minDims = [0,0];
 
 //Relative position parameters based on file size while scrolling data larger than the max scroll bar size.
 
@@ -74,40 +110,23 @@ function VHex( el, io, v )
   this.sel = 0; this.sele = 0; this.slen = -1;
   
   //Find the width of the system scroll bar, and max height of scroll bar.
-  //Find the lower and upper limit while scrolling.
+  //Find the lower and upper limit while scrolling data larger than scroll bar clip area is 5%.
 
-  if( this.sBarWidth == null )
-  {
-    this.setRows(562949953421312); var o = this.size.clientHeight;
-    
-    //Firefox sets height 0 when too large. In this case we must calculate max height.
-
-    if( o == 0 )
-    {
-      this.setSize = function( s ){ this.size.style = "height:"+s+"px;min-height:"+s+"px;border:0;"; }
-      this.setSize(n = 1); while( this.size.clientHeight != 0 ){ this.setSize(n <<= 1); } o = n >>= 1; n >>= 1; while( n > 0 ){ this.setSize(o | n); if( this.size.clientHeight != 0 ) { o |= n; } n >>= 1; }
-      n = this.setSize = undefined;
-    }
-    
-    VHex.prototype.sBarMax = o / 2; o = undefined;
-    VHex.prototype.sBarWidth = this.comp.offsetWidth - this.comp.clientWidth;
-    VHex.prototype.sBarLowLim = Math.floor(this.sBarMax * 0.05);
-    VHex.prototype.sBarUpLim = this.sBarMax - this.sBarLowLim;
-  }
+  if( swingIO.sBarWidth == null ) { swingIO.getScrollBarInfo(this); }
 
   //Virtual or offset scroll.
 
   if( v )
   {
-    this.relSize = 562949953421312; this.relDataUp = this.relSize - this.sBarLowLim; this.rel = true;
-    this.adjSize = function() { var s = this.sBarMax - this.getRows(); this.size.style = "height:" + s + "px;min-height:" + s + "px;border:0;"; }
+    this.relSize = 562949953421312; this.relDataUp = this.relSize - swingIO.sBarLowLim; this.rel = true;
+    this.adjSize = function() { var s = swingIO.sBarMax - this.getRows(); this.size.style = "height:" + s + "px;min-height:" + s + "px;border:0;"; }
     this.setRows = function(){}; this.sc = this.virtualSc;
   }
   else { this.sc = this.offsetSc; }
   
   //Component min size.
   
-  this.minDims = [682 + this.sBarWidth, 256]; this.resetDims();
+  this.minDims = [682 + swingIO.sBarWidth, 256]; this.resetDims();
   
   //text column output is optional.
   
@@ -119,21 +138,21 @@ function VHex( el, io, v )
 
   //Scroll.
   
-  eval("var t = function(){Ref["+Ref.length+"].sc();}"); h.onscroll=t;
+  eval("var t = function(){swingIO.Ref["+swingIO.Ref.length+"].sc();}"); h.onscroll=t;
 
   //Seek byte onclick Event
   
-  eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } Ref["+Ref.length+"].select(e);}");
+  eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } swingIO.Ref["+swingIO.Ref.length+"].select(e);}");
   
   this.comp.onmousedown = this.comp.ontouchstart = t;
 
   //Load Font.
   
-  dosFont.load().then(function(font){ document.fonts.add(font); }); this.setRows(io.file.size);
+  if( swingIO.dosFont ) { swingIO.dosFont.load().then(function(font){ document.fonts.add(font); swingIO.dosFont = undefined; }); } this.setRows(io.file.size);
   
   //Allows us to referenced the proper component to update on scroll.
   
-  Ref[Ref.length] = this;
+  swingIO.Ref[swingIO.Ref.length] = this;
   
   //Add the component to the IO Event handler.
   
@@ -303,7 +322,7 @@ VHex.prototype.selection = function(g, pos)
 
 //Basic UI controls.
 
-VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + this.sBarWidth, 256]; this.end = (this.text = v) ? 518 : 352; this.resetDims(); if( this.visible ) { this.update(this.io); } }
+VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + swingIO.sBarWidth, 256]; this.end = (this.text = v) ? 518 : 352; this.resetDims(); if( this.visible ) { this.update(this.io); } }
 
 VHex.prototype.getRows = function() { return( Math.floor( this.comp.clientHeight / 16 ) ); }
 
@@ -315,9 +334,9 @@ VHex.prototype.setRows = function( size )
 
   //Scroll bar can only go so high before it hit's it's limit.
 
-  if( this.sBarMax != null )
+  if( swingIO.sBarMax != null )
   {
-    if( size > this.sBarMax ) { this.rel = true; this.relSize = size; this.relDataUp = this.relSize - this.sBarLowLim; size = this.sBarMax; } else { this.rel = false; }
+    if( size > swingIO.sBarMax ) { this.rel = true; this.relSize = size; this.relDataUp = this.relSize - swingIO.sBarLowLim; size = swingIO.sBarMax; } else { this.rel = false; }
   }
 
   //Set size.
@@ -345,13 +364,13 @@ VHex.prototype.adjRelPos = function()
 
   //The scroll bar must not pass the rel down position unless rel position is less than rel down data.
 
-  if( offset <= this.sBarLowLim && this.relPos >= this.sBarLowLim ) { offset = this.sBarLowLim; }
-  else if( this.relPos <= this.sBarLowLim ) { this.relPos = offset; }
+  if( offset <= swingIO.sBarLowLim && this.relPos >= swingIO.sBarLowLim ) { offset = swingIO.sBarLowLim; }
+  else if( this.relPos <= swingIO.sBarLowLim ) { this.relPos = offset; }
 
   //The scroll bar must not pass the rel Up position unless rel position is grater than rel up data.
 
-  if( offset >= this.sBarUpLim && this.relPos <= this.relDataUp ) { offset = this.sBarUpLim; }
-  else if(this.relPos >= this.relDataUp ) { this.relPos = this.relDataUp + ( offset - this.sBarUpLim ); }
+  if( offset >= swingIO.sBarUpLim && this.relPos <= this.relDataUp ) { offset = swingIO.sBarUpLim; }
+  else if(this.relPos >= this.relDataUp ) { this.relPos = this.relDataUp + ( offset - swingIO.sBarUpLim ); }
 
   //The only time the scroll bar passes the Rel UP or down position is when all that remains is that size of data.
 
@@ -409,6 +428,7 @@ VHex.prototype.validate = function()
 /*------------------------------------------------------------
 This is a web based version of the Data type inspector originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/master/dataInspector.java
+Note the data type list and byte data dLen should be shared between swingIO as both the dataDescriptor, and dataInspector share the data type indexes.
 ------------------------------------------------------------*/
 
 dataInspector.prototype.dType = ["Binary (8 bit)","Int8","UInt8","Int16","UInt16","Int32","UInt32","Int64","UInt64","Float32","Float64","Char8","Char16","String8","String16","Use No Data type"];
@@ -448,17 +468,17 @@ function dataInspector(el, io)
   
   var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "";
   
-  this.out = []; for(var i = 0; i < this.dType.length; i++) { event = "='event.preventDefault();Ref["+Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
+  this.out = []; for(var i = 0; i < this.dType.length; i++) { event = "='event.preventDefault();swingIO.Ref["+swingIO.Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
   
-  event = "onclick='Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
+  event = "onclick='swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);'";
   
   out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
   
-  event = "onclick='Ref["+Ref.length+"].base = this.value;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);'";
+  event = "onclick='swingIO.Ref["+swingIO.Ref.length+"].base = this.value;swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);'";
   
   out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
   
-  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='Ref["+Ref.length+"].dLen[14] = (Ref["+Ref.length+"].dLen[13] = Ref["+Ref.length+"].strLen = Math.min(this.value, 65536)) << 1;Ref["+Ref.length+"].onseek(Ref["+Ref.length+"].io);' value='0' /></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.Ref["+swingIO.Ref.length+"].dLen[14] = (swingIO.Ref["+swingIO.Ref.length+"].dLen[13] = swingIO.Ref["+swingIO.Ref.length+"].strLen = Math.min(this.value, 65536)) << 1;swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);' value='0' /></fieldset></td><tr>";
   
   d.innerHTML = out;
   
@@ -496,7 +516,7 @@ function dataInspector(el, io)
   
   //Allows us to referenced the proper component on update.
   
-  Ref[Ref.length] = this;
+  swingIO.Ref[swingIO.Ref.length] = this;
   
   //Add the component to the IO Event handler.
   
@@ -825,8 +845,9 @@ Descriptor.prototype.setEvent = function( s, e ) { this.event = e; this.source =
 Descriptor.prototype.length = function() { return( this.relPos[this.relPos.length - 1] ); }
 
 /*------------------------------------------------------------
-This is a web based version of the data model originally designed to run in Java.
+This is a web based version of the experimental optimized data model originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
+Note the data type list and byte data dLen should be shared between swingIO as both the dataDescriptor, and dataInspector share the data type indexes.
 ------------------------------------------------------------*/
 
 dataDescriptor.prototype.DType = ["Bit8",,"Int8",,"UInt8",,"Int16","LInt16","UInt16","LUInt16","Int32","LInt32","UInt32","LUInt32","Int64","LInt64","UInt64","LUInt64","Float32","LFloat32","Float64","LFloat64", "Char8",,"Char16","LChar16","String8",,"String16","LString16","Other",,"Array"];
@@ -855,9 +876,13 @@ function dataDescriptor( el, io )
     dataDescriptor.prototype.minHex = w * 2 + this.g.measureText(" ").width - 2; w = undefined;
   }
 
+  //Get scrollbar information if not already loaded.
+
+  if( swingIO.sBarWidth == null ) { swingIO.getScrollBarInfo(this); }
+
   //Component minimum size.
 
-  if( this.minDims == null ){ dataDescriptor.prototype.minDims = [((this.textWidth[0]+this.textWidth[1]+this.textWidth[2])<<1) + 16, 192]; } this.resetDims();
+  if( this.minDims == null ){ dataDescriptor.prototype.minDims = [((this.textWidth[0]+this.textWidth[1]+this.textWidth[2])<<1) + swingIO.sBarWidth + 64, 192]; } this.resetDims();
 
   //Selected element.
 
@@ -865,11 +890,11 @@ function dataDescriptor( el, io )
   
   //Scroll.
   
-  eval("var t = function(){Ref["+Ref.length+"].sc();}"); d.onscroll=t;
+  eval("var t = function(){swingIO.Ref["+swingIO.Ref.length+"].sc();}"); d.onscroll=t;
 
   //clicked data type event.
   
-  eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } Ref["+Ref.length+"].select(e);}");
+  eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } swingIO.Ref["+swingIO.Ref.length+"].select(e);}");
   
   //If touch screen.
  
@@ -877,7 +902,7 @@ function dataDescriptor( el, io )
   
   //Allows us to referenced the proper component to update on scroll.
   
-  Ref[Ref.length] = this;
+  swingIO.Ref[swingIO.Ref.length] = this;
 }
 
 //Scrolling event.
@@ -1395,7 +1420,7 @@ treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.node
 
 //Shared UI controls.
 
-VHex.prototype.resetDims = dataInspector.prototype.resetDims = tree.prototype.resetDims = dataDescriptor.prototype.resetDims = function() { this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; }
+VHex.prototype.resetDims = dataInspector.prototype.resetDims = tree.prototype.resetDims = dataDescriptor.prototype.resetDims = function() { this.comp.style.width = this.comp.style.height = ""; this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; }
 VHex.prototype.minWidth = dataInspector.prototype.minWidth = tree.prototype.minWidth = dataDescriptor.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
 VHex.prototype.minHeight = dataInspector.prototype.minHeight = tree.prototype.minHeight = dataDescriptor.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
 VHex.prototype.width = dataInspector.prototype.width = tree.prototype.width = dataDescriptor.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
