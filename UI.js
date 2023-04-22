@@ -56,8 +56,7 @@ swingIO = {
   Data types are in pairs of 2 for little endian and big endian byte order.
   Blank felids are for data types that do not have a byte order.
   ------------------------------------------------------------*/
-  dType: [
-    "Bit8",,
+  dType: [ "Bit8",,
     "Int8",,
     "UInt8",,
     "Int16","LInt16",
@@ -487,23 +486,14 @@ function dataInspector(el, io)
   //Create the component.
   
   d.className = "dataInspec";
-  
   var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType(0);'";
-
   out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Binary (8 bit)</td><td>?</td></tr>";
-  
   this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + swingIO.dType[i<<1] + "</td><td>?</td></tr>"; }
-
   event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Use No Data type</td><td>?</td></tr>";
-  
   event = "onclick='swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
-  
   out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
-  
   event = "onclick='swingIO.ref["+swingIO.ref.length+"].base = this.value;swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
-  
   out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
-  
   out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.ref["+swingIO.ref.length+"].strLen = Math.min(this.value, 65536);swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);' value='0' /></fieldset></td><tr>";
   
   d.innerHTML = out;
@@ -514,13 +504,13 @@ function dataInspector(el, io)
   
   //Setup data type outputs.
   
-  this.td = d.getElementsByTagName("table")[0];
-  
-  for(var i = 1; swingIO.dLen[this.out.length] > -2; i++) { this.out[this.out.length] = this.td.rows[i].cells[1]; }
+  this.td = d.getElementsByTagName("table")[0]; for(var i = 1; swingIO.dLen[this.out.length] > -2; i++) { this.out[this.out.length] = this.td.rows[i].cells[1]; }
 
   //User input string length is updated when clicking on a string data type as output element 16.
 
   this.input = this.td.rows[i+4].cells[0].getElementsByTagName("input")[0];
+
+  //Set default number base and string length.
   
   this.base = 10; this.strLen = 0;
 
@@ -538,9 +528,7 @@ function dataInspector(el, io)
   
   if(this.minDims == null) { dataInspector.prototype.minDims = [d.getElementsByTagName("fieldset")[1].clientWidth+16, t.clientHeight+32]; }
   
-  t.style.minWidth=d.style.minWidth=this.minDims[0]; d.style.minHeight=this.minDims[1];
-  
-  t.style.width = "100%"; t.style.height = "100%"; t = undefined;
+  t.style.minWidth=d.style.minWidth=this.minDims[0]; d.style.minHeight=this.minDims[1]; t.style.width = "100%"; t.style.height = "100%"; t = undefined;
   
   //Allows us to referenced the proper component on update.
   
