@@ -124,11 +124,11 @@ VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A"
 
 function VHex( el, io, v )
 {
-  this.io = io; var h = this.comp = document.getElementById(el); h.className="vhex"; h.setAttribute("ref",swingIO.ref.length);
-
-  h.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
-
-  this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
+  this.io = io; var e = "='if(typeof(window.ontouchstart) != \"undefined\" && window.event.type == \"mousedown\"){ return; } swingIO.ref["+swingIO.ref.length+"].select(window.event);'";
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.ref["+swingIO.ref.length+"].sc();' onmousedown"+e+" ontouchstart"+e+">\
+  <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>"; e = undefined;
+  
+  this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
   
   //Visible on creation.
   
@@ -164,14 +164,6 @@ function VHex( el, io, v )
   //virtual or file offset view.
   
   this.s = (this.virtual = v) ? "Virtual Address (h)" : "Offset (h)"; this.addcol = v ? -1 : 42;
-
-  //Scroll.
-
-  h.onscroll=function() { swingIO.ref[this.getAttribute("ref")].sc(); };
-
-  //Seek byte onclick Event
-  
-  this.comp.onmousedown = this.comp.ontouchstart = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } swingIO.ref[this.getAttribute("ref")].select(e);};
 
   //Load Font.
   
@@ -889,11 +881,11 @@ dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = []
 
 function dataDescriptor( el, io )
 {
-  this.io = io; var d = this.comp = document.getElementById(el); d.className="vhex"; d.setAttribute("ref",swingIO.ref.length); d.style.overflowY = "auto";
-  
-  d.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id=\""+el+"s\"></div>";
+  this.io = io; var e = "='if(typeof(window.ontouchstart) != \"undefined\" && window.event.type == \"mousedown\"){ return; } swingIO.ref["+swingIO.ref.length+"].select(window.event);'";
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' style='overflow-y:auto;' onscroll='swingIO.ref["+swingIO.ref.length+"].sc();' onmousedown"+e+" ontouchstart"+e+">\
+  <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>"; e = undefined;
 
-  this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
+  this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
 
   //We should only ever measure this once.
 
@@ -919,14 +911,6 @@ function dataDescriptor( el, io )
   //Selected element.
 
   this.rel1 = 0; this.rel2 = 0; this.type = 0; this.selectedRow = -1;
-  
-  //Scroll.
-  
-  d.onscroll=function(){swingIO.ref[this.getAttribute("ref")].sc();};
-
-  //clicked data type event.
- 
-  this.comp.ontouchstart = this.comp.onmousedown = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } swingIO.ref[this.getAttribute("ref")].select(e);};
   
   //Allows us to referenced the proper component to update on scroll.
   
