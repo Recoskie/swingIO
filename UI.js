@@ -52,6 +52,35 @@ swingIO = {
   //Scroll bar information.
   sBarWidth: null, sBarMax: null, sBarLowLim: null, sBarUpLim: null,
   /*------------------------------------------------------------
+  Data types can be added or removed as you wish. Fully programable system.
+  Data types are in pairs of 2 for little endian and big endian byte order.
+  Blank felids are for data types that do not have a byte order.
+  ------------------------------------------------------------*/
+  dType: [
+    "Bit8",,
+    "Int8",,
+    "UInt8",,
+    "Int16","LInt16",
+    "UInt16","LUInt16",
+    "Int32","LInt32",
+    "UInt32","LUInt32",
+    "Int64","LInt64",
+    "UInt64","LUInt64",
+    "Float32","LFloat32",
+    "Float64","LFloat64",
+    "Char8",,
+    "Char16","LChar16",
+    "String8",,
+    "String16","LString16",
+    "Other",,
+    "Array"
+  ],
+  /*------------------------------------------------------------
+  Number of bytes each data type is.
+  The negative values are for variable length data types, and Arrays that are not exactly one data type but are a combination.
+  ------------------------------------------------------------*/
+  dLen: [1,1,1,2,2,4,4,8,8,4,8,1,2,-1,-1,-1,-2],
+  /*------------------------------------------------------------
   Get scroll bar information via a component. Must be swingIO component format.
   Note that comp must contain the parent element and size must contain the canvas, or element to display in the component.
   ------------------------------------------------------------*/
@@ -431,8 +460,7 @@ See https://github.com/Recoskie/swingIO/blob/master/dataInspector.java
 Note the data type list and byte data dLen should be shared between swingIO as both the dataDescriptor, and dataInspector share the data type indexes.
 ------------------------------------------------------------*/
 
-dataInspector.prototype.dType = ["Binary (8 bit)","Int8","UInt8","Int16","UInt16","Int32","UInt32","Int64","UInt64","Float32","Float64","Char8","Char16","String8","String16","Use No Data type"];
-dataInspector.prototype.dLen = [1,1,1,2,2,4,4,8,8,4,8,1,2,0,0,-1], dataInspector.prototype.minDims = null, dataInspector.prototype.minChar = null;
+dataInspector.prototype.minDims = null, dataInspector.prototype.minChar = null;
 
 function dataInspector(el, io)
 {
@@ -466,9 +494,13 @@ function dataInspector(el, io)
   
   d.className = "dataInspec";
   
-  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "";
+  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "='event.preventDefault();swingIO.Ref["+swingIO.Ref.length+"].setType(0);'";
+
+  out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Binary (8 bit)</td><td>?</td></tr>";
   
-  this.out = []; for(var i = 0; i < this.dType.length; i++) { event = "='event.preventDefault();swingIO.Ref["+swingIO.Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + this.dType[i] + "</td><td>?</td></tr>"; }
+  this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='event.preventDefault();swingIO.Ref["+swingIO.Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + swingIO.dType[i<<1] + "</td><td>?</td></tr>"; }
+
+  event = "='event.preventDefault();swingIO.Ref["+swingIO.Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Use No Data type</td><td>?</td></tr>";
   
   event = "onclick='swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);'";
   
@@ -478,7 +510,7 @@ function dataInspector(el, io)
   
   out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
   
-  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.Ref["+swingIO.Ref.length+"].dLen[14] = (swingIO.Ref["+swingIO.Ref.length+"].dLen[13] = swingIO.Ref["+swingIO.Ref.length+"].strLen = Math.min(this.value, 65536)) << 1;swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);' value='0' /></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.Ref["+swingIO.Ref.length+"].strLen = Math.min(this.value, 65536);swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);' value='0' /></fieldset></td><tr>";
   
   d.innerHTML = out;
   
@@ -490,15 +522,17 @@ function dataInspector(el, io)
   
   this.td = d.getElementsByTagName("table")[0];
   
-  for(var i = 1; i <= this.dType.length; i++) { this.out[this.out.length] = this.td.rows[i].cells[1]; }
+  for(var i = 1; swingIO.dLen[this.out.length] > -2; i++) { this.out[this.out.length] = this.td.rows[i].cells[1]; }
 
   //User input string length is updated when clicking on a string data type as output element 16.
 
-  this.out[16] = this.td.rows[21].cells[0].getElementsByTagName("input")[0];
+  this.input = this.td.rows[i+4].cells[0].getElementsByTagName("input")[0];
   
   this.base = 10; this.strLen = 0;
+
+  //Set other type.
   
-  this.out[15].innerHTML = ""; this.setType(15, 0);
+  this.out[this.out.length-1].innerHTML = ""; this.setType(this.out.length-1, 0);
   
   //Visible on creation.
   
@@ -525,17 +559,17 @@ function dataInspector(el, io)
 
 dataInspector.prototype.setType = function(t, order, len)
 {
-  t = t >= 15 ? 15 : t; len = (t >= 13 && t <= 15) ? (len || this.dLen[t]) : this.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
+  t = t >= 15 ? 15 : t; len = len || swingIO.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
   
   if(this.sel) { this.td.rows[this.sel].style.background = "#FFFFFF"; } this.td.rows[this.sel=t+1].style.background = "#9EB0C1";
+
+  //Variable length string.
+
+  if( t == 13 || t == 14 ) { len = (len < 0 ? (t == 14 ? this.strLen << 1 : this.strLen) : len); this.input.value = this.strLen = t == 14 ? len >> 1 : len; }
   
   //Update hex editor data length.
   
   for( var i = 0; i < this.editors.length; i++ ) { this.editors[i].slen = len; if(this.editors[i].visible) { this.editors[i].onseek(this.io); } }
-
-  //Variable length string.
-
-  if( t == 13 || t == 14 ) { if( t == 14 ) { len >>= 1; } this.dLen[14] = (this.dLen[13] = this.out[16].value = this.strLen = len) << 1; }
 
   this.onseek(this.io);
 }
@@ -681,11 +715,6 @@ This is a web based version of the data model originally designed to run in Java
 And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
 ------------------------------------------------------------*/
 
-//Data inspector types, and byte length size.
-//Note that this could be shrunk down by better relating the data inspector types and names array.
-
-arrayType.prototype.bytes = Descriptor.prototype.bytes = dataInspector.prototype.dLen.slice();Descriptor.prototype.bytes[13]=Descriptor.prototype.bytes[14]=Descriptor.prototype.bytes[15]=-1;Descriptor.prototype.bytes[16]=-2;
-
 //The position we wish to style binary data.
 
 Descriptor.prototype.offset = 0;
@@ -745,7 +774,7 @@ arrayType.prototype.optimizeData = Descriptor.prototype.optimizeData = function(
   
   this.relPos = []; var length = 0; for( var i = 0, b = 0; i < data.length; i++ )
   {
-    des[i] = data[i].des; this.data[i] = data[i].type; b = this.bytes[data[i].type>>1]
+    des[i] = data[i].des; this.data[i] = data[i].type; b = swingIO.dLen[data[i].type>>1];
 
     //Variable length data types must be able to reference the descriptor, or array.
     //This allows variable length data types to be adjusted.
@@ -844,14 +873,15 @@ Descriptor.prototype.setEvent = function( s, e ) { this.event = e; this.source =
 
 Descriptor.prototype.length = function() { return( this.relPos[this.relPos.length - 1] ); }
 
+//Construct the Descriptor data type keys from the swingIO data types list.
+
+for(var i=0;i<swingIO.dType.length;swingIO.dType[i]&&(Descriptor[swingIO.dType[i]]=i),i++);
+
 /*------------------------------------------------------------
 This is a web based version of the experimental optimized data model originally designed to run in Java.
 See https://github.com/Recoskie/swingIO/blob/Experimental/dataDescriptor.java
-Note the data type list and byte data dLen should be shared between swingIO as both the dataDescriptor, and dataInspector share the data type indexes.
 ------------------------------------------------------------*/
 
-dataDescriptor.prototype.DType = ["Bit8",,"Int8",,"UInt8",,"Int16","LInt16","UInt16","LUInt16","Int32","LInt32","UInt32","LUInt32","Int64","LInt64","UInt64","LUInt64","Float32","LFloat32","Float64","LFloat64", "Char8",,"Char16","LChar16","String8",,"String16","LString16","Other",,"Array"];
-for(var i=0;i<dataDescriptor.prototype.DType.length;dataDescriptor.prototype.DType[i]&&(Descriptor[dataDescriptor.prototype.DType[i]]=i),i++);
 dataDescriptor.prototype.di = null, dataDescriptor.prototype.data = new Descriptor([]);
 dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = [], dataDescriptor.prototype.minHex = 28;
 
@@ -1082,7 +1112,7 @@ dataDescriptor.prototype.dataUpdate = function(data)
           {
             this.rel1 = (arEl * array.size) + this.data.relPos[arRow-1]; this.rel2 = this.rel1 + array.relPos[array.dataTypes-1]
 
-            dType = this.DType[32]; des = "Array element " + arEl + "";
+            dType = swingIO.dType[32]; des = "Array element " + arEl + "";
           }
           arType -= 1;
         }
@@ -1097,7 +1127,7 @@ dataDescriptor.prototype.dataUpdate = function(data)
 
           //Array that has one element has the (El #) prefix added.
 
-          dType = this.DType[array.data[arType]]; des = array.aDes[arType] + (array.dataTypes == 1 ? "(El " + arEl + ")" : "");
+          dType = swingIO.dType[array.data[arType]]; des = array.aDes[arType] + (array.dataTypes == 1 ? "(El " + arEl + ")" : "");
         }
 
         break;
@@ -1110,7 +1140,7 @@ dataDescriptor.prototype.dataUpdate = function(data)
 
     //Regular data types are stored in relative position and by description and data type.
 
-    if( dType == null ) { this.rel1 = this.data.relPos[row]; this.rel2 = this.data.relPos[row+1]; des = this.data.des[row]; dType = this.DType[this.data.data[row]]; }
+    if( dType == null ) { this.rel1 = this.data.relPos[row]; this.rel2 = this.data.relPos[row+1]; des = this.data.des[row]; dType = swingIO.dType[this.data.data[row]]; }
 
     //Data type description.
  
