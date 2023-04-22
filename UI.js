@@ -559,13 +559,17 @@ function dataInspector(el, io)
 
 dataInspector.prototype.setType = function(t, order, len)
 {
-  t = t >= 15 ? 15 : t; len = len || swingIO.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
+  t = t >= (this.out.length-1) ? (this.out.length-1) : t; len = len || swingIO.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
   
   if(this.sel) { this.td.rows[this.sel].style.background = "#FFFFFF"; } this.td.rows[this.sel=t+1].style.background = "#9EB0C1";
 
   //Variable length string.
 
-  if( t == 13 || t == 14 ) { len = (len < 0 ? (t == 14 ? this.strLen << 1 : this.strLen) : len); this.input.value = this.strLen = t == 14 ? len >> 1 : len; }
+  if( t == (Descriptor.String8 >> 1) || t == (Descriptor.String16 >> 1) )
+  {
+    if( len < 0 ) { len = t == (Descriptor.String16 >> 1) ? this.strLen << 1 : this.strLen; }
+    this.input.value = this.strLen = t == (Descriptor.String16 >> 1) ? len >> 1 : len;
+  }
   
   //Update hex editor data length.
   
