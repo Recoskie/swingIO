@@ -103,6 +103,10 @@ swingIO = {
     o = n = this.setSize = undefined;
   },
   setSize: function(el,size) { el.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;"; },
+  /*------------------------------------------------------------
+  Event handling.
+  ------------------------------------------------------------*/
+  scroll:function(r){this.ref[r].sc();},click:function(r){if(typeof(window.ontouchstart) != "undefined" && window.event.type == "mousedown"){ return; } this.ref[r].select(window.event);},
   //Once dos font is used and loaded by a hex editor then the font reference object is no longer needed.
   dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.ttf)')
 }; treeNodes = path = undefined;
@@ -124,8 +128,8 @@ VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A"
 
 function VHex( el, io, v )
 {
-  this.io = io; var e = "='if(typeof(window.ontouchstart) != \"undefined\" && window.event.type == \"mousedown\"){ return; } swingIO.ref["+swingIO.ref.length+"].select(window.event);'";
-  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.ref["+swingIO.ref.length+"].sc();' onmousedown"+e+" ontouchstart"+e+">\
+  this.io = io; var e = "='swingIO.click("+swingIO.ref.length+");'";
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.scroll("+swingIO.ref.length+");' onmousedown"+e+" ontouchstart"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>"; e = undefined;
   
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
@@ -881,8 +885,8 @@ dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = []
 
 function dataDescriptor( el, io )
 {
-  this.io = io; var e = "='if(typeof(window.ontouchstart) != \"undefined\" && window.event.type == \"mousedown\"){ return; } swingIO.ref["+swingIO.ref.length+"].select(window.event);'";
-  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' style='overflow-y:auto;' onscroll='swingIO.ref["+swingIO.ref.length+"].sc();' onmousedown"+e+" ontouchstart"+e+">\
+  this.io = io; var e = "='swingIO.click("+swingIO.ref.length+");'";
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onmousedown"+e+" ontouchstart"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>"; e = undefined;
 
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
