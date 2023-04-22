@@ -48,7 +48,7 @@ The main swingIO object is used to store references to other components and to s
 
 swingIO = {
   //Component reference list.
-  Ref: [],
+  ref: [],
   //Scroll bar information.
   sBarWidth: null, sBarMax: null, sBarLowLim: null, sBarUpLim: null,
   /*------------------------------------------------------------
@@ -124,7 +124,7 @@ VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A"
 
 function VHex( el, io, v )
 {
-  this.io = io; var h = this.comp = document.getElementById(el); h.className="vhex";
+  this.io = io; var h = this.comp = document.getElementById(el); h.className="vhex"; h.setAttribute("ref",swingIO.ref.length);
 
   h.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id=\""+el+"s\"></div>";
 
@@ -166,14 +166,12 @@ function VHex( el, io, v )
   this.s = (this.virtual = v) ? "Virtual Address (h)" : "Offset (h)"; this.addcol = v ? -1 : 42;
 
   //Scroll.
-  
-  eval("var t = function(){swingIO.Ref["+swingIO.Ref.length+"].sc();}"); h.onscroll=t;
+
+  h.onscroll=function() { swingIO.ref[this.getAttribute("ref")].sc(); };
 
   //Seek byte onclick Event
   
-  eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } swingIO.Ref["+swingIO.Ref.length+"].select(e);}");
-  
-  this.comp.onmousedown = this.comp.ontouchstart = t;
+  this.comp.onmousedown = this.comp.ontouchstart = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } swingIO.ref[this.getAttribute("ref")].select(e);};
 
   //Load Font.
   
@@ -181,7 +179,7 @@ function VHex( el, io, v )
   
   //Allows us to referenced the proper component to update on scroll.
   
-  swingIO.Ref[swingIO.Ref.length] = this;
+  swingIO.ref[swingIO.ref.length] = this;
   
   //Add the component to the IO Event handler.
   
@@ -494,23 +492,23 @@ function dataInspector(el, io)
   
   d.className = "dataInspec";
   
-  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "='event.preventDefault();swingIO.Ref["+swingIO.Ref.length+"].setType(0);'";
+  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType(0);'";
 
   out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Binary (8 bit)</td><td>?</td></tr>";
   
-  this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='event.preventDefault();swingIO.Ref["+swingIO.Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + swingIO.dType[i<<1] + "</td><td>?</td></tr>"; }
+  this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + swingIO.dType[i<<1] + "</td><td>?</td></tr>"; }
 
-  event = "='event.preventDefault();swingIO.Ref["+swingIO.Ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Use No Data type</td><td>?</td></tr>";
+  event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Use No Data type</td><td>?</td></tr>";
   
-  event = "onclick='swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);'";
+  event = "onclick='swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
   
   out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
   
-  event = "onclick='swingIO.Ref["+swingIO.Ref.length+"].base = this.value;swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);'";
+  event = "onclick='swingIO.ref["+swingIO.ref.length+"].base = this.value;swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
   
   out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
   
-  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.Ref["+swingIO.Ref.length+"].strLen = Math.min(this.value, 65536);swingIO.Ref["+swingIO.Ref.length+"].onseek(swingIO.Ref["+swingIO.Ref.length+"].io);' value='0' /></fieldset></td><tr>";
+  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.ref["+swingIO.ref.length+"].strLen = Math.min(this.value, 65536);swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);' value='0' /></fieldset></td><tr>";
   
   d.innerHTML = out;
   
@@ -550,7 +548,7 @@ function dataInspector(el, io)
   
   //Allows us to referenced the proper component on update.
   
-  swingIO.Ref[swingIO.Ref.length] = this;
+  swingIO.ref[swingIO.ref.length] = this;
   
   //Add the component to the IO Event handler.
   
@@ -891,7 +889,7 @@ dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = []
 
 function dataDescriptor( el, io )
 {
-  this.io = io; var d = this.comp = document.getElementById(el); d.className="vhex"; d.style.overflowY = "auto";
+  this.io = io; var d = this.comp = document.getElementById(el); d.className="vhex"; d.setAttribute("ref",swingIO.ref.length); d.style.overflowY = "auto";
   
   d.innerHTML = "<canvas id=\""+el+"g\" style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id=\""+el+"s\"></div>";
 
@@ -924,19 +922,15 @@ function dataDescriptor( el, io )
   
   //Scroll.
   
-  eval("var t = function(){swingIO.Ref["+swingIO.Ref.length+"].sc();}"); d.onscroll=t;
+  d.onscroll=function(){swingIO.ref[this.getAttribute("ref")].sc();};
 
   //clicked data type event.
-  
-  eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } swingIO.Ref["+swingIO.Ref.length+"].select(e);}");
-  
-  //If touch screen.
  
-  this.comp.ontouchstart = this.comp.onmousedown = t;
+  this.comp.ontouchstart = this.comp.onmousedown = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } swingIO.ref[this.getAttribute("ref")].select(e);};
   
   //Allows us to referenced the proper component to update on scroll.
   
-  swingIO.Ref[swingIO.Ref.length] = this;
+  swingIO.ref[swingIO.ref.length] = this;
 }
 
 //Scrolling event.
@@ -1349,7 +1343,7 @@ function tree(el) { this.comp = document.getElementById(el); this.comp.style.ove
 
 //Set the tree nodes.
 
-tree.prototype.set = function(v) { eval("var t = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } tree.prototype.treeClick(e);}"); this.comp.onmousedown = this.comp.ontouchstart = t; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+tree.prototype.set = function(v) { this.comp.onmousedown = this.comp.ontouchstart = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } tree.prototype.treeClick(e);}; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
 //Navigate the tree nodes. Does the same thing as treeNode getNode except this navigates the HTML list structure directly.
 
