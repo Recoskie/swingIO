@@ -105,7 +105,7 @@ swingIO = {
   /*------------------------------------------------------------
   Event handling.
   ------------------------------------------------------------*/
-  scroll:function(r){this.ref[r].sc();},click:function(r){if(typeof(window.ontouchstart) != "undefined" && window.event.type == "mousedown"){ return; } this.ref[r].select(window.event);},
+  scroll:function(r){this.ref[r].sc();},click:function(r){this.ref[r].select(window.event);},
   //Once dos font is used and loaded by a hex editor then the font reference object is no longer needed.
   dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.ttf)')
 }; treeNodes = path = undefined;
@@ -128,7 +128,7 @@ VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A"
 function VHex( el, io, v )
 {
   this.io = io; var e = "='swingIO.click("+swingIO.ref.length+");'";
-  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.scroll("+swingIO.ref.length+");' onmousedown"+e+" ontouchstart"+e+">\
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>"; e = undefined;
   
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
@@ -486,10 +486,10 @@ function dataInspector(el, io)
   //Create the component.
   
   d.className = "dataInspec";
-  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType(0);'";
-  out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Binary (8 bit)</td><td>?</td></tr>";
-  this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>" + swingIO.dType[i<<1] + "</td><td>?</td></tr>"; }
-  event = "='event.preventDefault();swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr ontouchstart"+event+" onmousedown"+event+"><td>Use No Data type</td><td>?</td></tr>";
+  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "='swingIO.ref["+swingIO.ref.length+"].setType(0);'";
+  out += "<tr onpointerdown"+event+"><td>Binary (8 bit)</td><td>?</td></tr>";
+  this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr onpointerdown"+event+"><td>" + swingIO.dType[i<<1] + "</td><td>?</td></tr>"; }
+  event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr onpointerdown"+event+"><td>Use No Data type</td><td>?</td></tr>";
   event = "onclick='swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
   out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
   event = "onclick='swingIO.ref["+swingIO.ref.length+"].base = this.value;swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
@@ -874,7 +874,7 @@ dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = []
 function dataDescriptor( el, io )
 {
   this.io = io; var e = "='swingIO.click("+swingIO.ref.length+");'";
-  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onmousedown"+e+" ontouchstart"+e+">\
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>"; e = undefined;
 
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
@@ -1319,7 +1319,7 @@ function tree(el) { this.comp = document.getElementById(el); this.comp.style.ove
 
 //Set the tree nodes.
 
-tree.prototype.set = function(v) { this.comp.onmousedown = this.comp.ontouchstart = function(e){if(typeof(window.ontouchstart) != 'undefined' && e.type == 'mousedown'){ return; } tree.prototype.treeClick(e);}; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+tree.prototype.set = function(v) { this.comp.onpointerdown = function(e){ tree.prototype.treeClick(e);}; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
 //Navigate the tree nodes. Does the same thing as treeNode getNode except this navigates the HTML list structure directly.
 
