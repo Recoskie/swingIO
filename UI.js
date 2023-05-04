@@ -2,7 +2,8 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
-document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+.noSel { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .dataInspec { background:#CECECE; }.dataInspec table tr td { font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width:50%; }\
 .dataInspec table tr:nth-child(n+0):nth-child(-n+1) { background:#8E8E8E; }\
 .dataInspec table tr:nth-child(n+2):nth-child(-n+17) { cursor: pointer; background:#FFFFFF; }\
@@ -1319,7 +1320,7 @@ function tree(el) { this.comp = document.getElementById(el); this.comp.style.ove
 
 //Set the tree nodes.
 
-tree.prototype.set = function(v) { this.comp.onpointerdown = function(e){ tree.prototype.treeClick(e);}; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+tree.prototype.set = function(v) { this.comp.onpointerdown = function(e){ tree.prototype.treeClick(e);}; this.comp.className = "noSel"; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
 //Navigate the tree nodes. Does the same thing as treeNode getNode except this navigates the HTML list structure directly.
 
