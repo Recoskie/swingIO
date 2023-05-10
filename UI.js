@@ -128,8 +128,10 @@ VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A"
 
 function VHex( el, io, v )
 {
-  this.io = io; var e = "='swingIO.click("+swingIO.ref.length+");'";
-  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
+  this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
+  var w = this.comp.getAttribute("width") || this.comp.style.width || this.comp.clientWidth;
+  var h = this.comp.getAttribute("height") || this.comp.style.height || this.comp.clientHeight;
+  this.comp.outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>"; e = undefined;
   
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
@@ -179,7 +181,7 @@ function VHex( el, io, v )
   
   //Add the component to the IO Event handler.
   
-  io.comps[io.comps.length] = this;
+  io.comps[io.comps.length] = this; this.comp.style.width = w; this.comp.style.height = h; w = h = undefined;
 }
 
 //Scrolling event.
@@ -874,7 +876,9 @@ dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = []
 
 function dataDescriptor( el, io )
 {
-  this.io = io; var e = "='swingIO.click("+swingIO.ref.length+");'";
+  this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
+  var w = this.comp.getAttribute("width") || this.comp.style.width || this.comp.clientWidth;
+  var h = this.comp.getAttribute("height") || this.comp.style.height || this.comp.clientHeight;
   document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>"; e = undefined;
 
@@ -907,7 +911,7 @@ function dataDescriptor( el, io )
   
   //Allows us to referenced the proper component to update on scroll.
   
-  swingIO.ref[swingIO.ref.length] = this;
+  swingIO.ref[swingIO.ref.length] = this; this.comp.style.width = w; this.comp.style.height = h; w = h = undefined;
 }
 
 //Scrolling event.
