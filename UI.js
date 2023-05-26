@@ -11,7 +11,10 @@ document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scrol
 #treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { white-space: nowrap; border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 [class^='node']{ cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
-.nested { display: none; }.active { display: block; }</style>";
+.nested { display: none; }.active { display: block; }\
+.alert { background-color:#777777; padding: 20px; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}\
+.alertbg { width:100%; height:100%; background-color: rgba(0,0,0,0.8); position:absolute; top:0px; left:0px; }\
+.closebtn{ margin-left:15px; color: white; font-weight:bold; float:right; font-size: 22px; line-height:20px; cursor:pointer; }.closebtn:hover{ color: black; }</style>";
 
 /*------------------------------------------------------------
 Optimized graphical text clipping.
@@ -1436,6 +1439,10 @@ VHex.prototype.width = dataInspector.prototype.width = tree.prototype.width = da
 VHex.prototype.height = dataInspector.prototype.height = tree.prototype.height = dataDescriptor.prototype.height = function( v ) { return(this.comp.style.height = v || this.comp.style.height); }
 VHex.prototype.hide = dataInspector.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; if(this.visible){ this.onseek(this.io); } }
 tree.prototype.hide = dataDescriptor.prototype.hide = function( v ) { this.visible = !v; this.comp.style.display = v ? "none" : ""; }
+
+//The default alert box sucks.
+
+function alert(msg) { document.children[0].insertAdjacentHTML('beforeend','<div class="alertbg"><div class="alert"><span class="closebtn" onclick="this.parentElement.parentElement.remove();">X</span><br />'+msg+'<br /><center><input type="button" value="Close" onclick="this.parentElement.parentElement.parentElement.remove();" /></center></div></div>'); }
 
 //64bit lossless base conversion.
 
