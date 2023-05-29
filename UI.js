@@ -1442,7 +1442,7 @@ tree.prototype.hide = dataDescriptor.prototype.hide = function( v ) { this.visib
 
 //The default alert box sucks.
 
-function alert(msg) { document.children[0].insertAdjacentHTML('beforeend','<div class="alertbg"><div class="alert"><span class="closebtn" onclick="this.parentElement.parentElement.remove();">X</span><br />'+msg+'<br /><center><input type="button" value="Close" onclick="this.parentElement.parentElement.parentElement.remove();" /></center></div></div>'); }
+function alert(msg) { document.children[0].insertAdjacentHTML('beforeend','<div class="alertbg"><div class="alert"><span class="closebtn" onclick="this.parentElement.parentElement.remove();">X</span><br />'+msg+'<br /><br/><center><input type="button" value="OK" onclick="this.parentElement.parentElement.parentElement.remove();" /></center></div></div>'); }
 
 //64bit lossless base conversion.
 
