@@ -132,8 +132,8 @@ VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A"
 function VHex( el, io, v )
 {
   this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
-  var w = this.comp.getAttribute("width") || this.comp.style.width || this.comp.clientWidth;
-  var h = this.comp.getAttribute("height") || this.comp.style.height || this.comp.clientHeight;
+  var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
+  var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
   this.comp.outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>"; e = undefined;
   
@@ -880,8 +880,8 @@ dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = []
 function dataDescriptor( el, io )
 {
   this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
-  var w = this.comp.getAttribute("width") || this.comp.style.width || this.comp.clientWidth;
-  var h = this.comp.getAttribute("height") || this.comp.style.height || this.comp.clientHeight;
+  var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
+  var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
   document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>"; e = undefined;
 
@@ -1321,9 +1321,9 @@ treeNode.prototype.node = [ 2, 3,
   15
 ];
 
-tree.prototype.minDims = [0,0], tree.prototype.selectedNode = null;
+tree.prototype.minDims = [160,96], tree.prototype.selectedNode = null;
 
-function tree(el) { this.comp = document.getElementById(el); this.comp.style.overflow = "auto"; }
+function tree(el) { this.comp = document.getElementById(el); this.resetDims(); this.comp.style.overflow = "auto"; }
 
 //Set the tree nodes.
 
@@ -1432,7 +1432,7 @@ treeNode.prototype.toString = function() { for( var o = "", i = 0; i < this.node
 
 //Shared UI controls.
 
-VHex.prototype.resetDims = dataInspector.prototype.resetDims = tree.prototype.resetDims = dataDescriptor.prototype.resetDims = function() { this.comp.style.width = this.comp.style.height = ""; this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; }
+VHex.prototype.resetDims = dataInspector.prototype.resetDims = tree.prototype.resetDims = dataDescriptor.prototype.resetDims = function() { this.comp.style.width = this.comp.style.height = "0px;"; this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; }
 VHex.prototype.minWidth = dataInspector.prototype.minWidth = tree.prototype.minWidth = dataDescriptor.prototype.minWidth = function( v ) { return(this.comp.style.minWidth = v || this.comp.style.minWidth); }
 VHex.prototype.minHeight = dataInspector.prototype.minHeight = tree.prototype.minHeight = dataDescriptor.prototype.minHeight = function( v ) { return(this.comp.style.minHeight = v || this.comp.style.minHeight); }
 VHex.prototype.width = dataInspector.prototype.width = tree.prototype.width = dataDescriptor.prototype.width = function( v ) { return(this.comp.style.width = v || this.comp.style.width); }
