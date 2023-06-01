@@ -2,7 +2,7 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
-document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; }\
 .noSel { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .dataInspec { background:#CECECE; }.dataInspec table tr td { font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width:50%; }\
 .dataInspec table tr:nth-child(n+0):nth-child(-n+1) { background:#8E8E8E; }\
@@ -134,7 +134,7 @@ function VHex( el, io, v )
   this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
   var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
   var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
-  this.comp.outerHTML = "<div id='"+el+"' class='vhex' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
+  this.comp.outerHTML = "<div id='"+el+"' class='vhex noSel' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>"; e = undefined;
   
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
@@ -491,7 +491,7 @@ function dataInspector(el, io)
 
   //Create the component.
   
-  d.className = "dataInspec";
+  d.className = "dataInspec noSel";
   var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "='swingIO.ref["+swingIO.ref.length+"].setType(0);'";
   out += "<tr onpointerdown"+event+"><td>Binary (8 bit)</td><td>?</td></tr>";
   this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr onpointerdown"+event+"><td>" + swingIO.dType[i<<1] + "</td><td>?</td></tr>"; }
@@ -882,7 +882,7 @@ function dataDescriptor( el, io )
   this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
   var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
   var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
-  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex noSel' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>"; e = undefined;
 
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
