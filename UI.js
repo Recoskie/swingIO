@@ -350,7 +350,7 @@ VHex.prototype.selection = function(g, pos)
 
 //Basic UI controls.
 
-VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + swingIO.sBarWidth, 256]; this.end = (this.text = v) ? 518 : 352; this.resetDims(); if( this.visible ) { this.update(this.io); } }
+VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + swingIO.sBarWidth, 256]; this.end = (this.text = v) ? 518 : 352; this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; if( this.visible ) { this.update(this.io); } }
 
 VHex.prototype.getRows = function() { return( Math.floor( this.comp.clientHeight / 16 ) ); }
 
