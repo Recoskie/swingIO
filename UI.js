@@ -430,7 +430,7 @@ VHex.prototype.validate = function()
 
   if( this.c.height != this.comp.clientHeight ){ this.adjSize(); }
 
-  //Does not match the memory buffer, then we must reload data and render the output.
+  //Does not match the memory buffer, then we must reload data and redraw the output.
 
   this.io.buf = ( this.comp.clientHeight >> 4 ) << 4;
 
@@ -451,6 +451,14 @@ VHex.prototype.validate = function()
   //Aligns in memory buffer but needs to draw more rows.
 
   else if( this.c.height>>4 < this.comp.clientHeight>>4 ) { this.update(); }
+  
+  //Expand the width of the canvas without redrawing everything.
+  
+  else if(this.c.width < this.comp.clientWidth)
+  {
+    var t = this.g.getImageData(0,0,this.c.width,this.c.height);
+    this.c.width = this.comp.clientWidth; this.g.putImageData(t,0,0); t = undefined;
+  }
 }
 
 /*------------------------------------------------------------
