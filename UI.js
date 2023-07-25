@@ -411,11 +411,9 @@ VHex.prototype.onread = function() { }
 
 VHex.prototype.onseek = function( f )
 {
-  var vs = (this.oldOff = (this.relPos + this.comp.scrollTop)) * 16, ve = vs + f.buf, pos = this.virtual ? f.virtual : f.offset;
+  this.oldOff = this.relPos + this.comp.scrollTo, pos = this.virtual ? f.virtual : f.offset;
 
   this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
-  
-  if( pos > ve || pos < vs ) { this.sc = this.blockSc; this.comp.scrollTo( 0, pos >> 4 ); }
     
   if( this.rel ) { this.adjRelPos(); } this.update(f);
 }
@@ -580,58 +578,59 @@ dataInspector.prototype.onread = function( f ) { }
 
 dataInspector.prototype.onseek = function( f )
 {
-  if(((rel = f.offset - f.data.offset)+7) < f.data.length)
+  var v8 = 0, v16 = 0, v32 = 0, v64 = 0, float = 0, sing = 0, exp = 0, mantissa = 0;
+  
+  //Calculate data relative position in buffer.
+  
+  var rel = f.offset - f.data.offset;
+    
+  //Little endian, and big endian byte order.
+    
+  if( this.order[1].checked )
   {
-    var v8 = 0, v16 = 0, v32 = 0, v64 = 0, float = 0, sing = 0, exp = 0, mantissa = 0;
-    
-    //Little endian, and big endian byte order.
-    
-    if( this.order[1].checked )
-    {
-      v32 = v8=f.data[rel]; v32 |= (v16=f.data[rel+1]) << 8; v32 |= f.data[rel+2] << 16; v32 += f.data[rel+3] * 16777216;
-      v64 = f.data[rel+4]; v64 |= f.data[rel+5] << 8; v64 |= f.data[rel+6] << 16; v64 += f.data[rel+7] * 16777216;
-      v16 = (v16 << 8) | v8;
-    }
-    else
-    {
-      v64 = f.data[rel+7]; v64 |= f.data[rel+6] << 8; v64 |= f.data[rel+5] << 16; v64 += f.data[rel+4] * 16777216;
-      v32 = f.data[rel+3]; v32 |= f.data[rel+2] << 8; v32 |= (v16=f.data[rel+1]) << 16; v32 += (v8=f.data[rel]) * 16777216;
-      v16 = (v8 << 8) | v16;
-    }
+    v32 |= v8 |= f.data[rel]; v32 |= (v16 |= f.data[rel+1]) << 8; v32 |= (f.data[rel+2] || 0x00) << 16; v32 += (f.data[rel+3] || 0x00) * 16777216;
+    v64 |= f.data[rel+4]; v64 |= f.data[rel+5] << 8; v64 |= f.data[rel+6] << 16; v64 += (f.data[rel+7] || 0x00) * 16777216;
+    v16 = (v16 << 8) | v8;
+  }
+  else
+  {
+    v64 |= f.data[rel+7]; v64 |= f.data[rel+6] << 8; v64 |= f.data[rel+5] << 16; v64 += (f.data[rel+4] || 0x00) * 16777216;
+    v32 |= f.data[rel+3]; v32 |= f.data[rel+2] << 8; v32 |= (v16 |= f.data[rel+1]) << 16; v32 += (v8 |= f.data[rel]) * 16777216;
+    v16 = (v8 << 8) | v16;
+  }
 
-    //Byte.
+  //Byte.
 
-    this.out[0].innerHTML = v8.toStr(2).pad(8);
+  this.out[0].innerHTML = v8.toStr(2).pad(8);
 
-    //The integer types. Limit the number of base conversions when sing and unsigned match.
+  //The integer types. Limit the number of base conversions when sing and unsigned match.
     
-    this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toStr(this.base); this.out[2].innerHTML = v8 < 128 ? this.out[1].innerHTML : v8.toStr(this.base);
+  this.out[1].innerHTML = (v8 >= 128 ? v8 - 256 : v8).toStr(this.base); this.out[2].innerHTML = v8 < 128 ? this.out[1].innerHTML : v8.toStr(this.base);
     this.out[3].innerHTML = (v16 >= 32768 ? v16 - 65536 : v16).toStr(this.base); this.out[4].innerHTML = v16 < 32768 ? this.out[3].innerHTML : v16.toStr(this.base);
-    this.out[5].innerHTML = (v32&-1).toStr(this.base); this.out[6].innerHTML = v32 < 2147483648 ? this.out[5].innerHTML : v32.toStr(this.base);
+  this.out[5].innerHTML = (v32&-1).toStr(this.base); this.out[6].innerHTML = v32 < 2147483648 ? this.out[5].innerHTML : v32.toStr(this.base);
     
-    if( this.order[1].checked )
+  if( this.order[1].checked )
+  {
+    if( v64 >= 2147483648 )
     {
-      if( v64 >= 2147483648 )
-      {
-        this.out[7].innerHTML = "-" + (~v64+(v32 >= 2147483648 ? 0 : 1)).toString64(((~v32)+1),this.base);
-        this.out[8].innerHTML = v64.toString64(v32,this.base);
-      }
-      else
-      {
-        this.out[7].innerHTML = this.out[8].innerHTML = v64.toString64(v32,this.base);
-      }
+      this.out[7].innerHTML = "-" + (~v64+(v32 >= 2147483648 ? 0 : 1)).toString64(((~v32)+1),this.base);
+      this.out[8].innerHTML = v64.toString64(v32,this.base);
     }
     else
     {
-      if( v32 > 2147483648 )
-      {
-        this.out[7].innerHTML = "-" + (~v32+(v64 >= 2147483648 ? 0 : 1)).toString64(((~v64)+1),this.base);
-        this.out[8].innerHTML = v32.toString64(v64,this.base);
-      }
-      else
-      {
-        this.out[7].innerHTML = this.out[8].innerHTML = v32.toString64(v64,this.base);
-      }
+      this.out[7].innerHTML = this.out[8].innerHTML = v64.toString64(v32,this.base);
+    }
+  }
+  else
+  {
+    if( v32 > 2147483648 )
+    {
+      this.out[7].innerHTML = "-" + (~v32+(v64 >= 2147483648 ? 0 : 1)).toString64(((~v64)+1),this.base);
+      this.out[8].innerHTML = v32.toString64(v64,this.base);
+    }
+    else
+    {
+      this.out[7].innerHTML = this.out[8].innerHTML = v32.toString64(v64,this.base);
     }
   }
   
