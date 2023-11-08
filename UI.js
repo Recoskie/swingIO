@@ -411,6 +411,8 @@ VHex.prototype.onread = function() { }
 
 VHex.prototype.onseek = function( f )
 {
+  if(!this.io.fileInit) { this.io.buf = ( this.comp.clientHeight >> 4 ) << 4; this.adjSize(); this.comp.scrollTo(0,0); this.sc(); return; }
+  
   this.oldOff = this.relPos + this.comp.scrollTo, pos = this.virtual ? f.virtual : f.offset;
 
   this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
@@ -432,19 +434,7 @@ VHex.prototype.validate = function()
 
   this.io.buf = ( this.comp.clientHeight >> 4 ) << 4;
 
-  if( (this.getPos() << 4) != (this.virtual ? this.io.dataV.offset : this.io.data.offset) || (((( this.comp.clientHeight >> 4 ) << 4 ) > (this.virtual ? this.io.dataV.length : this.io.data.length))) )
-  {
-    if( this.io.wait(this.validate) ) { return; } this.io.bufRead(this, "update");
-    
-    if(this.virtual)
-    {
-      this.io.seekV(this.getPos()); this.io.readV(this.io.buf);
-    }
-    else
-    {
-      this.io.seek(this.getPos()); this.io.read(this.io.buf);
-    }
-  }
+  if( ((this.getPos() << 4) != (this.virtual ? this.io.dataV.offset : this.io.data.offset) || (((( this.comp.clientHeight >> 4 ) << 4 ) > (this.virtual ? this.io.dataV.length : this.io.data.length)))) || !this.io.fileInit ) { this.initData(false); }
 
   //Aligns in memory buffer but needs to draw more rows.
 
@@ -456,6 +446,26 @@ VHex.prototype.validate = function()
   {
     var t = this.g.getImageData(0,0,this.c.width,this.c.height);
     this.c.width = this.comp.clientWidth; this.g.putImageData(t,0,0); t = undefined;
+  }
+}
+
+//Always wait till io stream is available.
+
+VHex.prototype.initData = function(r)
+{
+  r = r || false; if( !r ) { this.io.wait(this,"initData"); return; }
+  
+  //Now we are able to update the editors data.
+  
+  this.io.bufRead(this, "update");
+    
+  if(this.virtual)
+  {
+    this.io.seekV(0); this.io.readV(this.io.buf);
+  }
+  else
+  {
+    this.io.seek(0); this.io.read(this.io.buf);
   }
 }
 
