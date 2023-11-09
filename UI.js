@@ -191,18 +191,18 @@ function VHex( el, io, v )
 
 VHex.prototype.offsetSc = function(r)
 {
-  if(!r) { this.io.wait(this,"offsetSc"); return; } if(this.io.fileInit && (this.getPos() * 16) == this.io.data.offset) { return; }
+  if(!r) { this.io.wait(this,"offsetSc"); return; } if( this.rel ){ this.adjRelPos(); }
   
-  if( this.rel ){ this.adjRelPos(); }
+  if(this.io.fileInit && (this.getPos() * 16) == this.io.data.offset) { return; }
   
   this.io.bufRead( this, "update" ); this.io.seek(this.getPos() * 16); this.io.read(this.getRows() * 16);
 }
 
 VHex.prototype.virtualSc = function(r)
 {
-  if(!r) { this.io.wait(this,"virtualSc"); return; } if(this.io.fileInit && (this.getPos() * 16) == this.io.dataV.offset) { return; }
+  if(!r) { this.io.wait(this,"virtualSc"); return; } this.adjRelPos();
   
-  this.adjRelPos();
+  if(this.io.fileInit && (this.getPos() * 16) == this.io.dataV.offset) { console.log(this.getPos()+""); return; }
   
   this.io.bufRead( this, "update" ); this.io.seekV(this.getPos() * 16); this.io.readV(this.getRows() * 16);
 }
@@ -409,10 +409,10 @@ VHex.prototype.onseek = function( f )
 {
   if(!this.io.fileInit) { this.io.buf = ( this.comp.clientHeight >> 4 ) << 4; this.adjSize(); this.comp.scrollTo(0,0); this.sc(); return; }
   
-  this.oldOff = this.relPos + this.comp.scrollTo, pos = this.virtual ? f.virtual : f.offset;
-
+  this.oldOff = this.relPos + this.comp.scrollTop, pos = this.virtual ? f.virtual : f.offset;
+  
   this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
-    
+  
   if( this.rel ) { this.adjRelPos(); } this.update(f);
 }
 
