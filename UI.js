@@ -462,7 +462,7 @@ VHex.prototype.validate = function()
 
 VHex.prototype.initData = function(r)
 {
-  r = r || false; if( !r ) { this.io.wait(this,"initData"); return; }
+  if( !r ) { this.io.wait(this,"initData"); return; }
   
   //Now we are able to update the editors data.
   
