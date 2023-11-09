@@ -191,28 +191,20 @@ function VHex( el, io, v )
 
 VHex.prototype.offsetSc = function(r)
 {
-  if(!r) { this.io.wait(this,"offsetSc"); return; }
+  if(!r) { this.io.wait(this,"offsetSc"); return; } if(this.io.fileInit && (this.getPos() * 16) == this.io.data.offset) { return; }
   
   if( this.rel ){ this.adjRelPos(); }
   
-  this.io.bufRead( this, "update" );
-
-  this.io.seek(this.getPos() * 16);
-  
-  this.io.read(this.getRows() * 16);
+  this.io.bufRead( this, "update" ); this.io.seek(this.getPos() * 16); this.io.read(this.getRows() * 16);
 }
 
 VHex.prototype.virtualSc = function(r)
 {
-  if(!r) { this.io.wait(this,"virtualSc"); return; }
+  if(!r) { this.io.wait(this,"virtualSc"); return; } if(this.io.fileInit && (this.getPos() * 16) == this.io.dataV.offset) { return; }
   
   this.adjRelPos();
   
-  this.io.bufRead( this, "update" );
-
-  this.io.seekV(this.getPos() * 16);
-  
-  this.io.readV(this.getRows() * 16);
+  this.io.bufRead( this, "update" ); this.io.seekV(this.getPos() * 16); this.io.readV(this.getRows() * 16);
 }
 
 //Blocks the scroll event when scroll bar is being adjusted.
@@ -303,11 +295,6 @@ VHex.prototype.update = function(temp)
   }
   
   g.stroke();
-  
-  //Because of asynchronous reading which gives the best performance it is possible
-  //that the hex editor position and buffer do not match. If they do not match we must call sc agine.
-  
-  if( (this.getPos() * 16) !== this.io.data.offset ) { console.log("Out of sync"); }
 }
 
 //Draw selected area.
