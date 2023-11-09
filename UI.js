@@ -892,7 +892,7 @@ dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = []
 
 function dataDescriptor( el, io )
 {
-  this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
+  this.io = io; this.dPos = 0; this.dEnd = 0; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
   var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
   var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
   document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex noSel' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
@@ -1295,15 +1295,24 @@ dataDescriptor.prototype.validate = function()
     
     //Data within the current buffer area.
     
-    var dPos = this.data.rel(this.curRow) + this.data.offset, dEnd = this.data.rel(this.endRow) + this.data.offset;
+    this.dPos = this.data.rel(this.curRow) + this.data.offset; this.dEnd = this.data.rel(this.endRow) + this.data.offset;
      
-    if(this.io.data.offset <= dPos && (this.io.data.offset+this.io.data.length) >= dEnd) { this.dataUpdate(this.io.data); }
+    if(this.io.data.offset <= this.dPos && (this.io.data.offset+this.io.data.length) >= this.dEnd) { this.dataUpdate(this.io.data); }
     
     //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-    else if( !this.io.wait(this.validate) ) { this.io.onRead(this, "dataUpdate",this.io.tempD); this.io.seek(dPos); this.io.read(dEnd - dPos); }
+    else { this.initData(); }
   }
   else { this.update(); }
+}
+
+//Always wait till io stream is available.
+
+dataDescriptor.prototype.initData = function(r)
+{
+  if(!r) { this.io.wait(this,"initData"); return; }
+
+  this.io.onRead(this, "dataUpdate", this.io.tempD); this.io.seek(this.dPos); this.io.read(this.dEnd - this.dPos);
 }
 
 /*------------------------------------------------------------
