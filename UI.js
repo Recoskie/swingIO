@@ -189,8 +189,10 @@ function VHex( el, io, v )
 
 //Scrolling event.
 
-VHex.prototype.offsetSc = function()
+VHex.prototype.offsetSc = function(r)
 {
+  if(!r) { this.io.wait(this,"offsetSc"); return; }
+  
   if( this.rel ){ this.adjRelPos(); }
   
   this.io.bufRead( this, "update" );
@@ -200,8 +202,10 @@ VHex.prototype.offsetSc = function()
   this.io.read(this.getRows() * 16);
 }
 
-VHex.prototype.virtualSc = function()
+VHex.prototype.virtualSc = function(r)
 {
+  if(!r) { this.io.wait(this,"virtualSc"); return; }
+  
   this.adjRelPos();
   
   this.io.bufRead( this, "update" );
@@ -299,6 +303,11 @@ VHex.prototype.update = function(temp)
   }
   
   g.stroke();
+  
+  //Because of asynchronous reading which gives the best performance it is possible
+  //that the hex editor position and buffer do not match. If they do not match we must call sc agine.
+  
+  if( (this.getPos() * 16) !== this.io.data.offset ) { console.log("Out of sync"); }
 }
 
 //Draw selected area.
@@ -703,15 +712,15 @@ dataInspector.prototype.onseek = function( f )
 
   var maxCharLen = Math.min( this.strLen, this.out[13].clientWidth / this.minChar ), c = "";
 
-  for( var i = 0; i < maxCharLen; i++ ){ c += String.fromCharCode(f.data[rel+i]); } this.out[13].innerHTML = c; c = "";
+  for( var i = 0, v = 0; i < maxCharLen; i++ ){ v = f.data[rel+i]; c += v == 0x3C ? "&lt;" : String.fromCharCode(v); } this.out[13].innerHTML = c; c = "";
 
   if( this.order[1].checked )
   {
-    for( var i = 0, e = maxCharLen << 1; i < e; i+=2 ) { c += String.fromCharCode((f.data[rel+i+1]<<8)+f.data[rel+i]); }
+    for( var i = 0, e = maxCharLen << 1, v = 0; i < e; i+=2 ) { v = (f.data[rel+i+1]<<8)+f.data[rel+i]; c += v == 0x3C ? "&lt;" : String.fromCharCode(v); }
   }
   else
   {
-    for( var i = 0, e = maxCharLen << 1; i < e; i+=2 ) { c += String.fromCharCode((f.data[rel+i]<<8)+f.data[rel+i+1]); }
+    for( var i = 0, e = maxCharLen << 1, v = 0; i < e; i+=2 ) { v = (f.data[rel+i]<<8)+f.data[rel+i+1]; c += v == 0x3C ? "&lt;" : String.fromCharCode(v); }
   }
 
   this.out[14].innerHTML = c; c = undefined;
