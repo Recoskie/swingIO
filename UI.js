@@ -1378,7 +1378,7 @@ tree.prototype.event = function(){}; tree.prototype.treeClick = function(v)
   {
     v = document.elementFromPoint((v.pageX || v.touches[0].pageX) - window.scrollX, (v.pageY || v.touches[0].pageY) - window.scrollY); if( v.tagName == "DIV" ){ v = v.parentElement; }
 
-    if(window.getComputedStyle(v,"before").getPropertyValue("content") == "none") { return; }
+   if(v.querySelector("div").className == "noSel") { return; }
   }
   
   var node = v.tagName == "SPAN"; v = v.querySelector("div"); v.self = this; v.setArgs = this.setArgs; v.getArgs = this.getArgs; v.setNode = this.setNode;
@@ -1447,6 +1447,10 @@ treeNode.prototype.getNode = function(i){ return(this.nodes[i+1]); }
 //Number of tree nodes we can iterate though with "getNode".
 
 treeNode.prototype.length = function() { return( this.nodes.length - 1 ); }
+
+//Set a tree nodes arguments.
+
+treeNode.prototype.setArgs = function(args) { var s = this.node ? this.node : this.nodes[0], s1 = s.indexOf("='",33)+2, s2 = s.indexOf("'",s1); s = s.substring(0,s1)+((args!=null)?args:"")+s.substring(s2,s.length); if(this.node){ this.node = s; }else{ this.nodes[0] = s; } }
 
 //Combines the html together of all nodes. Adds </ul></li> at the end of nodes with nested elements.
 
