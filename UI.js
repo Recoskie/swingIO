@@ -409,11 +409,23 @@ VHex.prototype.onseek = function( f )
 {
   if(!this.io.fileInit) { this.io.buf = ( this.comp.clientHeight >> 4 ) << 4; this.adjSize(); this.comp.scrollTo(0,0); this.sc(); return; }
   
-  this.oldOff = this.relPos + this.comp.scrollTop, pos = this.virtual ? f.virtual : f.offset;
+  var pos = this.virtual ? f.virtual : f.offset;
   
   this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
   
-  if( this.rel ) { this.adjRelPos(); } this.update(f);
+  if( this.rel )
+  {
+    this.sc = this.blockSc; pos = Math.floor(pos / 16);
+
+    this.relPos = pos;
+
+    if(pos > swingIO.sBarUpLim && this.relPos <= this.relDataUp) { pos = swingIO.sBarUpLim; }
+
+    this.oldOff = pos;
+
+    this.comp. scrollTo(0,pos);
+  }
+  else { this.sc = this.blockSc; this.comp.scrollTo( 0, Math.floor(pos / 16) ); } this.update(f);
 }
 
 VHex.prototype.validate = function()
@@ -1392,7 +1404,7 @@ tree.prototype.event = function(){}; tree.prototype.treeClick = function(v)
   {
     v = document.elementFromPoint((v.pageX || v.touches[0].pageX) - window.scrollX, (v.pageY || v.touches[0].pageY) - window.scrollY); if( v.tagName == "DIV" ){ v = v.parentElement; }
 
-   if(v.querySelector("div").className == "noSel") { return; }
+   if(v.querySelector("div").className == "noSel" && window.getComputedStyle(v,"before").getPropertyValue("content") == "none") { return; }
   }
   
   var node = v.tagName == "SPAN"; v = v.querySelector("div"); v.self = this; v.setArgs = this.setArgs; v.getArgs = this.getArgs; v.setNode = this.setNode;
