@@ -202,7 +202,7 @@ VHex.prototype.virtualSc = function(r)
 {
   if(!r) { this.io.wait(this,"virtualSc"); return; } this.adjRelPos();
   
-  if(this.io.fileInit && (this.getPos() * 16) == this.io.dataV.offset) { console.log(this.getPos()+""); return; }
+  if(this.io.fileInit && (this.getPos() * 16) == this.io.dataV.offset) { return; }
   
   this.io.bufRead( this, "update" ); this.io.seekV(this.getPos() * 16); this.io.readV(this.getRows() * 16);
 }
@@ -557,7 +557,7 @@ function dataInspector(el, io)
   io.comps[io.comps.length] = this;
 }
 
-dataInspector.prototype.setType = function(t, order, len)
+dataInspector.prototype.setType = function(t, order, len, v)
 {
   t = t >= (this.out.length-1) ? (this.out.length-1) : t; len = len || swingIO.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
   
@@ -572,8 +572,13 @@ dataInspector.prototype.setType = function(t, order, len)
   }
   
   //Update hex editor data length.
-  
-  for( var i = 0; i < this.editors.length; i++ ) { this.editors[i].slen = len; if(this.editors[i].visible) { this.editors[i].onseek(this.io); } }
+
+  var all = v == null; for( var i = 0; i < this.editors.length; i++ )
+  {
+    if(all || ((v == this.editors[i].virtual))) { this.editors[i].slen = len; } else { this.editors[i].slen = 1; }
+
+    if(this.editors[i].visible) { this.editors[i].onseek(this.io); }
+  }
 
   this.onseek(this.io);
 }
@@ -723,6 +728,10 @@ And also https://github.com/Recoskie/swingIO/blob/Experimental/Descriptor.java
 //The position we wish to style binary data.
 
 Descriptor.prototype.offset = 0;
+
+//The data that this descriptor displays is in virtual address spae or file offset.
+
+Descriptor.prototype.virtual = false; //Note if set undefined then the data is in both places.
 
 //Singular data type.
 
@@ -997,7 +1006,7 @@ dataDescriptor.prototype.select = function(e)
 
     if(this.rel1 != this.rel2)
     {
-      this.io.onSeek(this,"setDataType"); this.io.seek(this.data.offset + this.rel1);
+      this.io.onSeek(this,"setDataType"); if(!this.data.virtual) { this.io.seek(this.data.offset + this.rel1); } else { this.io.seekV(this.data.offset + this.rel1); }
     }
 
     //If the data is zero in size then we should display what the data felled is intended for.
@@ -1034,13 +1043,18 @@ dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function(
 
   //Data within the current buffer area.
 
-  var dPos = this.data.rel(this.curRow) + this.data.offset, dEnd = this.data.rel(this.endRow) + this.data.offset, data = (temp == 1) ? this.io.tempD : this.io.data;
+  var dPos = this.data.rel(this.curRow) + this.data.offset, dEnd = this.data.rel(this.endRow) + this.data.offset, data = (temp == 1) ? this.io.tempD : (!this.data.virtual ? this.io.data : this.io.dataV);
  
   if(data.offset <= dPos && (data.offset+data.length) >= dEnd) { this.dataUpdate(data); }
 
   //Else we need to load the data we need before updating the component. This is least likely to happen.
 
-  else { this.io.onRead( this, "dataCheck", 1 ); this.io.seek(dPos); this.io.read(dEnd - dPos); }
+  else
+  {
+    this.io.onRead( this, "dataCheck", 1 );
+    if(!this.data.virtual) { this.io.seek(dPos); this.io.read(dEnd - dPos); }
+    else { this.io.seekV(dPos); this.io.readV(dEnd - dPos); }
+  }
 }
 
 //Update output as data model.
@@ -1244,7 +1258,7 @@ dataDescriptor.prototype.setDescriptor = function( d )
 
 dataDescriptor.prototype.load = function()
 {
-  this.data.source[this.data.event]( -1, this.io.offset - this.io.data.offset ); this.di.setType(15, 0, this.data.relPos[this.data.relPos.length-1]);
+  this.data.source[this.data.event]( -1, this.io.offset - this.io.data.offset ); this.di.setType(15, 0, this.data.relPos[this.data.relPos.length-1], this.data.virtual);
   
   this.adjSize(); this.comp.scrollTo(0,0); this.update();
 }
@@ -1255,7 +1269,7 @@ dataDescriptor.prototype.setDataType = function()
 
   this.data.source[this.data.event]( this.selectedRow, this.io.offset - this.io.data.offset );
   
-  this.di.setType(this.type, order, this.rel2 - this.rel1); this.update();
+  this.di.setType(this.type, order, this.rel2 - this.rel1, this.data.virtual); this.update();
 }
 
 //Set core data model.
