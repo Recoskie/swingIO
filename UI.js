@@ -412,20 +412,12 @@ VHex.prototype.onseek = function( f )
   var pos = this.virtual ? f.virtual : f.offset;
   
   this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
+
+  this.sc = this.blockSc;
   
-  if( this.rel )
-  {
-    this.sc = this.blockSc; pos = Math.floor(pos / 16);
-
-    this.relPos = pos;
-
-    if(pos > swingIO.sBarUpLim && this.relPos <= this.relDataUp) { pos = swingIO.sBarUpLim; }
-
-    this.oldOff = pos;
-
-    this.comp. scrollTo(0,pos);
-  }
-  else { this.sc = this.blockSc; this.comp.scrollTo( 0, Math.floor(pos / 16) ); } this.update(f);
+  if( this.rel ) { this.comp.scrollTo(0,this.relPos = this.oldOff = Math.floor(pos / 16)); this.adjRelPos(); } else { this.comp.scrollTo(0,Math.floor(pos / 16)); }
+  
+  this.update(f);
 }
 
 VHex.prototype.validate = function()
