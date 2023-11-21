@@ -398,7 +398,7 @@ VHex.prototype.adjRelPos = function()
 
   //The only time the scroll bar passes the Rel UP or down position is when all that remains is that size of data.
 
-  this.sc = this.blockSc; this.comp.scrollTo( 0, offset ); this.oldOff = offset;
+  this.comp.scrollTo( 0, offset ); this.oldOff = offset;
 }
 
 VHex.prototype.onread = function() { }
@@ -409,9 +409,7 @@ VHex.prototype.onseek = function( f )
 {
   if(!this.io.fileInit) { this.io.buf = ( this.comp.clientHeight >> 4 ) << 4; this.adjSize(); this.comp.scrollTo(0,0); this.sc(); return; }
   
-  var pos = this.virtual ? f.virtual : f.offset;
-  
-  this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
+  var pos = this.virtual ? f.virtual : f.offset; this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
 
   this.sc = this.blockSc;
   
