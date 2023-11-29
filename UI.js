@@ -1255,7 +1255,7 @@ dataDescriptor.prototype.setDescriptor = function( d )
 {
   this.update = this.dataCheck; this.data = d; this.selectedRow = -1;
   
-  this.io.onSeek(this,"load"); this.io.seek(d.offset);
+  this.io.onSeek(this,"load"); if(!d.virtual) { this.io.seek(d.offset); } else { this.io.seekV(d.offset); }
 }
 
 dataDescriptor.prototype.load = function()
@@ -1426,6 +1426,8 @@ tree.prototype.setNode = function( node )
   var el = document.createElement("template"); el.innerHTML = node + ""; el = el.content.firstChild;
 
   if( (t = this.parentElement.parentElement).innerHTML.startsWith("<span") > 0 ){ t.children[1].remove(); } //Remove any nodes that have nested nodes.
+
+  el.querySelector("div").style.backgroundColor=this.style.backgroundColor;
 
   this.parentElement.parentElement.replaceChild(el,this.parentElement); if(this.self) { this.self.selectedNode = el.querySelector("div"); }
 }
