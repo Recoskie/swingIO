@@ -2,7 +2,8 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
-document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; }\
+document.head.innerHTML += "<style>html, body { margin: 0px; -moz-transform: scale(var(--sc)); -webkit-transform: scale(var(--sc)); transform: scale(var(--sc)); transform-origin: top left; }\
+.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; }\
 .noSel { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .dataInspec { background:#CECECE; }.dataInspec table tr td { font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width:50%; }\
 .dataInspec table tr:nth-child(n+0):nth-child(-n+1) { background:#8E8E8E; }\
@@ -14,7 +15,8 @@ document.head.innerHTML += "<style>.vhex { position: relative; overflow-y: scrol
 .nested { display: none; }.active { display: block; }\
 .alert { background-color:#777777; padding: 20px; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}\
 .alertbg { width:100%; height:100%; background-color: rgba(0,0,0,0.8); position:absolute; top:0px; left:0px; }\
-.closebtn{ margin-left:15px; color: white; font-weight:bold; float:right; font-size: 22px; line-height:20px; cursor:pointer; }.closebtn:hover{ color: black; }</style>";
+.closebtn{ margin-left:15px; color: white; font-weight:bold; float:right; font-size: 22px; line-height:20px; cursor:pointer; }.closebtn:hover{ color: black; }\
+:root{ --sc:1; }</style>";
 
 /*------------------------------------------------------------
 Optimized graphical text clipping.
@@ -55,6 +57,10 @@ swingIO = {
   ref: [],
   //Scroll bar information.
   sBarWidth: null, sBarMax: null, sBarLowLim: null, sBarUpLim: null,
+  /*------------------------------------------------------------
+  Manually scale the page in and out.
+  ------------------------------------------------------------*/
+  sc: 1, scale: function(sc){ this.sc = sc; document.documentElement.style.setProperty("--sc",`${sc}`); }, 
   /*------------------------------------------------------------
   Data types can be added or removed as you wish. Fully programable system.
   Data types are in pairs of 2 for little endian and big endian byte order.
@@ -215,7 +221,9 @@ VHex.prototype.blockSc = function() { if(this.virtual) { this.sc = this.virtualS
 
 VHex.prototype.select = function(e)
 {
-  var x = ((e.pageX || e.touches[0].pageX) - this.comp.offsetLeft) - 164, y = ((e.pageY || e.touches[0].pageY) - this.comp.offsetTop) - 16;
+  var x = (((e.pageX || e.touches[0].pageX) - this.comp.getBoundingClientRect().x)/(swingIO.sc)) - (164*swingIO.sc);
+  var y = (((e.pageY || e.touches[0].pageY) - this.comp.getBoundingClientRect().y)/swingIO.sc) - (16*swingIO.sc);
+  x/=swingIO.sc; y/=swingIO.sc;
 
   if( x > 0 && y > 0 )
   {
@@ -947,7 +955,7 @@ dataDescriptor.prototype.sc = function() { this.update(); }
 
 dataDescriptor.prototype.select = function(e)
 {
-  this.selectedRow = (this.comp.scrollTop + ( (((e.pageY || e.touches[0].pageY) - this.comp.offsetTop ) ) >> 4 ))&-1; if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }
+  this.selectedRow = (this.comp.scrollTop + ((((e.pageY || e.touches[0].pageY)-this.comp.getBoundingClientRect().y)/swingIO.sc)/(16*swingIO.sc)))&-1; if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }  
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
 
   //Data type descriptor.
