@@ -11,7 +11,7 @@ document.head.innerHTML += "<style>html, body { margin: 0px; -moz-transform: sca
 .dataInspec fieldset { display: flex; justify-content: space-between; }\
 #treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { white-space: nowrap; border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
-[class^='node']{ cursor: pointer; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+[class^='node']{ cursor: pointer; padding-left: 100em; padding-right: 100em;  margin-left: -100em; margin-right: -100em; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .nested { display: none; }.active { display: block; }\
 .alert { background-color:#777777; padding: 20px; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}\
 .alertbg { width:100%; height:100%; background-color: rgba(0,0,0,0.8); position:absolute; top:0px; left:0px; }\
