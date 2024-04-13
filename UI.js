@@ -14,7 +14,7 @@ document.head.innerHTML += "<style>html, body { margin: 0px; -moz-transform: sca
 [class^='node']{ cursor: pointer; padding-left: 100em; padding-right: 100em;  margin-left: -100em; margin-right: -100em; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .nested { display: none; }.active { display: block; }\
 .alert { background-color:#777777; padding: 20px; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}\
-.alertbg { width:100%; height:100%; background-color: rgba(0,0,0,0.8); position:absolute; top:0px; left:0px; }\
+.alertbg { width:calc(1 / var(--sc) * 100%); height:calc(1 / var(--sc) * 100%); background-color: rgba(0,0,0,0.8); position:absolute; top:0px; left:0px; }\
 .closebtn{ margin-left:15px; color: white; font-weight:bold; float:right; font-size: 22px; line-height:20px; cursor:pointer; }.closebtn:hover{ color: black; }\
 :root{ --sc:1; }</style>";
 
