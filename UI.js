@@ -1476,7 +1476,11 @@ treeNode.prototype.length = function() { return( this.nodes.length - 1 ); }
 
 //Set a tree nodes arguments.
 
-treeNode.prototype.setArgs = function(args) { var s = this.node ? this.node : this.nodes[0], s1 = s.indexOf("='",33)+2, s2 = s.indexOf("'",s1); s = s.substring(0,s1)+((args!=null)?args:"")+s.substring(s2,s.length); if(this.node){ this.node = s; }else{ this.nodes[0] = s; } }
+treeNode.prototype.setArgs = function(args)
+{
+  var s = this.nodes[0], s1 = s.indexOf("='",27)+2, s2 = s.indexOf("'",s1); s = s.substring(0,s1)+((args!=null)?args:"")+s.substring(s2,s.length); this.nodes[0] = s;
+  if(this.node) { s = this.node; s1 = s.indexOf("='",33)+2; s2 = s.indexOf("'",s1); s1 = s.indexOf("='",33)+2, s2 = s.indexOf("'",s1); s = s.substring(0,s1)+((args!=null)?args:"")+s.substring(s2,s.length); this.node = s; }
+}
 
 //Combines the html together of all nodes. Adds </ul></li> at the end of nodes with nested elements.
 
