@@ -5,10 +5,10 @@ var treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif
 document.head.innerHTML += "<style>html, body { margin: 0px; -moz-transform: scale(var(--sc)); -webkit-transform: scale(var(--sc)); transform: scale(var(--sc)); transform-origin: top left; }\
 .vhex { position: relative; overflow-y: scroll; overflow-x: hidden; }\
 .noSel { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
-.dataInspec { background:#CECECE; }.dataInspec table tr td { font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width:50%; }\
-.dataInspec table tr:nth-child(n+0):nth-child(-n+1) { background:#8E8E8E; }\
-.dataInspec table tr:nth-child(n+2):nth-child(-n+17) { cursor: pointer; background:#FFFFFF; }\
-.dataInspec fieldset { display: flex; justify-content: space-between; }\
+.dataInspec { background:#CECECE; }.dataInspec div:nth-child(n+0):nth-child(-n+34) { width: calc(50% - 4px); min-height: 24px; display:inline-block; border-color: #CECECE !important; font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\
+.dataInspec div:nth-child(n+0):nth-child(-n+2) { text-align: center; background:#8E8E8E; }\
+.dataInspec div:nth-child(n+3):nth-child(-n+34) { cursor: pointer; background:#FFFFFF; }\
+.dataInspec fieldset { display: flex; white-space: nowrap; justify-content: space-between; }\
 #treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { white-space: nowrap; border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 [class^='node']{ cursor: pointer; padding-left: 100em; padding-right: 100em;  margin-left: -100em; margin-right: -100em; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
@@ -60,7 +60,7 @@ swingIO = {
   /*------------------------------------------------------------
   Manually scale the page in and out.
   ------------------------------------------------------------*/
-  sc: 1, scale: function(sc){ this.sc = sc; document.documentElement.style.setProperty("--sc",`${sc}`); }, 
+  sc: 1, scale: function(sc){ this.sc = sc; document.documentElement.style.setProperty("--sc",`${sc}`); },
   /*------------------------------------------------------------
   Data types can be added or removed as you wish. Fully programable system.
   Data types are in pairs of 2 for little endian and big endian byte order.
@@ -140,7 +140,7 @@ function VHex( el, io, v )
   this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
   var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
   var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
-  this.comp.outerHTML = "<div id='"+el+"' class='vhex noSel' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
+  this.comp.outerHTML = "<div id='"+el+"' class='vhex noSel' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerup"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>"; e = undefined;
   
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
@@ -221,8 +221,8 @@ VHex.prototype.blockSc = function() { if(this.virtual) { this.sc = this.virtualS
 
 VHex.prototype.select = function(e)
 {
-  var x = (((e.pageX || e.touches[0].pageX) - this.comp.getBoundingClientRect().x)/(swingIO.sc)) - (164*swingIO.sc);
-  var y = (((e.pageY || e.touches[0].pageY) - this.comp.getBoundingClientRect().y)/swingIO.sc) - (16*swingIO.sc);
+  var x = ((e.pageX || e.touches[0].pageX)/swingIO.sc - this.comp.offsetLeft*swingIO.sc) - (164*swingIO.sc);
+  var y = ((e.pageY || e.touches[0].pageY)/swingIO.sc - this.comp.offsetTop*swingIO.sc) - (16*swingIO.sc);
   x/=swingIO.sc; y/=swingIO.sc;
 
   if( x > 0 && y > 0 )
@@ -481,11 +481,11 @@ See https://github.com/Recoskie/swingIO/blob/master/dataInspector.java
 Note the data type list and byte data dLen should be shared between swingIO as both the dataDescriptor, and dataInspector share the data type indexes.
 ------------------------------------------------------------*/
 
-dataInspector.prototype.minDims = null, dataInspector.prototype.minChar = null;
+dataInspector.prototype.minDims = [null], dataInspector.prototype.minChar = null;
 
 function dataInspector(el, io)
 {
-  this.io = io; var d = this.comp = document.getElementById(el); this.editors = [];
+  this.io = io; var d = this.comp = document.getElementById(el); this.editors = []; d.style.width = d.style.height = d.style.minWidth = d.style.minHeight = "0px";
 
   //Text minium char width only needs to be calculated once. This is used to know the general length of an string before it is text-overflow: ellipsis.
   //This is so we do not convert more bytes into a String of text than we have to as the rest will not be visible.
@@ -514,16 +514,15 @@ function dataInspector(el, io)
   //Create the component.
   
   d.className = "dataInspec noSel";
-  var out = "<table style='table-layout:fixed;width:0px;height:0px;'><tr><td>Data Type</td><td>Value</td></tr>", event = "='swingIO.ref["+swingIO.ref.length+"].setType(0);'";
-  out += "<tr onpointerdown"+event+"><td>Binary (8 bit)</td><td>?</td></tr>";
-  this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr onpointerdown"+event+"><td>" + swingIO.dType[i<<1] + "</td><td>?</td></tr>"; }
-  event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<tr onpointerdown"+event+"><td>Use No Data type</td><td>?</td></tr>";
+  var out = "<div>Data Type</div><div>Value</div>", event = "='swingIO.ref["+swingIO.ref.length+"].setType(0);'";
+  out += "<div onpointerdown"+event+">Binary (8 bit)</div><div onpointerdown"+event+">?</div>";
+  this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<div onpointerdown"+event+">" + swingIO.dType[i<<1] + "</div><div onpointerdown"+event+">?</div>"; }
+  event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<div onpointerdown"+event+">Use No Data type</div><div onpointerdown"+event+">?</div>";
   event = "onclick='swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
-  out += "<tr><td colspan='2'><fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset></td><tr>";
+  out += "<fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset>";
   event = "onclick='swingIO.ref["+swingIO.ref.length+"].base = this.value;swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
-  out += "<tr><td colspan='2'><fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset></td><tr>";
-  out += "<tr><td colspan='2'><fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.ref["+swingIO.ref.length+"].strLen = Math.min(this.value, 65536);swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);' value='0' /></fieldset></td><tr>";
-  
+  out += "<fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset>";
+  out += "<fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.ref["+swingIO.ref.length+"].strLen = Math.min(this.value, 65536);swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);' value='0' /></fieldset>";  
   d.innerHTML = out;
   
   //Byte order control.
@@ -532,11 +531,11 @@ function dataInspector(el, io)
   
   //Setup data type outputs.
   
-  this.td = d.getElementsByTagName("table")[0]; for(var i = 1; swingIO.dLen[this.out.length] > -2; i++) { this.out[this.out.length] = this.td.rows[i].cells[1]; }
+  this.td = d.getElementsByTagName("div"); for(var i = 1; swingIO.dLen[this.out.length] > -2; i++) { this.out[this.out.length] = this.td[(i<<1)+1]; }
 
   //User input string length is updated when clicking on a string data type as output element 16.
 
-  this.input = this.td.rows[i+4].cells[0].getElementsByTagName("input")[0];
+  this.input = d.getElementsByTagName("input")[6];
 
   //Set default number base and string length.
   
@@ -551,12 +550,10 @@ function dataInspector(el, io)
   this.hide( false );
   
   //Component min size.
+
+  if(this.minDims[0] == null) { d.style.minWidth=(this.minDims[0]=d.getElementsByTagName("fieldset")[1].clientWidth+16)+"px";this.minDims[1]=this.input.offsetTop-d.offsetTop+32; }
   
-  var t = d.getElementsByTagName("table")[0];
-  
-  if(this.minDims == null) { dataInspector.prototype.minDims = [d.getElementsByTagName("fieldset")[1].clientWidth+16, t.clientHeight+32]; }
-  
-  t.style.minWidth=d.style.minWidth=this.minDims[0]; d.style.minHeight=this.minDims[1]; t.style.width = "100%"; t.style.height = "100%"; t = undefined;
+  d.style.minWidth=this.minDims[0]+"px"; d.style.minHeight=this.minDims[1]+"px"; d.style.width = "100%"; d.style.height = "100%";
   
   //Allows us to referenced the proper component on update.
   
@@ -569,9 +566,9 @@ function dataInspector(el, io)
 
 dataInspector.prototype.setType = function(t, order, len, v)
 {
-  t = t >= (this.out.length-1) ? (this.out.length-1) : t; len = len || swingIO.dLen[t]; if(order != null) { this.order[order&-1].checked = true; }
+  t = t >= (this.out.length-1) ? (this.out.length-1) : t; len = len || swingIO.dLen[t]; t = (t + 1) << 1; if(order != null) { this.order[order&-1].checked = true; }
   
-  if(this.sel) { this.td.rows[this.sel].style.background = "#FFFFFF"; } this.td.rows[this.sel=t+1].style.background = "#9EB0C1";
+  if(this.sel) { this.td[this.sel].style.background = this.td[this.sel+1].style.background = "#FFFFFF"; } this.td[this.sel=t].style.background = this.td[t+1].style.background = "#9EB0C1";
 
   //Variable length string.
 
@@ -914,7 +911,7 @@ function dataDescriptor( el, io )
   this.io = io; this.dPos = 0; this.dEnd = 0; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
   var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
   var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
-  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex noSel' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerdown"+e+">\
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex noSel' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerup"+e+">\
   <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>"; e = undefined;
 
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
@@ -955,7 +952,7 @@ dataDescriptor.prototype.sc = function() { this.update(); }
 
 dataDescriptor.prototype.select = function(e)
 {
-  this.selectedRow = (this.comp.scrollTop + ((((e.pageY || e.touches[0].pageY)-this.comp.getBoundingClientRect().y)/swingIO.sc)/(16*swingIO.sc)))&-1; if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }  
+  this.selectedRow=this.comp.scrollTop+((((e.pageY || e.touches[0].pageY)/swingIO.sc-this.comp.offsetTop*swingIO.sc)/swingIO.sc) >> 4); if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
 
   //Data type descriptor.
@@ -1373,7 +1370,7 @@ function tree(el) { this.comp = document.getElementById(el); this.resetDims(); t
 
 //Set the tree nodes.
 
-tree.prototype.set = function(v) { this.comp.onpointerdown = function(e){ tree.prototype.treeClick(e);}; this.comp.className = "noSel"; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
+tree.prototype.set = function(v) { this.comp.onpointerup = function(e){tree.prototype.treeClick(e);}; this.comp.className = "noSel"; this.comp.innerHTML = "<ul id=\"treeUL\">" + v + "</ul>"; }
 
 //Navigate the tree nodes. Does the same thing as treeNode getNode except this navigates the HTML list structure directly.
 
