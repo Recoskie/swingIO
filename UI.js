@@ -572,10 +572,10 @@ dataInspector.prototype.setType = function(t, order, len, v)
 
   //Variable length string.
 
-  if( t == (Descriptor.String8 >> 1) || t == (Descriptor.String16 >> 1) )
+  if( t == (Descriptor.String8 + 2) || t == (Descriptor.String16 + 2) )
   {
-    if( len < 0 ) { len = t == (Descriptor.String16 >> 1) ? this.strLen << 1 : this.strLen; }
-    this.input.value = this.strLen = t == (Descriptor.String16 >> 1) ? len >> 1 : len;
+    if( len < 0 ) { len = t == (Descriptor.String16 + 2) ? this.strLen << 1 : this.strLen; }
+    this.input.value = this.strLen = t == (Descriptor.String16 + 2) ? len >> 1 : len;
   }
   
   //Update hex editor data length.
