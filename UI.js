@@ -952,7 +952,7 @@ dataDescriptor.prototype.sc = function() { this.update(); }
 
 dataDescriptor.prototype.select = function(e)
 {
-  this.selectedRow=this.comp.scrollTop+((((e.pageY || e.touches[0].pageY)/swingIO.sc-this.comp.offsetTop*swingIO.sc)/swingIO.sc) >> 4); if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }
+  this.selectedRow=(this.comp.scrollTop&-1)+((((e.pageY || e.touches[0].pageY)/swingIO.sc-this.comp.offsetTop*swingIO.sc)/swingIO.sc) >> 4); if( this.selectedRow < 1 || this.data.rows == 0 ) { return; }
   this.selectedRow = Math.min( this.selectedRow, this.data.rows ) - 1;
 
   //Data type descriptor.
