@@ -2,7 +2,7 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 
 var treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
-document.head.innerHTML += "<style>html, body { margin: 0px; -moz-transform: scale(var(--sc)); -webkit-transform: scale(var(--sc)); transform: scale(var(--sc)); transform-origin: top left; }\
+document.head.innerHTML += "<style>html, body { margin: 0px; width:calc(1 / var(--sc) * 100%); height:calc(1 / var(--sc) * 100%); -moz-transform: scale(var(--sc)); -webkit-transform: scale(var(--sc)); transform: scale(var(--sc)); transform-origin: top left; }\
 .vhex { position: relative; overflow-y: scroll; overflow-x: hidden; }\
 .noSel { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .dataInspec { background:#CECECE; }.dataInspec div:nth-child(n+0):nth-child(-n+34) { width: calc(50% - 4px); min-height: 24px; display:inline-block; border-color: #CECECE !important; font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\
@@ -11,10 +11,10 @@ document.head.innerHTML += "<style>html, body { margin: 0px; -moz-transform: sca
 .dataInspec fieldset { display: flex; white-space: nowrap; justify-content: space-between; }\
 #treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { white-space: nowrap; border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
-[class^='node']{ cursor: pointer; padding-left: 100em; padding-right: 100em;  margin-left: -100em; margin-right: -100em; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
+[class^='node']{ cursor: pointer; padding-left: 100em; padding-right: 100em; margin-left: -100em; margin-right: -100em; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .nested { display: none; }.active { display: block; }\
 .alert { background-color:#777777; padding: 20px; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}\
-.alertbg { width:calc(1 / var(--sc) * 100%); height:calc(1 / var(--sc) * 100%); background-color: rgba(0,0,0,0.8); position:absolute; top:0px; left:0px; }\
+.alertbg { width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); position:absolute; top:0px; left:0px; }\
 .closebtn{ margin-left:15px; color: white; font-weight:bold; float:right; font-size: 22px; line-height:20px; cursor:pointer; }.closebtn:hover{ color: black; }\
 :root{ --sc:1; }</style>";
 
@@ -61,6 +61,8 @@ swingIO = {
   Manually scale the page in and out.
   ------------------------------------------------------------*/
   sc: 1, scale: function(sc){ this.sc = sc; document.documentElement.style.setProperty("--sc",`${sc}`); },
+  pageW: function() { return(document.documentElement.clientWidth * this.sc); },
+  pageH: function() { return(document.documentElement.clientHeight * this.sc); },
   /*------------------------------------------------------------
   Data types can be added or removed as you wish. Fully programable system.
   Data types are in pairs of 2 for little endian and big endian byte order.
