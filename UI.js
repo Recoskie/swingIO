@@ -38,6 +38,20 @@ CanvasRenderingContext2D.prototype.drawString = function(text,x,y,width)
   if( i < text.length || this.measureText(o).width > width ){ o = b; }; this.fillText(o,x,y);
 }
 
+//An address of say 0x000000007777F8 can be shortened as 0x...7777F8 in limited draw space.
+
+CanvasRenderingContext2D.prototype.drawAdrString = function(loc,x,y,width)
+{
+  var o = loc.toString(16).toUpperCase(), abr = "0x"; while(o.length < 16){ o = "0" + o; }
+  
+  if((width - this.measureText(abr+o).width) < 0)
+  {
+    abr += "..."; while((width - this.measureText(abr+o).width) < 0) { o = o.substring(1,o.length); }
+  }
+
+  this.fillText(abr+o,x,y);
+}
+
 //Calculating the average character for regular text and set font speeds up measurements by a lot.
 //Should only be called once on setting the graphics context font.
 
@@ -1223,18 +1237,18 @@ dataDescriptor.prototype.coreUpdate = function()
     var row = i; if( row < ( this.data.linear.length >> 1 ) )
     {
       g.fillText( "LDisassemble", 2, posY - 3 );
-      g.fillText( this.data.linear[ row << 1 ].address(), cols + 2, posY - 3 );
+      g.drawAdrString( this.data.linear[ row << 1 ], cols + 2, posY - 3, cols );
     }
     else if( ( row -= ( this.data.linear.length >> 1 ) ) < this.data.crawl.length )
     {
       g.fillText( "Disassemble", 2, posY - 3 );
-      g.fillText( this.data.crawl[ row ].address(), cols + 2, posY - 3 );
+      g.drawAdrString( this.data.crawl[ row ], cols + 2, posY - 3, cols );
     }
     else
     {
       row -= this.data.crawl.length;
       g.fillText( "Data", 2, posY - 3 );
-      g.fillText( this.data.data_off[ row << 1 ].address(), cols + 2, posY - 3 );
+      g.drawAdrString( this.data.data_off[ row << 1 ], cols + 2, posY - 3, cols );
     }
   
     g.moveTo(0, posY); g.lineTo(width, posY);
