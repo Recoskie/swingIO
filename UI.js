@@ -78,7 +78,7 @@ swingIO = {
   pageW: function() { return(document.documentElement.clientWidth * this.sc); },
   pageH: function() { return(document.documentElement.clientHeight * this.sc); },
   /*------------------------------------------------------------
-  Data types can be added or removed as you wish. Fully programable system.
+  Data types can be added or removed as you wish. Fully programmable system.
   Data types are in pairs of 2 for little endian and big endian byte order.
   Blank felids are for data types that do not have a byte order.
   ------------------------------------------------------------*/
@@ -1041,18 +1041,10 @@ dataDescriptor.prototype.select = function(e)
 
   else
   {
-    if( r < ( this.data.linear.length >> 1 ) )
-    {
-      this.coreDisLoc(this.data.linear[r],false); this.update();
-    }
-    else if( ( r -= ( this.data.linear.length >> 1 ) ) < this.data.crawl.length )
-    {
-      this.coreDisLoc(this.data.crawl[r],true); this.update();
-    }
-    else
-    {
-      r -= this.data.crawl.length; r = r << 1; this.io.seekV( this.data.data_off[r] );
-    }
+    if( r < ( this.data.linear.length >> 1 ) ) { this.coreDisLoc(this.data.linear[r],false); }
+    else if( ( r -= ( this.data.linear.length >> 1 ) ) < this.data.crawl.length ) { this.coreDisLoc(this.data.crawl[r],true); }
+    else { r -= this.data.crawl.length; r = r << 1; this.io.seekV( this.data.data_off[r] ); }
+    this.update();
   }
 }
 
