@@ -44,9 +44,9 @@ CanvasRenderingContext2D.prototype.drawAdrString = function(loc,x,y,width)
 {
   var o = loc.toString(16).toUpperCase(), abr = "0x"; while(o.length < 16){ o = "0" + o; }
   
-  if((width - this.measureText(abr+o).width) < 0)
+  if((width - this.measureText(abr+o).width) < 2)
   {
-    abr += "..."; while((width - this.measureText(abr+o).width) < 0) { o = o.substring(1,o.length); }
+    abr += "..."; while((width - this.measureText(abr+o).width) < 2) { o = o.substring(1,o.length); }
   }
 
   this.fillText(abr+o,x,y);
