@@ -128,10 +128,6 @@ swingIO = {
     o = n = this.setSize = undefined;
   },
   setSize: function(el,size) { el.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;"; },
-  /*------------------------------------------------------------
-  Event handling.
-  ------------------------------------------------------------*/
-  scroll:function(r){this.ref[r].sc();},click:function(r){this.ref[r].select(window.event);},
   //Once dos font is used and loaded by a hex editor then the font reference object is no longer needed.
   dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.ttf)')
 }; treeNodes = path = undefined;
@@ -153,11 +149,11 @@ VHex.prototype.hexCols = ["00","01","02","03","04","05","06","07","08","09","0A"
 
 function VHex( el, io, v )
 {
-  this.io = io; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
+  this.io = io; this.comp = document.getElementById(el);
   var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
   var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
-  this.comp.outerHTML = "<div id='"+el+"' class='vhex noSel' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerup"+e+">\
-  <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>"; e = undefined;
+  this.comp.outerHTML = "<div id='"+el+"' class='vhex noSel'>\
+  <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#CECECE;z-index:-1;'></canvas><div id='"+el+"s'></div></div>";
   
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
   
@@ -180,9 +176,9 @@ function VHex( el, io, v )
   {
     this.relSize = 562949953421312; this.relDataUp = this.relSize - swingIO.sBarLowLim; this.rel = true;
     this.adjSize = function() { var s = swingIO.sBarMax - this.getRows(); this.size.style = "height:" + s + "px;min-height:" + s + "px;border:0;"; }
-    this.setRows = function(){}; this.sc = this.virtualSc;
+    this.setRows = function(){}; this.sc = this.virtualSc.bind(this);
   }
-  else { this.sc = this.offsetSc; }
+  else { this.sc = this.offsetSc.bind(this); }
   
   //Component min size.
   
@@ -199,15 +195,28 @@ function VHex( el, io, v )
   //Load Font.
   
   if( swingIO.dosFont ) { swingIO.dosFont.load().then(function(font){ document.fonts.add(font); swingIO.dosFont = undefined; }); } this.setRows(io.file.size);
-  
-  //Allows us to referenced the proper component to update on scroll.
-  
-  swingIO.ref[swingIO.ref.length] = this;
+
+  //Event handling.
+
+  this.comp.addEventListener("scroll",this.sc);
+  this.comp.addEventListener("pointerdown",this.select.bind(this));
+  this.comp.addEventListener("pointerup",this.select.bind(this));
+  /*wScroll:function(r)
+  {
+    window.event.preventDefault();
+    r.comp.scrollBy(0,window.event.deltaY >> 4);
+    r.sc();
+  }*/
+  this.comp.addEventListener("wheel", this.scWheel.bind(this), false );
   
   //Add the component to the IO Event handler.
   
   io.comps[io.comps.length] = this; this.comp.style.width = w; this.comp.style.height = h; w = h = undefined;
 }
+
+//Scrolling event. Note slow the scroll wheel speed on custom rendered GUI components.
+
+VHex.prototype.scWheel = function(e) { e.preventDefault(); this.comp.scrollBy(0,e.deltaY / 16); this.sc(); }
 
 //Scrolling event.
 
@@ -217,7 +226,7 @@ VHex.prototype.offsetSc = function(r)
   
   if(this.io.fileInit && (this.getPos() * 16) == this.io.data.offset) { return; }
   
-  this.io.bufRead( this, "update" ); this.io.seek(this.getPos() * 16); this.io.read(this.getRows() * 16);
+  this.io.bufRead( this, this.update ); this.io.seek(this.getPos() * 16); this.io.read(this.getRows() * 16);
 }
 
 VHex.prototype.virtualSc = function(r)
@@ -226,12 +235,12 @@ VHex.prototype.virtualSc = function(r)
   
   if(this.io.fileInit && (this.getPos() * 16) == this.io.dataV.offset) { return; }
   
-  this.io.bufRead( this, "update" ); this.io.seekV(this.getPos() * 16); this.io.readV(this.getRows() * 16);
+  this.io.bufRead( this, this.update ); this.io.seekV(this.getPos() * 16); this.io.readV(this.getRows() * 16);
 }
 
 //Blocks the scroll event when scroll bar is being adjusted.
 
-VHex.prototype.blockSc = function() { if(this.virtual) { this.sc = this.virtualSc; } else { this.sc = this.offsetSc; } }
+VHex.prototype.blockSc = function() { this.comp.removeEventListener("scroll",this.blockSc); this.comp.addEventListener("scroll",this.sc); }
 
 //Byte selection event.
 
@@ -435,7 +444,7 @@ VHex.prototype.onseek = function( f )
   
   var pos = this.virtual ? f.virtual : f.offset; this.sele = ( this.sel = pos ) + (this.slen > 0 ? this.slen - 1 : 0);
 
-  this.sc = this.blockSc;
+  this.comp.removeEventListener("scroll",this.sc); this.comp.addEventListener("scroll",this.blockSc.bind(this));
   
   if( this.rel ) { this.comp.scrollTo(0,this.relPos = this.oldOff = Math.floor(pos / 16)); this.adjRelPos(); } else { this.comp.scrollTo(0,Math.floor(pos / 16)); }
   
@@ -479,7 +488,7 @@ VHex.prototype.initData = function(r)
   
   //Now we are able to update the editors data.
   
-  this.io.bufRead(this, "update");
+  this.io.bufRead(this, this.update);
     
   if(this.virtual)
   {
@@ -924,11 +933,11 @@ dataDescriptor.prototype.minDims = null, dataDescriptor.prototype.textWidth = []
 
 function dataDescriptor( el, io )
 {
-  this.io = io; this.dPos = 0; this.dEnd = 0; this.comp = document.getElementById(el); var e = "='swingIO.click("+swingIO.ref.length+");'";
+  this.io = io; this.dPos = 0; this.dEnd = 0; this.comp = document.getElementById(el);
   var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
   var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
-  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex noSel' style='overflow-y:auto;' onscroll='swingIO.scroll("+swingIO.ref.length+");' onpointerup"+e+">\
-  <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>"; e = undefined;
+  document.getElementById(el).outerHTML = "<div id='"+el+"' class='vhex noSel' style='overflow-y:auto;'>\
+  <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div style='border: 0;' id='"+el+"s'></div></div>";
 
   this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d"); this.hide(false);
 
@@ -956,15 +965,23 @@ function dataDescriptor( el, io )
   //Selected element.
 
   this.rel1 = 0; this.rel2 = 0; this.type = 0; this.selectedRow = -1;
+
+  //Event handling.
+
+  var e = this.select.bind(this);
+  this.comp.addEventListener("pointerdown",e);
+  this.comp.addEventListener("pointerup",e);
+  this.comp.addEventListener("scroll",this.update.bind(this));
+  this.comp.addEventListener("wheel", this.scWheel.bind(this));
   
   //Allows us to referenced the proper component to update on scroll.
   
-  swingIO.ref[swingIO.ref.length] = this; this.comp.style.width = w; this.comp.style.height = h; w = h = undefined;
+  this.comp.style.width = w; this.comp.style.height = h; w = h = undefined;
 }
 
 //Scrolling event.
 
-dataDescriptor.prototype.sc = function() { this.update(); }
+dataDescriptor.prototype.scWheel = function(e) { e.preventDefault(); this.comp.scrollBy(0,e.deltaY / 16); this.update(); }
 
 dataDescriptor.prototype.select = function(e)
 {
@@ -1029,7 +1046,7 @@ dataDescriptor.prototype.select = function(e)
 
     if(this.rel1 != this.rel2)
     {
-      this.io.onSeek(this,"setDataType"); if(!this.data.virtual) { this.io.seek(this.data.offset + this.rel1); } else { this.io.seekV(this.data.offset + this.rel1); }
+      this.io.onSeek(this,this.setDataType); if(!this.data.virtual) { this.io.seek(this.data.offset + this.rel1); } else { this.io.seekV(this.data.offset + this.rel1); }
     }
 
     //If the data is zero in size then we should display what the data felled is intended for.
@@ -1066,7 +1083,7 @@ dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function(
 
   else
   {
-    this.io.onRead( this, "dataCheck", 1 );
+    this.io.onRead( this, this.dataCheck, 1 );
     if(!this.data.virtual) { this.io.seek(dPos); this.io.read(dEnd - dPos); }
     else { this.io.seekV(dPos); this.io.readV(dEnd - dPos); }
   }
@@ -1268,7 +1285,7 @@ dataDescriptor.prototype.setDescriptor = function( d )
 {
   this.update = this.dataCheck; this.data = d; this.selectedRow = -1;
   
-  this.io.onSeek(this,"load"); if(!d.virtual) { this.io.seek(d.offset); } else { this.io.seekV(d.offset); }
+  this.io.onSeek(this,this.load); if(!d.virtual) { this.io.seek(d.offset); } else { this.io.seekV(d.offset); }
 }
 
 dataDescriptor.prototype.load = function()
@@ -1341,7 +1358,7 @@ dataDescriptor.prototype.initData = function(r)
 {
   if(!r) { this.io.wait(this,"initData"); return; }
 
-  this.io.onRead(this, "dataUpdate", this.io.tempD); this.io.seek(this.dPos); this.io.read(this.dEnd - this.dPos);
+  this.io.onRead(this, this.dataUpdate, this.io.tempD); this.io.seek(this.dPos); this.io.read(this.dEnd - this.dPos);
 }
 
 /*------------------------------------------------------------
