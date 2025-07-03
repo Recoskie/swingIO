@@ -67,8 +67,6 @@ The main swingIO object is used to store references to other components and to s
 ------------------------------------------------------------*/
 
 swingIO = {
-  //Component reference list.
-  ref: [],
   //Scroll bar information.
   sBarWidth: null, sBarMax: null, sBarLowLim: null, sBarUpLim: null,
   /*------------------------------------------------------------
@@ -200,13 +198,6 @@ function VHex( el, io, v )
 
   this.comp.addEventListener("scroll",this.sc);
   this.comp.addEventListener("pointerdown",this.select.bind(this));
-  this.comp.addEventListener("pointerup",this.select.bind(this));
-  /*wScroll:function(r)
-  {
-    window.event.preventDefault();
-    r.comp.scrollBy(0,window.event.deltaY >> 4);
-    r.sc();
-  }*/
   this.comp.addEventListener("wheel", this.scWheel.bind(this), false );
   
   //Add the component to the IO Event handler.
@@ -231,7 +222,7 @@ VHex.prototype.offsetSc = function(r)
 
 VHex.prototype.virtualSc = function(r)
 {
-  if(!r) { this.io.wait(this,"virtualSc"); return; } this.adjRelPos();
+  if(!r) { this.io.wait(this,"virtualSc"); console.log(r); return; } this.adjRelPos();
   
   if(this.io.fileInit && (this.getPos() * 16) == this.io.dataV.offset) { return; }
   
@@ -536,31 +527,87 @@ function dataInspector(el, io)
     dataInspector.prototype.minChar = min; g2d = undefined;
   }
 
-  //Create the component.
-  
-  d.className = "dataInspec noSel";
-  var out = "<div>Data Type</div><div>Value</div>", event = "='swingIO.ref["+swingIO.ref.length+"].setType(0);'";
-  out += "<div onpointerdown"+event+">Binary (8 bit)</div><div onpointerdown"+event+">?</div>";
-  this.out = []; for(var i = 1; swingIO.dLen[i+1] > -2; i++) { event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<div onpointerdown"+event+">" + swingIO.dType[i<<1] + "</div><div onpointerdown"+event+">?</div>"; }
-  event = "='swingIO.ref["+swingIO.ref.length+"].setType("+i+");'"; out += "<div onpointerdown"+event+">Use No Data type</div><div onpointerdown"+event+">?</div>";
-  event = "onclick='swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
-  out += "<fieldset><legend>Byte Order</legend><span><input type='radio' "+event+" name='"+el+"o' value='0' checked='checked' />Little Endian</span><span style='width:50%;'><input type='radio' "+event+" name='"+el+"o' value='1' />Big Endian</span></fieldset>";
-  event = "onclick='swingIO.ref["+swingIO.ref.length+"].base = this.value;swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);'";
-  out += "<fieldset><legend>Integer Base</legend><span><input type='radio' "+event+" name='"+el+"b' value='2' />Native Binary</span><span><input type='radio' "+event+" name='"+el+"b' value='8' />Octal</span><span><input type='radio' "+event+" name='"+el+"b' value='10' checked='checked' />Decimal</span><span><input type='radio' "+event+" name='"+el+"b' value='16' />Hexadecimal</span></fieldset></fieldset>";
-  out += "<fieldset><legend>String Char Length</legend><input type='number' min='0' max='65536' step='1' style='width:100%;' onchange='swingIO.ref["+swingIO.ref.length+"].strLen = Math.min(this.value, 65536);swingIO.ref["+swingIO.ref.length+"].onseek(swingIO.ref["+swingIO.ref.length+"].io);' value='0' /></fieldset>";  
-  d.innerHTML = out;
-  
-  //Byte order control.
-  
-  this.order = ([].slice.call(document.getElementsByName(el+"o"), 0)).reverse();
-  
-  //Setup data type outputs.
-  
-  this.td = d.getElementsByTagName("div"); for(var i = 1; swingIO.dLen[this.out.length] > -2; i++) { this.out[this.out.length] = this.td[(i<<1)+1]; }
+  //Each output div, with td used to help with highlighting data types.
 
-  //User input string length is updated when clicking on a string data type as output element 16.
+  this.out = []; this.td = []; this.order = []; this.input = undefined; temp = 0;
 
-  this.input = d.getElementsByTagName("input")[6];
+  //Create the component. Create data types.
+
+  d.className = "dataInspec noSel"; d.append(n=document.createElement("div")); n.append("data Type"); this.td.push(n);
+  d.append(n=document.createElement("div")); n.append("Value"); this.td.push(n);
+  
+  d.appendChild(n=document.createElement("div")); n.append("Binary (8 bit)"); n.addEventListener("pointerdown",this.setType.bind(this,0));
+  this.td.push(n);
+  d.appendChild(n=document.createElement("div")); n.addEventListener("pointerdown",this.setType.bind(this,0));
+  this.out.push(n);this.td.push(n);
+
+  for(var i = 1; swingIO.dLen[i+1] > -2; i++)
+  {
+    d.appendChild(n=document.createElement("div")); n.append(swingIO.dType[i<<1]); n.addEventListener("pointerdown",this.setType.bind(this,i));
+    this.td.push(n);
+    d.appendChild(n=document.createElement("div")); n.addEventListener("pointerdown",this.setType.bind(this,i));
+    this.out.push(n);this.td.push(n);
+  }
+
+  d.appendChild(n=document.createElement("div")); n.append("Use No Data type"); n.addEventListener("pointerdown",this.setType.bind(this,i));
+  this.td.push(n);
+  d.appendChild(n=document.createElement("div")); n.addEventListener("pointerdown",this.setType.bind(this,i));
+  this.out.push(n);this.td.push(n);
+
+  //Byte order.
+
+  f=document.createElement("fieldset");
+  
+  f.appendChild(n=document.createElement("legend")); n.append("Byte Order");
+  
+  f.appendChild(s=document.createElement("span"));
+  s.appendChild(n=document.createElement("input")); n.setAttribute("type","radio"); this.order[1] = n;
+  n.name = el+"o"; n.value=0; n.checked=true; n.addEventListener("click",this.onseek.bind(this,this.io));
+  s.append("Little Endian");
+  
+  f.appendChild(s=document.createElement("span")); s.style = "width:50%";
+  s.appendChild(n=document.createElement("input")); n.setAttribute("type","radio"); this.order[0] = n;
+  n.name = el+"o"; n.value=1; n.addEventListener("click",this.onseek.bind(this,this.io));
+  s.append("Big Endian");
+  
+  d.appendChild(f);
+
+  //Number base format.
+
+  f=document.createElement("fieldset"); temp = f;
+  f.appendChild(n=document.createElement("legend")); n.append("Integer Base");
+  
+  f.appendChild(s=document.createElement("span"));
+  s.appendChild(n=document.createElement("input")); n.setAttribute("type","radio"); n.name = el+"b"; n.value=2;
+  n.addEventListener("click",(function(e){this.base=e.target.value;this.onseek(this.io);}).bind(this));
+  s.append("Native Binary");
+  
+  f.appendChild(s=document.createElement("span"));
+  s.appendChild(n=document.createElement("input")); n.setAttribute("type","radio"); n.name = el+"b"; n.value=8;
+  n.addEventListener("click",(function(e){this.base=e.target.value;this.onseek(this.io);}).bind(this));
+  s.append("Octal");
+  
+  f.appendChild(s=document.createElement("span"));
+  s.appendChild(n=document.createElement("input")); n.setAttribute("type","radio"); n.name = el+"b"; n.value=10; n.checked=true;
+  n.addEventListener("click",(function(e){this.base=e.target.value;this.onseek(this.io);}).bind(this));
+  s.append("Decimal");
+  
+  f.appendChild(s=document.createElement("span"));
+  s.appendChild(n=document.createElement("input")); n.setAttribute("type","radio"); n.name = el+"b"; n.value=16;
+  n.addEventListener("click",(function(e){this.base=e.target.value;this.onseek(this.io);}).bind(this));
+  s.append("Hexadecimal");
+  
+  d.appendChild(f);
+
+  //Adjust multibyte char string filed length.
+
+  f=document.createElement("fieldset");
+  f.appendChild(n=document.createElement("legend")); n.append("String Char Length");
+  f.appendChild(s=document.createElement("span")); s.style = "width:100%;"
+  s.appendChild(n=document.createElement("input"));
+  n.setAttribute("type","number"); n.min = 0; n.max = 65536; n.step = 1; n.value = 0; n.style = "width:100%;"; this.input = n;
+  n.addEventListener("change",(function(e){this.strLen = Math.min(parseInt(e.target.value),65536);this.onseek(this.io);}).bind(this));
+  d.appendChild(f);
 
   //Set default number base and string length.
   
@@ -576,17 +623,13 @@ function dataInspector(el, io)
   
   //Component min size.
 
-  if(this.minDims[0] == null) { d.style.minWidth=(this.minDims[0]=d.getElementsByTagName("fieldset")[1].clientWidth+16)+"px";this.minDims[1]=this.input.offsetTop-d.offsetTop+32; }
+  if(this.minDims[0] == null) { d.style.minWidth=(this.minDims[0]=temp.clientWidth+16)+"px";this.minDims[1]=this.input.offsetTop-d.offsetTop+32; }
   
   d.style.minWidth=this.minDims[0]+"px"; d.style.minHeight=this.minDims[1]+"px"; d.style.width = "100%"; d.style.height = "100%";
   
-  //Allows us to referenced the proper component on update.
-  
-  swingIO.ref[swingIO.ref.length] = this;
-  
   //Add the component to the IO Event handler.
   
-  io.comps[io.comps.length] = this;
+  io.comps[io.comps.length] = this; temp = null;
 }
 
 dataInspector.prototype.setType = function(t, order, len, v)
@@ -968,9 +1011,7 @@ function dataDescriptor( el, io )
 
   //Event handling.
 
-  var e = this.select.bind(this);
-  this.comp.addEventListener("pointerdown",e);
-  this.comp.addEventListener("pointerup",e);
+  this.comp.addEventListener("pointerdown",this.select.bind(this));
   this.comp.addEventListener("scroll",this.update.bind(this));
   this.comp.addEventListener("wheel", this.scWheel.bind(this));
   
