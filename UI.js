@@ -196,7 +196,7 @@ function VHex( el, io, v )
   
   if( swingIO.dosFont ) { swingIO.dosFont.load().then((function(font)
   {
-    document.fonts.add(font); swingIO.dosFont = undefined;
+    document.fonts.add(font); swingIO.dosFont = undefined; this.c.width = 682;
 
     //On first creation we create the top row.
 
@@ -305,7 +305,7 @@ VHex.prototype.update = function(temp)
 
   //Only display the data over the component image.
   
-  for( var y = 16, i1 = 0, text = ""; y < height; y += 16, i1 += 16 )
+  height += 13; for( var y = 29, i1 = 0, text = ""; y < height; y += 16, i1 += 16 )
     {
       for( var str = "", i2 = 0, val = 0; i2 < 16; i2++ )
       {
@@ -319,12 +319,12 @@ VHex.prototype.update = function(temp)
         }
       }
       
-      g.fillText(str, 166, y+13);if( this.text ) { g.fillText( text, 528, y+13); text = ""; }
+      if( this.text ) { str += " " + text; text = ""; } g.fillText(str, 166, y);
     }
     
   //Address and offset column.
     
-  g.fillStyle = "#FFFFFF"; height -= 16; for( var i = 0; i < height; i += 16 ) { g.fillText((pos + i).address(), 0, i+29); }
+  g.fillStyle = "#FFFFFF"; height-=29; for( var i = 0; i < height; i += 16 ) { g.fillText((pos + i).address(), 0, i+29); }
 }
 
 //Draw selected area.
@@ -359,15 +359,15 @@ VHex.prototype.selection = function(g, pos)
     
     if( this.text )
     {
-      x1 = r1 * 9, x2 = r2 * 9; g.moveTo( 528 + x1, y1 );
+      x1 = r1 * 9, x2 = r2 * 9; g.moveTo( 526 + x1, y1 );
     
-      if(mLine) { g.lineTo( 672, y1 ); } else { g.lineTo( 528 + x2, y1 ); }
+      if(mLine) { g.lineTo( 672, y1 ); } else { g.lineTo( 526 + x2, y1 ); }
     
-      if( x2 == 0 ) { g.lineTo( 672, y2 ); } else { if(mLine) { g.lineTo( 672, y2 - 16 ); g.lineTo( 528 + x2, y2 - 16 ); } g.lineTo( 528 + x2, y2 ); }
+      if( x2 == 0 ) { g.lineTo( 672, y2 ); } else { if(mLine) { g.lineTo( 672, y2 - 16 ); g.lineTo( 526 + x2, y2 - 16 ); } g.lineTo( 526 + x2, y2 ); }
     
-      if(mLine) { g.lineTo( 528, y2 ); } else { g.lineTo( 528 + x1, y2 ); }
+      if(mLine) { g.lineTo( 526, y2 ); } else { g.lineTo( 526 + x1, y2 ); }
     
-      if( x1 == 0 ) { g.lineTo( 528, y1 ); } else { if(mLine) { g.lineTo( 528, y1 + 16 ); g.lineTo( 528 + x1, y1 + 16 ); } g.lineTo( 528 + x1, y1 ); }
+      if( x1 == 0 ) { g.lineTo( 526, y1 ); } else { if(mLine) { g.lineTo( 526, y1 + 16 ); g.lineTo( 526 + x1, y1 + 16 ); } g.lineTo( 526 + x1, y1 ); }
     }
     
     g.closePath(); g.fill(); g.beginPath();
