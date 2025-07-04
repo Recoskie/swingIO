@@ -127,7 +127,7 @@ swingIO = {
   },
   setSize: function(el,size) { el.size.style = "height:" + size + "px;min-height:" + size + "px;border:0;"; },
   //Once dos font is used and loaded by a hex editor then the font reference object is no longer needed.
-  dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.ttf)')
+  dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.otf)')
 }; treeNodes = path = undefined;
 
 /*------------------------------------------------------------
@@ -273,14 +273,9 @@ VHex.prototype.update = function(temp)
   
   //Columns lines.
   
-  for( var x = 166, i = 0; i < 16; x += 22, i++ )
-  {
-    g.fillText(this.hexCols[i], x, 14);
-    
-    g.moveTo(x+19, 16);
+  for( var x = 185, i = 0, str = ""; i < 16; x += 22, i++ ) { str += this.hexCols[i] + "\uE000"; g.moveTo(x, 16); g.lineTo(x, height); }
 
-    g.lineTo(x+19, height);
-  }
+  g.fillText(str,166,13);
 
   //text output column.
   
@@ -290,9 +285,9 @@ VHex.prototype.update = function(temp)
   
   for( var y = 16, i1 = 0, text = ""; y < height; y += 16, i1 += 16 )
   {
-    for( var x = 166, i2 = 0, val = 0; i2 < 16; x += 22, i2++ )
+    for( var x = 166, i2 = 0, val = 0, str = ""; i2 < 16; x += 22, i2++ )
     {
-      val = data[i1+i2]; g.fillText(!isNaN(val) ? val.byte() : "??", x, y+13);
+      val = data[i1+i2]; str += !isNaN(val) ? val.byte() + "\uE000" : "??\uE000";
       
       if( this.text )
       { 
@@ -302,7 +297,7 @@ VHex.prototype.update = function(temp)
       }
     }
     
-    if( this.text ) { g.fillText( text, 528, y+13); text = ""; }
+    g.fillText(str, 166, y+13); if( this.text ) { g.fillText( text, 528, y+13); text = ""; }
     
     g.moveTo(164, y); g.lineTo(514, y);
   }
