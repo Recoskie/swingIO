@@ -129,7 +129,9 @@ swingIO = {
   //Once dos font is used and loaded by a hex editor then the font reference object is no longer needed.
   dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.otf)'),
   //Hex editors image. Speeds up rendering the hex editor components.
-  hexImg: new Image()
+  hexImg: new Image(), //Set on init.
+  //Hex editor fillText style gradient for address, and data.
+  hexRow: undefined //Set on init.
 }; treeNodes = path = undefined;
 
 /*------------------------------------------------------------
@@ -147,36 +149,48 @@ VHex.prototype.rel = false, VHex.prototype.relPos = 0, VHex.prototype.relSize = 
 
 function VHex( el, io, v )
 {
-  this.io = io; this.comp = document.getElementById(el);
-  var w = this.comp.getAttribute("width") || this.comp.style.width || "0px;";
-  var h = this.comp.getAttribute("height") || this.comp.style.height || "0px;";
-  this.comp.outerHTML = "<div id='"+el+"' class='vhex noSel'>\
-  <canvas id='"+el+"g' style='position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;'></canvas><div id='"+el+"s'></div></div>";
-  
-  this.comp = document.getElementById(el); this.size = document.getElementById(el+"s"); this.c = document.getElementById(el+"g"); this.g = this.c.getContext("2d");
+  this.io = io; this.comp = document.getElementById(el); this.comp.className = "vhex noSel";
+
+  this.comp.appendChild(this.c = document.createElement("canvas"));
+
+  this.c.style="position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;";
+
+  this.c.width = 682; this.c.height = 16; this.g = this.c.getContext("2d");
 
   //Font is preloaded so we should be able to set it.
 
   if(swingIO.dosFont != "")
   {
-    document.fonts.add(swingIO.dosFont); swingIO.dosFont = ""; this.c.width = 682; this.c.height = 16;
-
+    document.fonts.add(swingIO.dosFont); swingIO.dosFont = "";
+  
     //On first creation we create the top row.
-
+  
     this.g.font = "16px dos"; this.g.fillStyle = "#CECECE"; this.g.fillRect(0,0,682,16); this.g.fillStyle = "#000000";
-
+  
     //Hex Columns.
-
+  
     this.g.fillText("00\uE00001\uE00002\uE00003\uE00004\uE00005\uE00006\uE00007\uE00008\uE00009\uE0000A\uE0000B\uE0000C\uE0000D\uE0000E\uE0000F",166,13);
-
+  
     //text output column.
-
+  
     this.g.fillText("Text", 584, 13); swingIO.hexImg = new Image(); swingIO.hexImg.src = this.c.toDataURL('image/bmp');
+
+    //The fill text style hex editors will use for address and data.
+
+    swingIO.hexRow = this.g.createLinearGradient(0, 0, 682, 0);
+    swingIO.hexRow.addColorStop(0, "white"); swingIO.hexRow.addColorStop(0.24, "white");
+    swingIO.hexRow.addColorStop(0.24, "black"); swingIO.hexRow.addColorStop(1, "black");
   }
+  
+  this.comp.appendChild(this.size = document.createElement("div"));
   
   //Visible on creation.
   
   this.hide( false );
+
+  //Component min size.
+  
+  this.minDims = [682 + swingIO.sBarWidth, 256]; this.resetDims();
 
   //Selected byte positions.
 
@@ -196,11 +210,7 @@ function VHex( el, io, v )
     this.setRows = function(){}; this.sc = this.virtualSc.bind(this);
   }
   else { this.sc = this.offsetSc.bind(this); }
-  
-  //Component min size.
-  
-  this.minDims = [682 + swingIO.sBarWidth, 256]; this.resetDims();
-  
+
   //text column output is optional.
   
   this.text = true;
@@ -221,7 +231,7 @@ function VHex( el, io, v )
   
   //Add the component to the IO Event handler.
   
-  io.comps[io.comps.length] = this; this.comp.style.width = w; this.comp.style.height = h; w = h = undefined;
+  io.comps[io.comps.length] = this;
 }
 
 //Scrolling event. Note slow the scroll wheel speed on custom rendered GUI components.
@@ -272,9 +282,11 @@ VHex.prototype.select = function(e)
   }
 }
 
+//Block the hex editor from updating till initialized.
+
 VHex.prototype.update = function(temp)
 {
-  var g = this.g, height = this.c.height = this.comp.clientHeight; this.c.width = this.comp.clientWidth;
+  if(swingIO.hexImg.height < 16) { return; } var g = this.g, height = this.c.height = this.comp.clientHeight;
   
   var data = (temp == 1) ? this.io.tempD : (!this.virtual ? this.io.data : this.io.dataV), pos = data.offset;
 
@@ -282,7 +294,7 @@ VHex.prototype.update = function(temp)
   
   if((dif=height-swingIO.hexImg.height) > 0)
   {
-    g.drawImage(swingIO.hexImg,0,0); g.fillStyle = "#000000";
+    this.c.width = 682; g.drawImage(swingIO.hexImg,0,0); g.fillStyle = "#000000";
 
     //Columns lines.
 
@@ -301,36 +313,34 @@ VHex.prototype.update = function(temp)
     swingIO.hexImg = new Image(); swingIO.hexImg.src = this.c.toDataURL('image/bmp');
   }
 
+  this.c.width = this.comp.clientWidth;
+
   //draw hex editor body image on top of byte selection.
 
   if( this.sel >= 0 && this.sele >= 0 ) { this.selection(g, pos); } g.drawImage(swingIO.hexImg,0,0);
 
   //Only display the data over the component image.
 
-  g.font = "16px dos"; g.fillStyle = "#000000"; g.fillText(this.s, this.addcol, 13);
+  g.font = "16px dos"; g.fillStyle = "#000000"; g.fillText(this.s, this.addcol, 13); g.fillStyle = swingIO.hexRow;
   
   height += 13; for( var y = 29, dat = 0, text = ""; y < height; y += 16 )
+  {
+    for( var str = (pos+y-29).address()+"\uE000", i = 0, val = data[dat]; i < 16; val = data[++dat], i++ )
     {
-      for( var str = "", i = 0, val = data[dat]; i < 16; val = data[++dat], i++ )
-      {
-        str += !isNaN(val) ? val.byte() + "\uE000" : "??\uE000";
+      str += !isNaN(val) ? val.byte() + "\uE000" : "??\uE000";
         
-        if( this.text )
-        { 
-          val = !isNaN(val) ? val : 0x3F; if( val == 0 || val == 10 || val == 173 ) { val = 0x20; }
+      if( this.text )
+      { 
+        val = !isNaN(val) ? val : 0x3F; if( val == 0 || val == 10 || val == 173 ) { val = 0x20; }
   
-          text += String.fromCharCode( val );
-        }
+        text += String.fromCharCode( val );
       }
-
-      //Hex data and text output.
-      
-      if( this.text ) { str += " " + text; text = ""; } g.fillText(str, 166, y);
-
-      //Address and offset column.
-
-      g.fillStyle = "#FFFFFF"; g.fillText((pos+y-29).address(), 0, y); g.fillStyle = "#000000";
     }
+
+    //Draw hex editor row.
+      
+    if( this.text ) { str += " " + text; text = ""; } g.fillText(str, 0, y);
+  }
 }
 
 //Draw selected area.
