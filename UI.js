@@ -129,7 +129,7 @@ swingIO = {
   //Once dos font is used and loaded by a hex editor then the font reference object is no longer needed.
   dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.otf)'),
   //Hex editors image. Speeds up rendering the hex editor components.
-  hexImg: new Image(), //Set on init.
+  hexImg: undefined, //Set on init.
   //Hex editor fillText style gradient for address, and data.
   hexRow: undefined //Set on init.
 }; treeNodes = path = undefined;
@@ -155,25 +155,31 @@ function VHex( el, io, v )
 
   this.c.style="position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;";
 
-  this.c.width = 682; this.c.height = 16; this.g = this.c.getContext("2d");
+  this.g = this.c.getContext("2d");
 
   //Font is preloaded so we should be able to set it.
 
   if(swingIO.dosFont != "")
   {
     document.fonts.add(swingIO.dosFont); swingIO.dosFont = "";
+
+    //Use an transferable off screen bit map canvas.
+
+    swingIO.hexImg = new OffscreenCanvas(682, 16);
+
+    var g2 = swingIO.hexImg.getContext("2d");
   
     //On first creation we create the top row.
   
-    this.g.font = "16px dos"; this.g.fillStyle = "#CECECE"; this.g.fillRect(0,0,682,16); this.g.fillStyle = "#000000";
+    g2.font = "16px dos"; g2.fillStyle = "#CECECE"; g2.fillRect(0,0,682,16); g2.fillStyle = "#000000";
   
     //Hex Columns.
   
-    this.g.fillText("00\uE00001\uE00002\uE00003\uE00004\uE00005\uE00006\uE00007\uE00008\uE00009\uE0000A\uE0000B\uE0000C\uE0000D\uE0000E\uE0000F",166,13);
+    g2.fillText("00\uE00001\uE00002\uE00003\uE00004\uE00005\uE00006\uE00007\uE00008\uE00009\uE0000A\uE0000B\uE0000C\uE0000D\uE0000E\uE0000F",166,13);
   
     //text output column.
   
-    this.g.fillText("Text", 584, 13); swingIO.hexImg = new Image(); swingIO.hexImg.src = this.c.toDataURL('image/bmp');
+    g2.fillText("Text", 584, 13);
 
     //The fill text style hex editors will use for address and data.
 
@@ -286,7 +292,7 @@ VHex.prototype.select = function(e)
 
 VHex.prototype.update = function(temp)
 {
-  if(swingIO.hexImg.height < 16) { return; } var g = this.g, height = this.c.height = this.comp.clientHeight;
+  if(swingIO.hexImg.height < 16) { return; } var g = this.g, height = this.c.height = this.comp.clientHeight; this.c.width = this.comp.clientWidth;
   
   var data = (temp == 1) ? this.io.tempD : (!this.virtual ? this.io.data : this.io.dataV), pos = data.offset;
 
@@ -294,26 +300,25 @@ VHex.prototype.update = function(temp)
   
   if((dif=height-swingIO.hexImg.height) > 0)
   {
-    this.c.width = 682; g.drawImage(swingIO.hexImg,0,0); g.fillStyle = "#000000";
+    var temp = new OffscreenCanvas(682,height), g2 = temp.getContext("2d");
+    g2.drawImage(swingIO.hexImg,0,0); g2.fillStyle = "#000000";
 
     //Columns lines.
 
-    for( var x = 185, i = 0; i < 16; x += 22, i++ ) { g.moveTo(x, swingIO.hexImg.height); g.lineTo(x, height); }
+    for( var x = 185, i = 0; i < 16; x += 22, i++ ) { g2.moveTo(x, swingIO.hexImg.height); g2.lineTo(x, height); }
 
     //Rows.
 
-    for(var y = (swingIO.hexImg.height>>4)<<4; y < height; y += 16) { g.moveTo(164, y); g.lineTo(514, y); }
+    for(var y = (swingIO.hexImg.height>>4)<<4; y < height; y += 16) { g2.moveTo(164, y); g2.lineTo(514, y); }
 
     //Address and offset column.
   
-    g.fillRect(0, swingIO.hexImg.height, 164, height); g.stroke();
+    g2.fillRect(0, swingIO.hexImg.height, 164, height); g2.stroke();
 
     //To new GPU bitmap.
 
-    swingIO.hexImg = new Image(); swingIO.hexImg.src = this.c.toDataURL('image/bmp');
+    swingIO.hexImg = temp;
   }
-
-  this.c.width = this.comp.clientWidth;
 
   //draw hex editor body image on top of byte selection.
 
