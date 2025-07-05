@@ -257,7 +257,7 @@ VHex.prototype.offsetSc = function(r)
 
 VHex.prototype.virtualSc = function(r)
 {
-  if(!r) { this.io.wait(this,"virtualSc"); console.log(r); return; } this.adjRelPos();
+  if(!r) { this.io.wait(this,"virtualSc"); return; } this.adjRelPos();
   
   if(this.io.fileInit && (this.getPos() * 16) == this.io.dataV.offset) { return; }
   
@@ -292,7 +292,7 @@ VHex.prototype.select = function(e)
 
 VHex.prototype.update = function(temp)
 {
-  if(swingIO.hexImg.height < 16) { return; } var g = this.g, height = this.c.height = this.comp.clientHeight; this.c.width = this.comp.clientWidth;
+  if(swingIO.hexImg.height < 16) { return; } var g = this.g, width = this.c.width = this.comp.clientWidth, height = this.c.height = this.comp.clientHeight;
   
   var data = (temp == 1) ? this.io.tempD : (!this.virtual ? this.io.data : this.io.dataV), pos = data.offset;
 
@@ -322,7 +322,9 @@ VHex.prototype.update = function(temp)
 
   //draw hex editor body image on top of byte selection.
 
-  if( this.sel >= 0 && this.sele >= 0 ) { this.selection(g, pos); } g.drawImage(swingIO.hexImg,0,0);
+  if( this.sel >= 0 && this.sele >= 0 ) { this.selection(g, pos); }
+  
+  g.drawImage(swingIO.hexImg,0,0,width,height,0,0,width,height);
 
   //Only display the data over the component image.
 
