@@ -129,9 +129,8 @@ swingIO = {
   //Once dos font is used and loaded by a hex editor then the font reference object is no longer needed.
   dosFont: new FontFace('dos', 'url('+path+'/Font/DOS.otf)'),
   //Hex editors image. Speeds up rendering the hex editor components.
-  hexImg: undefined, //Set on init.
-  //Hex editor fillText style gradient for address, and data.
-  hexRow: undefined //Set on init.
+  hexRow: undefined, //Set on init.
+  hCell: undefined, hCellSel: undefined
 }; treeNodes = path = undefined;
 
 /*------------------------------------------------------------
@@ -150,11 +149,9 @@ VHex.prototype.rel = false, VHex.prototype.relPos = 0, VHex.prototype.relSize = 
 function VHex( el, io, v )
 {
   this.io = io; this.comp = document.getElementById(el); this.comp.className = "vhex noSel";
-
   this.comp.appendChild(this.c = document.createElement("canvas"));
-
   this.c.style="position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;";
-
+  this.c.width = 682; this.c.height = 16;
   this.g = this.c.getContext("2d");
 
   //Font is preloaded so we should be able to set it.
@@ -163,23 +160,21 @@ function VHex( el, io, v )
   {
     document.fonts.add(swingIO.dosFont); swingIO.dosFont = "";
 
-    //Use an transferable off screen bit map canvas.
+    //Create the hex editor cell fill patterns.
 
-    swingIO.hexImg = new OffscreenCanvas(682, 16);
+    var t = new OffscreenCanvas(682, 16), g2 = t.getContext("2d");
+    g2.fillStyle = "#9EB0C1"; g2.fillRect(0,0,682,16);
+        
+    for(var x = 164; x < 516; x+= 22){g2.moveTo(x,0); g2.lineTo(x+22,0); g2.lineTo(x+22,16);}
+    
+    g2.stroke(); swingIO.hCellSel = this.g.createPattern(t, "repeat-y");
 
-    var g2 = swingIO.hexImg.getContext("2d");
-  
-    //On first creation we create the top row.
-  
-    g2.font = "16px dos"; g2.fillStyle = "#CECECE"; g2.fillRect(0,0,682,16); g2.fillStyle = "#000000";
-  
-    //Hex Columns.
-  
-    g2.fillText("00\uE00001\uE00002\uE00003\uE00004\uE00005\uE00006\uE00007\uE00008\uE00009\uE0000A\uE0000B\uE0000C\uE0000D\uE0000E\uE0000F",166,13);
-  
-    //text output column.
-  
-    g2.fillText("Text", 584, 13);
+    g2.fillStyle = "#FFFFFF"; g2.fillRect(0,0,682,16);
+    g2.fillStyle = "#000000"; g2.fillRect(0,0,164,16);
+    
+    for(var x = 164; x < 516; x+= 22){g2.moveTo(x,0); g2.lineTo(x+22,0); g2.lineTo(x+22,16);}
+
+    g2.stroke(); swingIO.hCell = this.g.createPattern(t, "repeat-y"); t = undefined;
 
     //The fill text style hex editors will use for address and data.
 
@@ -189,10 +184,31 @@ function VHex( el, io, v )
   }
   
   this.comp.appendChild(this.size = document.createElement("div"));
+
+  //On first creation we create the top row.
+  
+  this.g.font = "16px dos"; this.g.fillStyle = "#CECECE"; this.g.fillRect(0,0,682,16); this.g.fillStyle = "#000000";
+  
+  //Hex Columns.
+      
+  this.g.fillText("00\uE00001\uE00002\uE00003\uE00004\uE00005\uE00006\uE00007\uE00008\uE00009\uE0000A\uE0000B\uE0000C\uE0000D\uE0000E\uE0000F",166,13);
+  
+  //Virtual or file offset view.
+  
+  this.g.fillText((this.virtual = v) ? "Virtual Address (h)" : "Offset (h)",v ? -1 : 42,12);
+  
+  //text output column.
+      
+  this.g.fillText("Text", 584, 13);
   
   //Visible on creation.
   
   this.hide( false );
+
+  //Find the width of the system scroll bar, and max height of scroll bar.
+  //Find the lower and upper limit while scrolling data larger than scroll bar clip area is 5%.
+
+  if( swingIO.sBarWidth == null ) { swingIO.getScrollBarInfo(this); }
 
   //Component min size.
   
@@ -201,11 +217,6 @@ function VHex( el, io, v )
   //Selected byte positions.
 
   this.sel = 0; this.sele = 0; this.slen = -1;
-  
-  //Find the width of the system scroll bar, and max height of scroll bar.
-  //Find the lower and upper limit while scrolling data larger than scroll bar clip area is 5%.
-
-  if( swingIO.sBarWidth == null ) { swingIO.getScrollBarInfo(this); }
 
   //Virtual or offset scroll.
 
@@ -221,10 +232,6 @@ function VHex( el, io, v )
   
   this.text = true;
   
-  //virtual or file offset view.
-  
-  this.s = (this.virtual = v) ? "Virtual Address (h)" : "Offset (h)"; this.addcol = v ? -1 : 42;
-
   //Adjust hex editor size.
 
   this.setRows(io.file.size);
@@ -292,43 +299,30 @@ VHex.prototype.select = function(e)
 
 VHex.prototype.update = function(temp)
 {
-  if(swingIO.hexImg.height < 16) { return; } var g = this.g, width = this.c.width = this.comp.clientWidth, height = this.c.height = this.comp.clientHeight;
+  if(this.c.height < 16) { return; } var g = this.g, height = this.c.height;
+
+  //Copy the rendered graphics. We will use this for faster scrolling effects.
+
+  if((height>>4)!=(ns=this.comp.clientHeight>>4))
+  {
+    ns += 1; ns = ns < 16 ? 16 : ns << 4;
+
+    var ct = new OffscreenCanvas(682,ns), g2 = ct.getContext("2d"); g2.drawImage(this.c,0,0);
+
+    height = this.c.height = ns; g.drawImage(ct,0,0); g2=ct=undefined;
+  }
   
   var data = (temp == 1) ? this.io.tempD : (!this.virtual ? this.io.data : this.io.dataV), pos = data.offset;
-
-  //We don't have to repeatably draw rows and columns. We only add as many as we need as pixel image data.
   
-  if((dif=height-swingIO.hexImg.height) > 0)
-  {
-    var temp = new OffscreenCanvas(682,height), g2 = temp.getContext("2d");
-    g2.drawImage(swingIO.hexImg,0,0); g2.fillStyle = "#000000";
+  //Cell lines.
 
-    //Columns lines.
-
-    for( var x = 185, i = 0; i < 16; x += 22, i++ ) { g2.moveTo(x, swingIO.hexImg.height); g2.lineTo(x, height); }
-
-    //Rows.
-
-    for(var y = (swingIO.hexImg.height>>4)<<4; y < height; y += 16) { g2.moveTo(164, y); g2.lineTo(514, y); }
-
-    //Address and offset column.
+  g.fillStyle = swingIO.hCell; g.fillRect(0,16,this.text ? 682 : 516,height);
   
-    g2.fillRect(0, swingIO.hexImg.height, 164, height); g2.stroke();
-
-    //To new GPU bitmap.
-
-    swingIO.hexImg = temp;
-  }
-
-  //draw hex editor body image on top of byte selection.
-
   if( this.sel >= 0 && this.sele >= 0 ) { this.selection(g, pos); }
-  
-  g.drawImage(swingIO.hexImg,0,0,width,height,0,0,width,height);
 
   //Only display the data over the component image.
 
-  g.font = "16px dos"; g.fillStyle = "#000000"; g.fillText(this.s, this.addcol, 13); g.fillStyle = swingIO.hexRow;
+  g.font = "16px dos"; g.fillStyle = swingIO.hexRow;
   
   height += 13; for( var y = 29, dat = 0, text = ""; y < height; y += 16 )
   {
@@ -354,7 +348,7 @@ VHex.prototype.update = function(temp)
 
 VHex.prototype.selection = function(g, pos)
 {
-  g.fillStyle = "#9EB0C1";
+  g.fillStyle = swingIO.hCellSel;
 
   //End and start position must be in order for the coordinates to be translated properly.
 
@@ -399,7 +393,7 @@ VHex.prototype.selection = function(g, pos)
 
 //Basic UI controls.
 
-VHex.prototype.setText = function( v ) { this.minDims = [(v ? 682 : 516) + swingIO.sBarWidth, 256]; this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; if( this.visible ) { this.update(this.io); } }
+VHex.prototype.setText = function( v ) { this.minDims = [((this.text = v) ? 682 : 516) + swingIO.sBarWidth, 256]; this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; if( this.visible ) { this.update(this.io); } }
 
 VHex.prototype.getRows = function() { return( Math.floor( this.comp.clientHeight / 16 ) ); }
 
