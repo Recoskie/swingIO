@@ -3,20 +3,20 @@ var path = document.currentScript.src; path = path.substring(0, path.lastIndexOf
 var treeNodes = ["f.gif","u.gif","H.gif","disk.gif","EXE.gif","dll.gif","sys.gif","ELF.gif","bmp.gif","jpg.gif","pal.gif","ani.gif","webp.gif","wav.gif","mid.gif","avi.gif"];
 
 document.head.innerHTML += "<style>html, body { margin: 0px; width:calc(1 / var(--sc) * 100%); height:calc(1 / var(--sc) * 100%); -moz-transform: scale(var(--sc)); -webkit-transform: scale(var(--sc)); transform: scale(var(--sc)); transform-origin: top left; }\
-.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; }\
+.vhex { position: relative; overflow-y: scroll; overflow-x: hidden; background: linear-gradient(to right, transparent var(--hexW), #CECECE 1px) }\
 .noSel { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .dataInspec { background:#CECECE; }.dataInspec div:nth-child(n+0):nth-child(-n+34) { width: calc(50% - 4px); min-height: 24px; display:inline-block; border-color: #CECECE !important; font-size:16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\
 .dataInspec div:nth-child(n+0):nth-child(-n+2) { text-align: center; background:#8E8E8E; }\
 .dataInspec div:nth-child(n+3):nth-child(-n+34) { cursor: pointer; background:#FFFFFF; }\
 .dataInspec fieldset { display: flex; white-space: nowrap; justify-content: space-between; }\
-#treeUL{ margin: 0; padding: 0; } #treeUL ul { list-style-type: none; } #treeUL div { white-space: nowrap; border: 0; }\
+#treeUL{ margin: 0; padding: 0; background:#FFFFFF; } #treeUL ul { list-style-type: none; } #treeUL div { white-space: nowrap; border: 0; }\
 "+(function(nodes){for(var i = 0, o = ""; i < nodes.length; o+=".node"+i+"::before { content: url("+path+"/Icons/"+nodes[i++]+"); }");return(o);})(treeNodes)+"\
 [class^='node']{ cursor: pointer; padding-left: 100em; padding-right: 100em; margin-left: -100em; margin-right: -100em; display:flex; align-items:center; width:0px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }\
 .nested { display: none; }.active { display: block; }\
 .alert { background-color:#777777; padding: 20px; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}\
 .alertbg { width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); position:absolute; top:0px; left:0px; }\
 .closebtn{ margin-left:15px; color: white; font-weight:bold; float:right; font-size: 22px; line-height:20px; cursor:pointer; }.closebtn:hover{ color: black; }\
-:root{ --sc:1; }</style><link rel='preload' href='"+path+"/Font/DOS.otf' as='font' type='font/otf' crossorigin='anonymous' />";
+:root{ --sc:1; --hexW:682px; }</style><link rel='preload' href='"+path+"/Font/DOS.otf' as='font' type='font/otf' crossorigin='anonymous' />";
 
 /*------------------------------------------------------------
 Optimized graphical text clipping.
@@ -150,9 +150,13 @@ function VHex( el, io, v )
 {
   this.io = io; this.comp = document.getElementById(el); this.comp.className = "vhex noSel";
   this.comp.appendChild(this.c = document.createElement("canvas"));
-  this.c.style="position:sticky;top:0px;left:0px;background:#FFFFFF;z-index:-1;";
+  this.c.style="position:sticky;top:0px;left:0px;z-index:-1;";
   this.c.width = 682; this.c.height = 16;
   this.g = this.c.getContext("2d");
+
+  //Defined height.
+
+  var h = Math.max(parseInt(this.comp.style.height)||0, parseInt(this.comp.height)||0);
 
   //Font is preloaded so we should be able to set it.
 
@@ -212,7 +216,7 @@ function VHex( el, io, v )
 
   //Component min size.
   
-  this.minDims = [682 + swingIO.sBarWidth, 256]; this.resetDims();
+  this.minDims = [682 + swingIO.sBarWidth, 256]; this.resetDims(); this.comp.style = "height:" + h + "px;"; h = undefined;
 
   //Selected byte positions.
 
@@ -393,7 +397,11 @@ VHex.prototype.selection = function(g, pos)
 
 //Basic UI controls.
 
-VHex.prototype.setText = function( v ) { this.minDims = [((this.text = v) ? 682 : 516) + swingIO.sBarWidth, 256]; this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px"; if( this.visible ) { this.update(this.io); } }
+VHex.prototype.setText = function( v )
+{
+  this.minDims = [((this.text = v) ? 682 : 516) + swingIO.sBarWidth, 256]; this.comp.style.minWidth = this.minDims[0] + "px"; this.comp.style.minHeight = this.minDims[1] + "px";
+  document.documentElement.style.setProperty("--hexW",`${v ? "682px" : "516px"}`); if( this.visible ) { this.update(this.io); }
+}
 
 VHex.prototype.getRows = function() { return( Math.floor( this.comp.clientHeight / 16 ) ); }
 
