@@ -1142,6 +1142,7 @@ dataDescriptor.prototype.select = function(e)
 
 dataDescriptor.prototype.update = dataDescriptor.prototype.dataCheck = function(temp)
 {
+  if(this.update == this.coreUpdate){this.update();return;} //Note that the bind event for scroll does not change even after changing update to coreUpdate. Note bind creates a new function.
   this.minRows = Math.min( this.data.rows, ((this.comp.clientHeight / 16) + 0.5)&-1 );
   this.curRow = Math.max(Math.min(this.comp.scrollTop,this.data.rows), 0) & -1, this.endRow = Math.min( this.curRow + this.minRows, this.data.rows ) & - 1;
 
